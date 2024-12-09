@@ -1,9 +1,10 @@
-import * as PDFJS from 'pdfjs-dist';
-import { GlobalWorkerOptions } from 'pdfjs-dist/build/pdf';
-import { TextItem } from 'pdfjs-dist/types/src/display/api';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
+import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 
 // Set worker path for PDF.js
-GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS.version}/pdf.worker.min.js`;
+if (typeof window !== 'undefined') {
+  GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${getDocument.version}/pdf.worker.min.js`;
+}
 
 export interface PDFContent {
   text: string;
@@ -11,22 +12,35 @@ export interface PDFContent {
 }
 
 export const extractPDFContent = async (file: File): Promise<PDFContent> => {
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await PDFJS.getDocument({ data: arrayBuffer }).promise;
-  
-  let text = '';
-  const pageCount = pdf.numPages;
-
-  for (let i = 1; i <= pageCount; i++) {
-    const page = await pdf.getPage(i);
-    const textContent = await page.getTextContent();
-    text += textContent.items.map((item: TextItem) => item.str).join(' ');
+  if (!file.type.includes('pdf')) {
+    throw new Error('Please upload a PDF file');
   }
 
-  return {
-    text,
-    pageCount,
-  };
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await getDocument({ data: arrayBuffer }).promise;
+    
+    let text = '';
+    const pageCount = pdf.numPages;
+
+    for (let i = 1; i <= pageCount; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .filter((item): item is TextItem => 'str' in item)
+        .map(item => item.str)
+        .join(' ');
+      text += pageText + '\n\n';
+    }
+
+    return {
+      text: text.trim(),
+      pageCount,
+    };
+  } catch (error) {
+    console.error('Error extracting PDF content:', error);
+    throw new Error('Failed to extract text from PDF');
+  }
 };
 
 export const generatePDF = async (translatedText: string): Promise<Blob> => {
