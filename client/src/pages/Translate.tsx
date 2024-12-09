@@ -57,15 +57,18 @@ export default function Translate() {
       {isTranslating && <ProgressIndicator progress={progress} />}
 
       <div className="flex-1 p-4">
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel defaultSize={50}>
+        <ResizablePanelGroup
+          direction="horizontal"
+          className="min-h-[200px] rounded-lg border"
+        >
+          <ResizablePanel defaultSize={50} minSize={30}>
             <TranslationPane
               title="Source Text"
               text={sourceText}
               onChange={setSourceText}
             />
           </ResizablePanel>
-          <ResizablePanel defaultSize={50}>
+          <ResizablePanel defaultSize={50} minSize={30}>
             <TranslationPane
               title="Translation"
               text={translatedText}
