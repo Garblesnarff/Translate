@@ -10,7 +10,12 @@ export function registerRoutes(app: Express) {
       const { text } = req.body;
       
       const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: `Translate this Tibetan text to English: ${text}`}]}],
+        contents: [{ role: "user", parts: [{ text: `You are a helpful Tibetan language translator. Please translate the following Tibetan text to English, maintaining academic and scholarly tone: ${text}`}]}],
+        generationConfig: {
+          temperature: 0.3,
+          topK: 1,
+          topP: 0.8,
+        },
       });
 
       const response = await result.response;
