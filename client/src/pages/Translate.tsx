@@ -5,7 +5,8 @@ import TranslationPane from "../components/TranslationPane";
 import UploadDialog from "../components/UploadDialog";
 import ProgressIndicator from "../components/ProgressIndicator";
 import { useTranslation } from "../lib/gemini";
-import { extractPDFContent, generatePDF } from "../lib/pdf";
+import { extractTextContent } from "../lib/textExtractor";
+import { generatePDF } from "../lib/pdf";
 
 export default function Translate() {
   const [sourceText, setSourceText] = useState("");
@@ -13,7 +14,7 @@ export default function Translate() {
   const { translate, isTranslating, progress } = useTranslation();
 
   const handleFileUpload = async (file: File) => {
-    const content = await extractPDFContent(file);
+    const content = await extractTextContent(file);
     setSourceText(content.text);
   };
 

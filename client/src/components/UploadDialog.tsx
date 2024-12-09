@@ -23,10 +23,18 @@ export default function UploadDialog({ onUpload }: UploadDialogProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.includes('pdf')) {
+    const validTypes = [
+      'application/pdf',
+      'text/html',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    
+    if (!validTypes.some(type => file.type.includes(type.split('/')[1]))) {
       toast({
         title: "Invalid file type",
-        description: "Please upload a PDF file",
+        description: "Please upload a PDF, HTML, TXT, or DOC/DOCX file",
         variant: "destructive",
       });
       return;
@@ -63,7 +71,7 @@ export default function UploadDialog({ onUpload }: UploadDialogProps) {
         <div className="grid gap-4 py-4">
           <Input
             type="file"
-            accept=".pdf"
+            accept=".pdf,.html,.txt,.doc,.docx"
             onChange={handleFileChange}
             disabled={isUploading}
           />
