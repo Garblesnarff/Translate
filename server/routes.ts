@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { splitTextIntoChunks, combineTranslations } from "../client/src/lib/textChunker";
+import { splitTextIntoChunks } from "../client/src/lib/textChunker";
+import { formatTranslation, combineTranslations, processGeminiResponse } from "./textFormatter";
 
 export function registerRoutes(app: Express) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -14,23 +15,25 @@ export function registerRoutes(app: Express) {
 
       for (const chunk of chunks) {
         const result = await model.generateContent({
-          contents: [{ role: "user", parts: [{ text: `You are a professional Tibetan language translator. Please translate the following Tibetan text to English, word for word. Keep its meaning as close to the original as you can.:
+          contents: [{ 
+            role: "user", 
+            parts: [{ 
+              text: `You are a professional Tibetan language translator. Translate the following Tibetan text to English:
 
 Instructions:
-1. Maintain an academic and scholarly tone
-2. Preserve the original structure but omit repeated headings
-3. For Buddhist terms and names:
-   - Keep original Sanskrit terms in italics (e.g. *dharma*)
-   - Use proper capitalization for proper nouns
-4. Use clear paragraph breaks and section headers
-5. Format using these rules:
-   - Use # for main headers only
-   - Use regular text for general content
+1. Translate literally while maintaining readability
+2. Preserve all proper names and technical terms
+3. Maintain paragraph structure
+4. Do not add explanatory notes
+5. Do not add headers unless they exist in the source
+6. Keep Sanskrit terms untranslated but transliterated
 
 Text to translate (Page ${chunk.pageNumber}):
-${chunk.content}`}]}],
+${chunk.content}`
+            }]
+          }],
           generationConfig: {
-            temperature: 0.2,
+            temperature: 0.1,  // Reduced for more consistent output
             topK: 1,
             topP: 0.8,
             maxOutputTokens: 8192,
@@ -38,17 +41,12 @@ ${chunk.content}`}]}],
         });
 
         const response = await result.response;
-        const translation = response.text()
-          .replace(/\*\*([^*]+)\*\*/g, '#$1') // Convert bold to headers
-          .replace(/(?:\r\n|\r|\n){3,}/g, '\n\n') // Remove excessive newlines
-          .replace(/#{2,}/g, '#') // Normalize multiple # to single #
-          .replace(/^[#\s]*(?:The\s+)?([A-Z][^#\n]+)(?:\s*#\s*)?$/gm, '# $1') // Normalize section headers
-          .replace(/(?:^|\n)(?:[-*]\s*(?:The\s+)?(?:Lotus|Wheel|Conch|Banner|Vase|Jewel|Fish|Throne|Dharma)\s*(?:$|\n)){3,}/g, '') // Remove repeated symbol lists
-          .trim();
-
+        const rawTranslation = response.text();
+        const processedTranslation = processGeminiResponse(rawTranslation);
+        
         translations.push({
           pageNumber: chunk.pageNumber,
-          translation,
+          translation: processedTranslation,
         });
       }
 

@@ -1,0 +1,62 @@
+import type { Express } from "express";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { splitTextIntoChunks } from "../client/src/lib/textChunker";
+import { formatTranslation, combineTranslations, processGeminiResponse } from "./textFormatter";
+
+export function registerRoutes(app: Express) {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-8b" });
+
+  app.post('/api/translate', async (req, res) => {
+    try {
+      const { text } = req.body;
+      const chunks = splitTextIntoChunks(text);
+      const translations = [];
+
+      for (const chunk of chunks) {
+        const result = await model.generateContent({
+          contents: [{ 
+            role: "user", 
+            parts: [{ 
+              text: `You are a professional Tibetan language translator. Translate the following Tibetan text to English:
+
+Instructions:
+1. Translate literally while maintaining readability
+2. Preserve all proper names and technical terms
+3. Maintain paragraph structure
+4. Do not add explanatory notes
+5. Do not add headers unless they exist in the source
+6. Keep Sanskrit terms untranslated but transliterated
+
+Text to translate (Page ${chunk.pageNumber}):
+${chunk.content}`
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.1,  // Reduced for more consistent output
+            topK: 1,
+            topP: 0.8,
+            maxOutputTokens: 8192,
+          },
+        });
+
+        const response = await result.response;
+        const rawTranslation = response.text();
+        const processedTranslation = processGeminiResponse(rawTranslation);
+        
+        translations.push({
+          pageNumber: chunk.pageNumber,
+          translation: processedTranslation,
+        });
+      }
+
+      const combinedTranslation = combineTranslations(translations);
+      res.json({ translatedText: combinedTranslation });
+    } catch (error) {
+      console.error('Translation error:', error);
+      res.status(500).json({ error: 'Translation failed' });
+    }
+  });
+
+  // ... rest of your routes
+}
