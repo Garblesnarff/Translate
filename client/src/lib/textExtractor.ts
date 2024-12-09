@@ -47,7 +47,23 @@ export async function extractTextContent(file: File): Promise<ExtractedContent> 
     };
   } catch (error) {
     console.error('Error extracting text content:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    
+    // Create a more user-friendly error message based on file type
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    let errorMessage = 'Unknown error occurred';
+    
+    if (error instanceof Error) {
+      if (error.message.includes('PDF')) {
+        errorMessage = 'Could not read PDF file. The file might be corrupted or password protected.';
+      } else if (['doc', 'docx'].includes(extension || '')) {
+        errorMessage = 'Could not read Word document. Please ensure it\'s not corrupted.';
+      } else if (['html', 'htm'].includes(extension || '')) {
+        errorMessage = 'Could not read HTML file. Please ensure it contains valid HTML content.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     throw new Error(`Failed to extract text from ${file.name}: ${errorMessage}`);
   }
 }

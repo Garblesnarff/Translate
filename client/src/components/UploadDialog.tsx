@@ -23,21 +23,29 @@ export default function UploadDialog({ onUpload }: UploadDialogProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const validTypes = [
-      'application/pdf',
-      'text/html',
-      'text/plain',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ];
+    // Helper function to check file type
+    const isValidFileType = (file: File) => {
+      const extension = file.name.split('.').pop()?.toLowerCase();
+      const mimeType = file.type.toLowerCase();
+      
+      // Check for PDF files (including browser-specific types)
+      if (extension === 'pdf' || mimeType.includes('pdf')) return true;
+      
+      // Check for HTML files
+      if (extension === 'html' || extension === 'htm' || mimeType.includes('html')) return true;
+      
+      // Check for text files
+      if (extension === 'txt' || mimeType.includes('text/plain')) return true;
+      
+      // Check for Word documents
+      if (['doc', 'docx'].includes(extension || '') || 
+          mimeType.includes('msword') || 
+          mimeType.includes('wordprocessingml')) return true;
+      
+      return false;
+    };
     
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const isValidType = validTypes.some(type => 
-      file.type.includes(type.split('/')[1]) || 
-      (fileExtension && type.includes(fileExtension))
-    );
-    
-    if (!isValidType) {
+    if (!isValidFileType(file)) {
       toast({
         title: "Invalid file type",
         description: "Please upload a PDF, HTML, TXT, or DOC/DOCX file",

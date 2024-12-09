@@ -3,7 +3,10 @@ import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 
 // Configure PDF.js worker
 import { version } from 'pdfjs-dist';
-GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
+GlobalWorkerOptions.workerSrc = new URL(
+  `pdfjs-dist/build/pdf.worker.min.js`,
+  import.meta.url
+).toString();
 
 export interface PDFContent {
   text: string;
