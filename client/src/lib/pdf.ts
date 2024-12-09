@@ -1,7 +1,9 @@
-import * as pdfjsLib from 'pdfjs-dist';
+import * as PDFJS from 'pdfjs-dist';
+import { GlobalWorkerOptions } from 'pdfjs-dist/build/pdf';
+import { TextItem } from 'pdfjs-dist/types/src/display/api';
 
 // Set worker path for PDF.js
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS.version}/pdf.worker.min.js`;
 
 export interface PDFContent {
   text: string;
@@ -10,7 +12,7 @@ export interface PDFContent {
 
 export const extractPDFContent = async (file: File): Promise<PDFContent> => {
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pdf = await PDFJS.getDocument({ data: arrayBuffer }).promise;
   
   let text = '';
   const pageCount = pdf.numPages;
@@ -18,7 +20,7 @@ export const extractPDFContent = async (file: File): Promise<PDFContent> => {
   for (let i = 1; i <= pageCount; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
-    text += textContent.items.map((item: any) => item.str).join(' ');
+    text += textContent.items.map((item: TextItem) => item.str).join(' ');
   }
 
   return {
