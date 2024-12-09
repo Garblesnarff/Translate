@@ -18,10 +18,16 @@ export function registerRoutes(app: Express) {
 
 Instructions:
 1. Maintain an academic and scholarly tone
-2. Preserve the original structure and headings
-3. Do not repeat sections unnecessarily
-4. Format the output with proper paragraphs
-5. Use minimal markdown formatting - only for headings and emphasis where necessary
+2. Preserve the original structure but omit repeated headings
+3. For Buddhist terms and names:
+   - Keep original Sanskrit terms in italics (e.g. *dharma*)
+   - Use proper capitalization for proper nouns
+4. Use clear paragraph breaks and section headers
+5. Format using these rules:
+   - Use # for main headers only
+   - Use *text* for emphasized terms and Sanskrit
+   - Use regular text for general content
+6. Do not repeat lists of Buddhist symbols or terms
 
 Text to translate (Page ${chunk.pageNumber}):
 ${chunk.content}`}]}],
@@ -35,9 +41,12 @@ ${chunk.content}`}]}],
 
         const response = await result.response;
         const translation = response.text()
-          .replace(/\*\*/g, '#') // Convert bold markdown to heading
+          .replace(/\*\*([^*]+)\*\*/g, '#$1') // Convert bold to headers
           .replace(/(?:\r\n|\r|\n){3,}/g, '\n\n') // Remove excessive newlines
-          .replace(/#{2,}/g, '#'); // Normalize multiple # to single #
+          .replace(/#{2,}/g, '#') // Normalize multiple # to single #
+          .replace(/^[#\s]*(?:The\s+)?([A-Z][^#\n]+)(?:\s*#\s*)?$/gm, '# $1') // Normalize section headers
+          .replace(/(?:^|\n)(?:[-*]\s*(?:The\s+)?(?:Lotus|Wheel|Conch|Banner|Vase|Jewel|Fish|Throne|Dharma)\s*(?:$|\n)){3,}/g, '') // Remove repeated symbol lists
+          .trim();
 
         translations.push({
           pageNumber: chunk.pageNumber,
