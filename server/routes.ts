@@ -14,7 +14,7 @@ export function registerRoutes(app: Express) {
 
       for (const chunk of chunks) {
         const result = await model.generateContent({
-          contents: [{ role: "user", parts: [{ text: `You are a professional Tibetan language translator. Please translate the following Tibetan text to English:
+          contents: [{ role: "user", parts: [{ text: `You are a professional Tibetan language translator. Please translate the following Tibetan text to English, word for word. Keep its meaning as close to the original as you can.:
 
 Instructions:
 1. Maintain an academic and scholarly tone
@@ -25,9 +25,7 @@ Instructions:
 4. Use clear paragraph breaks and section headers
 5. Format using these rules:
    - Use # for main headers only
-   - Use *text* for emphasized terms and Sanskrit
    - Use regular text for general content
-6. Do not repeat lists of Buddhist symbols or terms
 
 Text to translate (Page ${chunk.pageNumber}):
 ${chunk.content}`}]}],
@@ -35,7 +33,7 @@ ${chunk.content}`}]}],
             temperature: 0.2,
             topK: 1,
             topP: 0.8,
-            maxOutputTokens: 2048,
+            maxOutputTokens: 8192,
           },
         });
 
