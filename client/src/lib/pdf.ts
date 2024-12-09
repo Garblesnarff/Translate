@@ -1,12 +1,10 @@
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-import type { TextItem } from 'pdfjs-dist/types/src/display/api';
+import * as pdfjsLib from 'pdfjs-dist';
+import type { TextItem, PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 
-// Configure PDF.js worker
-import { version } from 'pdfjs-dist';
-GlobalWorkerOptions.workerSrc = new URL(
-  `pdfjs-dist/build/pdf.worker.min.js`,
-  import.meta.url
-).toString();
+// Configure worker
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+}
 
 export interface PDFContent {
   text: string;
@@ -20,7 +18,8 @@ export const extractPDFContent = async (file: File): Promise<PDFContent> => {
 
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await getDocument({ data: arrayBuffer }).promise;
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf: PDFDocumentProxy = await loadingTask.promise;
     
     let text = '';
     const pageCount = pdf.numPages;
@@ -41,7 +40,20 @@ export const extractPDFContent = async (file: File): Promise<PDFContent> => {
     };
   } catch (error) {
     console.error('Error extracting PDF content:', error);
-    throw new Error('Failed to extract text from PDF');
+    if (error instanceof Error) {
+      // Check for common PDF.js errors
+      if (error.message.includes('Invalid PDF structure')) {
+        throw new Error('The PDF file appears to be corrupted or invalid');
+      } else if (error.message.includes('Password required')) {
+        throw new Error('The PDF file is password protected');
+      } else if (error.message.includes('Missing PDF')) {
+        throw new Error('The file does not appear to be a valid PDF');
+      } else if (error.message.includes('worker')) {
+        throw new Error('PDF worker failed to load. Please try again.');
+      }
+      throw new Error(`PDF processing error: ${error.message}`);
+    }
+    throw new Error('Failed to process the PDF file. Please try again.');
   }
 };
 
