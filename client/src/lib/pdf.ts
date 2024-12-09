@@ -1,10 +1,9 @@
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 
-// Set worker path for PDF.js
-if (typeof window !== 'undefined') {
-  GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${getDocument.version}/pdf.worker.min.js`;
-}
+// Configure PDF.js worker
+import { version } from 'pdfjs-dist';
+GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
 
 export interface PDFContent {
   text: string;

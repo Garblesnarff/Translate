@@ -47,6 +47,7 @@ export async function extractTextContent(file: File): Promise<ExtractedContent> 
     };
   } catch (error) {
     console.error('Error extracting text content:', error);
-    throw new Error(`Failed to extract text from ${file.name}`);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    throw new Error(`Failed to extract text from ${file.name}: ${errorMessage}`);
   }
 }

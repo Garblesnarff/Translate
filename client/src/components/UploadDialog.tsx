@@ -31,7 +31,13 @@ export default function UploadDialog({ onUpload }: UploadDialogProps) {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ];
     
-    if (!validTypes.some(type => file.type.includes(type.split('/')[1]))) {
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    const isValidType = validTypes.some(type => 
+      file.type.includes(type.split('/')[1]) || 
+      (fileExtension && type.includes(fileExtension))
+    );
+    
+    if (!isValidType) {
       toast({
         title: "Invalid file type",
         description: "Please upload a PDF, HTML, TXT, or DOC/DOCX file",
