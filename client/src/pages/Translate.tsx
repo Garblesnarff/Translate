@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Button } from "@/components/ui/button";
 import TranslationPane from "../components/TranslationPane";
 import UploadDialog from "../components/UploadDialog";
@@ -59,7 +59,7 @@ export default function Translate() {
       <div className="flex-1 p-4">
         <ResizablePanelGroup
           direction="horizontal"
-          className="min-h-[200px] rounded-lg border"
+          className="min-h-[200px] rounded-lg border bg-background/95"
         >
           <ResizablePanel defaultSize={50} minSize={30}>
             <TranslationPane
@@ -68,6 +68,7 @@ export default function Translate() {
               onChange={setSourceText}
             />
           </ResizablePanel>
+          <ResizableHandle className="w-2 bg-muted hover:bg-muted-foreground/10 transition-colors" />
           <ResizablePanel defaultSize={50} minSize={30}>
             <TranslationPane
               title="Translation"
