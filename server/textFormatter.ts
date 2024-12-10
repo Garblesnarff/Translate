@@ -1,70 +1,187 @@
-interface TranslationChunk {
-  pageNumber: number;
-  translation: string;
+// textFormatter.ts
+interface BuddhistTerm {
+  sanskrit: string;
+  english: string;
+  preserveDiacritics: boolean;
 }
 
-/**
- * Formats the raw translation text according to specified rules
- */
-export function formatTranslation(text: string): string {
-  return text
-    // Step 1: Standardize line endings
-    .replace(/\r\n?/g, '\n')
-    
-    // Step 2: Handle headers
-    // Only format as headers if they follow specific patterns
-    .replace(/^(?:Chapter|Section|Part)\s+[\d\w]+[:\.]\s*([^\n]+)/gim, '# $1')
-    .replace(/^([A-Z][^a-z\n]{2,}(?:[^a-z\n]|$))/gm, '# $1')
-    
-    // Step 3: Handle italicized Sanskrit terms
-    // Wrap known Buddhist terms in italics, but avoid over-matching
-    .replace(/\b(dharma|karma|buddha|bodhisattva|sutra|tantra|sangha)\b/gi, 
-             (match) => `*${match.charAt(0).toLowerCase() + match.slice(1)}*`)
-    
-    // Step 4: Clean up paragraph breaks
-    // Standardize to double line breaks between paragraphs
-    .replace(/\n{3,}/g, '\n\n')
-    // Ensure single line break after headers
-    .replace(/^(#[^\n]+)\n+/gm, '$1\n')
-    
-    // Step 5: Handle nested lists and indentation
-    .replace(/^(\s{2,})-\s/gm, '  - ')
-    
-    // Step 6: Clean up whitespace
-    .trim()
-    .replace(/[ \t]+$/gm, '');
+interface TextProcessorOptions {
+  preserveSanskrit: boolean;
+  formatLineages: boolean;
+  enhancedSpacing: boolean;
+  handleHonorifics: boolean;
 }
 
-/**
- * Combines multiple translation chunks while maintaining proper formatting
- */
-export function combineTranslations(translations: TranslationChunk[]): string {
-  // Sort chunks by page number
-  const sortedTranslations = [...translations].sort((a, b) => a.pageNumber - b.pageNumber);
-  
-  // Process each chunk and combine
-  const combinedText = sortedTranslations
-    .map(chunk => {
-      const formattedText = formatTranslation(chunk.translation);
-      // Add page markers only if there are multiple pages
-      return translations.length > 1 
-        ? `\n[Page ${chunk.pageNumber}]\n\n${formattedText}`
-        : formattedText;
-    })
-    .join('\n\n');
-  
-  return formatTranslation(combinedText);
+export class TibetanTextProcessor {
+  private static readonly PRESERVED_TERMS: BuddhistTerm[] = [
+    { sanskrit: "Dharma", english: "teachings", preserveDiacritics: true },
+    { sanskrit: "Karma", english: "action", preserveDiacritics: true },
+    { sanskrit: "Buddha", english: "awakened one", preserveDiacritics: true },
+    { sanskrit: "Sangha", english: "community", preserveDiacritics: true },
+    { sanskrit: "Vajra", english: "diamond-like", preserveDiacritics: true }
+  ];
+
+  private static readonly HONORIFIC_MAPPINGS = new Map([
+    ["Rinpoche", "Precious One"],
+    ["Lama", "Master"],
+    ["Geshe", "Learned One"],
+    ["Khenpo", "Preceptor"]
+  ]);
+
+  private options: TextProcessorOptions;
+
+  constructor(options: Partial<TextProcessorOptions> = {}) {
+    this.options = {
+      preserveSanskrit: options.preserveSanskrit ?? true,
+      formatLineages: options.formatLineages ?? true,
+      enhancedSpacing: options.enhancedSpacing ?? true,
+      handleHonorifics: options.handleHonorifics ?? true
+    };
+  }
+
+  public processText(text: string): string {
+    let processed = text;
+
+    // Process sections in order
+    processed = this.formatHeaders(processed);
+    processed = this.processBuddhistTerms(processed);
+    processed = this.formatLineages(processed);
+    processed = this.enhanceSpacing(processed);
+    processed = this.processHonorificTitles(processed);
+
+    return processed;
+  }
+
+  private formatHeaders(text: string): string {
+    // First clean up any existing malformed headers
+    let processed = text.replace(/#{2,}\s*([^#\n]+)#{2,}/g, '## $1');
+
+    // Format section headers consistently
+    processed = processed.replace(
+      /^(?:##\s*)?([A-Z][^.!?\n]+(?:Lineage|Vows|Empowerment|Teachings|Activities)[^.!?\n]*):?\s*$/gm,
+      '\n## $1\n'
+    );
+
+    // Clean up multiple consecutive newlines around headers
+    processed = processed.replace(/\n{3,}##/g, '\n\n##');
+    processed = processed.replace(/##([^\n]+)\n{3,}/g, '## $1\n\n');
+
+    return processed;
+  }
+
+  private processBuddhistTerms(text: string): string {
+    if (!this.options.preserveSanskrit) return text;
+
+    return TibetanTextProcessor.PRESERVED_TERMS.reduce((processed, term) => {
+      // Only add English translation on first occurrence
+      const pattern = new RegExp(`\\b${term.sanskrit}\\b(?![^(]*\\))`, 'g');
+      let isFirst = true;
+
+      return processed.replace(pattern, (match) => {
+        if (isFirst) {
+          isFirst = false;
+          return `${term.sanskrit} (${term.english})`;
+        }
+        return term.sanskrit;
+      });
+    }, text);
+  }
+
+  private formatLineages(text: string): string {
+    if (!this.options.formatLineages) return text;
+
+    // Format lineage sections
+    let processed = text.replace(
+      /(?:^|\n)((?:##\s*)?Lineage[^:\n]*:?)([^]*?)(?=\n##|\n\n(?:[A-Z]|$)|$)/gm,
+      (match, header, content) => {
+        // Clean and format the lineage entries
+        const entries = content
+          .split('\n')
+          .map((line: string) => line.trim())
+          .filter(Boolean)
+          .map((line: string) => {
+            // Remove any existing bullet points or markers
+            line = line.replace(/^[*•-]\s*/, '');
+            // Handle Sanskrit/Tibetan pairs with translations
+            line = line.replace(/\s*\(\s*([^)]+)\s*\)\s*$/, ' ($1)');
+            // Add bullet point
+            return `* ${line}`;
+          });
+
+        return `\n## ${header.replace(/^##\s*/, '').replace(/:$/, '')}\n\n${entries.join('\n')}`;
+      }
+    );
+
+    // Clean up multiple consecutive newlines
+    processed = processed.replace(/\n{3,}/g, '\n\n');
+
+    return processed;
+  }
+
+  private enhanceSpacing(text: string): string {
+    if (!this.options.enhancedSpacing) return text;
+
+    let processed = text
+      // Remove excessive whitespace
+      .replace(/[ \t]+$/gm, '')
+      .replace(/^[ \t]+/gm, '')
+
+      // Ensure proper spacing around headers
+      .replace(/\n*(##[^\n]+)\n*/g, '\n\n$1\n\n')
+
+      // Format list items with proper spacing
+      .replace(/(\n\*[^\n]+)(?=\n\*)/g, '$1\n')
+      .replace(/(\n\*[^\n]+)(?=\n[^*\n])/g, '$1\n\n')
+
+      // Clean up multiple consecutive blank lines
+      .replace(/\n{3,}/g, '\n\n')
+
+      // Ensure proper paragraph spacing
+      .replace(/([^\n])\n([A-Z])/g, '$1\n\n$2')
+
+      // Clean up spacing around parenthetical translations
+      .replace(/\(\s+/g, '(')
+      .replace(/\s+\)/g, ')')
+
+      // Ensure single space after punctuation
+      .replace(/([.!?])\s+([A-Z])/g, '$1 $2');
+
+    return processed;
+  }
+
+  private processHonorificTitles(text: string): string {
+    if (!this.options.handleHonorifics) return text;
+
+    return Array.from(TibetanTextProcessor.HONORIFIC_MAPPINGS.entries())
+      .reduce((processed, [tibetan, english]) => {
+        const pattern = new RegExp(`\\b${tibetan}\\b(?![^(]*\\))`, 'g');
+        return processed.replace(pattern, `${english} (${tibetan})`);
+      }, text);
+  }
 }
 
-/**
- * Processes the Gemini API response to ensure consistent formatting
- */
-export function processGeminiResponse(response: string): string {
-  return formatTranslation(response)
-    // Remove any meta-commentary from the model
-    .replace(/^(?:Translation:|Here's the translation:|Translated text:)\s*/i, '')
-    // Remove any trailing notes or explanations
-    .replace(/\n+(?:Note:|Notes:|Translator's note:)[\s\S]*$/, '')
-    // Ensure proper spacing around parenthetical text
-    .replace(/\(\s*([^)]+)\s*\)/g, '($1)');
+// For backward compatibility with existing code
+interface TranslationOptions {
+  simplifyNames?: boolean;
+  formatHeaders?: boolean;
+  preserveStructure?: boolean;
+  preserveLineage?: boolean;
+}
+
+// Export the legacy function that maintains the old interface
+export function formatTibetanTranslation(
+  text: string | { translatedText: string },
+  options: TranslationOptions = {}
+): string {
+  const processor = new TibetanTextProcessor({
+    preserveSanskrit: true,
+    formatLineages: options.preserveLineage ?? true,
+    enhancedSpacing: options.preserveStructure ?? true,
+    handleHonorifics: !options.simplifyNames
+  });
+
+  const inputText = typeof text === 'string' ? text : text.translatedText;
+  const processed = processor.processText(inputText);
+
+  return typeof text === 'string' ? processed : JSON.stringify({ translatedText: processed });
 }
