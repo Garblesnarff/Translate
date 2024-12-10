@@ -109,6 +109,9 @@ export function registerRoutes(app: Express) {
           );
         }
 
+        // Look for potential new terms before translation
+        const suggestedTerms = await dictionary.suggestNewTerms(text);
+
         const textProcessor = new TibetanTextProcessor({
           preserveSanskrit: true,
           formatLineages: true,
@@ -118,6 +121,7 @@ export function registerRoutes(app: Express) {
 
         const translations = [];
         const errors = [];
+        let confidenceScores = [];
 
         for (const chunk of chunks) {
           try {
@@ -130,6 +134,13 @@ export function registerRoutes(app: Express) {
                     text: prompt
                   }]
                 }],
+                generationConfig: {
+                  temperature: 0.1,
+                  topK: 1,
+                  topP: 0.8,
+                  maxOutputTokens: 8192,
+                  candidateCount: 1,
+                },
               }) as Promise<GenerateContentResult>,
               new Promise((_, reject) => 
                 setTimeout(() => reject(new Error('Translation timeout')), 30000)
@@ -138,11 +149,18 @@ export function registerRoutes(app: Express) {
 
             const response = await result.response;
             const rawTranslation = response.text();
+            
+            // Calculate confidence based on dictionary term usage
+            const dictionaryTerms = rawTranslation.match(/\([^)]+\)/g) || [];
+            const confidence = Math.min(0.95, 0.7 + (dictionaryTerms.length * 0.05));
+            confidenceScores.push(confidence);
+
             const processedTranslation = textProcessor.processText(rawTranslation);
 
             translations.push({
               pageNumber: chunk.pageNumber,
               translation: processedTranslation,
+              confidence
             });
           } catch (error) {
             errors.push({
@@ -166,6 +184,8 @@ export function registerRoutes(app: Express) {
           .map(t => t.translation)
           .join('\n\n');
 
+        const averageConfidence = confidenceScores.reduce((a, b) => a + b, 0) / confidenceScores.length;
+
         res.json({ 
           translatedText: combinedText,
           metadata: {
@@ -173,6 +193,8 @@ export function registerRoutes(app: Express) {
             chunkCount: chunks.length,
             successfulChunks: translations.length,
             failedChunks: errors.length,
+            confidence: averageConfidence,
+            suggestedNewTerms: suggestedTerms.length > 0 ? suggestedTerms : undefined,
             errors: errors.length > 0 ? errors : undefined
           }
         });

@@ -72,13 +72,40 @@ export class TibetanDictionary {
     }
   }
 
+  private async findSimilarTerms(tibetan: string): Promise<DictionaryEntry[]> {
+    const client = await this.pool.connect();
+    try {
+      // Find exact matches and common variations
+      const result = await client.query(
+        `SELECT tibetan, english, context, category 
+         FROM dictionary_entries 
+         WHERE tibetan = $1
+         OR tibetan LIKE $2
+         OR $1 LIKE CONCAT('%', tibetan, '%')
+         ORDER BY CASE 
+           WHEN tibetan = $1 THEN 0
+           WHEN tibetan LIKE $2 THEN 1
+           ELSE 2
+         END`,
+        [tibetan, `%${tibetan}%`]
+      );
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
   public async getDictionaryContext(): Promise<string> {
     const client = await this.pool.connect();
     try {
       const result = await client.query(
-        `SELECT tibetan, english, context, category 
+        `SELECT tibetan, english, context, category,
+         COUNT(*) OVER (PARTITION BY category) as category_count
          FROM dictionary_entries 
-         ORDER BY category, tibetan`
+         ORDER BY category, 
+         (SELECT COUNT(*) FROM dictionary_entries de2 
+          WHERE de2.english = dictionary_entries.english) DESC,
+         tibetan`
       );
 
       if (result.rows.length === 0) {
@@ -98,12 +125,40 @@ export class TibetanDictionary {
       for (const [category, entries] of Object.entries(entriesByCategory)) {
         context += `${category.toUpperCase()}:\n`;
         for (const entry of entries) {
-          context += `- ${entry.tibetan}: ${entry.english} (${entry.context})\n`;
+          // Include frequency information for common terms
+          const frequencyNote = entries.length > 1 ? " [Common term]" : "";
+          context += `- ${entry.tibetan}: ${entry.english} (${entry.context})${frequencyNote}\n`;
         }
         context += '\n';
       }
 
       return context;
+    } finally {
+      client.release();
+    }
+  }
+
+  public async suggestNewTerms(text: string): Promise<DictionaryEntry[]> {
+    const client = await this.pool.connect();
+    try {
+      // Extract potential Tibetan terms (basic implementation)
+      const terms = text.match(/[\u0F00-\u0FFF]+/g) || [];
+      const suggestions: DictionaryEntry[] = [];
+
+      for (const term of terms) {
+        // Check if term exists
+        const existing = await this.findSimilarTerms(term);
+        if (existing.length === 0) {
+          suggestions.push({
+            tibetan: term,
+            english: "", // To be filled by LLM
+            context: "Suggested new term",
+            category: "suggested"
+          });
+        }
+      }
+
+      return suggestions;
     } finally {
       client.release();
     }
