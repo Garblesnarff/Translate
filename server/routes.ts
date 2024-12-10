@@ -177,21 +177,25 @@ export function registerRoutes(app: Express) {
   );
 }
 
+import { TibetanDictionary } from './dictionary';
+
+const dictionary = new TibetanDictionary();
+
 function createTranslationPrompt(pageNumber: number, text: string): string {
   return `Translate this Tibetan Buddhist text into clear English, following these specific guidelines:
 
+${dictionary.getDictionaryContext()}
+
 TRANSLATION RULES:
 1. Buddhist Terms:
+   - Use the provided dictionary translations consistently
    - Maintain Sanskrit terms with English in parentheses on first use
-   - Example: "upāsaka (lay practitioner)"
    - Keep diacritical marks for Sanskrit terms (ā, ī, ṇ, ś, etc.)
    - Always preserve these terms: Dharma, Karma, Buddha, Sangha, Vajra
 
 2. Names and Titles:
    - Keep Tibetan personal names in transliteration
-   - Translate honorary titles
-     - "Rinpoche" → "Precious One"
-     - "Lama" → "Master"
+   - Translate honorary titles according to the dictionary
    - Include original Tibetan in parentheses for important titles
    - Example: "Master Jampa Sönam (Bla ma Byams pa Bsod nams)"
 
