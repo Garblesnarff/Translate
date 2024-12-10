@@ -136,19 +136,6 @@ export default function TranslationPane({
   // Split text into chunks for virtualized rendering
   const textChunks = useMemo(() => splitIntoChunks(processedText), [processedText]);
   
-  // Memoize the row renderer for react-window
-  const Row = useCallback(({ index, style }: { index: number, style: React.CSSProperties }) => (
-    <div style={style}>
-      <ReactMarkdown 
-        remarkPlugins={[remarkGfm]}
-        components={markdownComponents}
-        className="prose prose-stone dark:prose-invert max-w-none p-4"
-      >
-        {textChunks[index]}
-      </ReactMarkdown>
-    </div>
-  ), [textChunks]);
-
   // Handle text changes with debouncing
   const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setIsLoading(true);
@@ -170,14 +157,13 @@ export default function TranslationPane({
           )}
           {readOnly ? (
             <div className="h-[calc(100vh-14rem)]">
-              <List
-                height={window.innerHeight - 250}
-                itemCount={textChunks.length}
-                itemSize={200}
-                width="100%"
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
+                className="prose prose-stone dark:prose-invert max-w-none p-4"
               >
-                {Row}
-              </List>
+                {processedText}
+              </ReactMarkdown>
             </div>
           ) : (
             <Textarea
