@@ -63,43 +63,44 @@ export const useTranslation = () => {
     setState(prev => ({ ...prev, isTranslating: true, error: null }));
     setProgress(10);
 
-    try {
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-      });
+    while (retries <= MAX_RETRIES) {
+      try {
+        const response = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
 
-      if (!response.ok) {
-        throw new Error(`Translation failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      translatedText = data.translatedText;
-      
-      setProgress(100);
-      setState(prev => ({ ...prev, isTranslating: false, error: null }));
-
-      return {
-        translatedText,
-        confidence: data.metadata?.confidence || 0.95,
-        metadata: {
-          processingTime: Date.now() - startTime,
-          chunkCount: data.metadata?.chunkCount || 1,
-          totalChars: text.length
+        if (!response.ok) {
+          throw new Error(`Translation failed: ${response.statusText}`);
         }
-      };
-    } catch (error) {
-      retries++;
 
-      if (retries <= MAX_RETRIES) {
-        console.warn(`Translation attempt ${retries} failed, retrying...`);
-        setProgress(0);
-        await new Promise(resolve => 
-          setTimeout(resolve, BASE_RETRY_DELAY * Math.pow(2, retries - 1))
-        );
-        continue;
-      }
+        const data = await response.json();
+        translatedText = data.translatedText;
+        
+        setProgress(100);
+        setState(prev => ({ ...prev, isTranslating: false, error: null }));
+
+        return {
+          translatedText,
+          confidence: data.metadata?.confidence || 0.95,
+          metadata: {
+            processingTime: Date.now() - startTime,
+            chunkCount: data.metadata?.chunkCount || 1,
+            totalChars: text.length
+          }
+        };
+      } catch (error) {
+        retries++;
+
+        if (retries <= MAX_RETRIES) {
+          console.warn(`Translation attempt ${retries} failed, retrying...`);
+          setProgress(0);
+          await new Promise(resolve => 
+            setTimeout(resolve, BASE_RETRY_DELAY * Math.pow(2, retries - 1))
+          );
+          continue;
+        }
 
       const translationError = error instanceof TranslationError
         ? error
