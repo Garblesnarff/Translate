@@ -1,12 +1,15 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import TranslationPane from "../components/TranslationPane";
 import UploadDialog from "../components/UploadDialog";
 import ProgressIndicator from "../components/ProgressIndicator";
-import { useTranslation } from "../lib/gemini";
+import { useTranslation, TranslationError } from "../lib/gemini";
 import { extractTextContent } from "../lib/textExtractor";
 import { generatePDF } from "../lib/pdf";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 
 export default function Translate() {
   const [sourceText, setSourceText] = useState("");
@@ -19,14 +22,26 @@ export default function Translate() {
   };
 
   const handleTranslate = async () => {
+    if (!sourceText.trim()) {
+      setTranslatedText("Error: Please enter some text to translate");
+      return;
+    }
+
     try {
       const result = await translate(sourceText);
       setTranslatedText(result.translatedText);
     } catch (error) {
-      // TranslationError will be caught here
-      if (error instanceof Error) {
-        // Show error in the translation pane
-        setTranslatedText(`Error: ${error.message}`);
+      if (error instanceof TranslationError) {
+        const errorMessage = `Translation Error: ${error.message}${error.code ? ` (${error.code})` : ''}`;
+        setTranslatedText(
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Translation Failed</AlertTitle>
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        );
+      } else {
+        setTranslatedText("An unexpected error occurred during translation");
       }
       console.error('Translation error:', error);
     }
@@ -43,7 +58,8 @@ export default function Translate() {
   };
 
   return (
-    <div className="h-screen flex flex-col"
+    <ErrorBoundary>
+      <div className="h-screen flex flex-col"
          style={{
            backgroundImage: `url(https://images.unsplash.com/photo-1508930113057-711dca60638c)`,
            backgroundSize: 'cover',
@@ -90,5 +106,6 @@ export default function Translate() {
         </ResizablePanelGroup>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

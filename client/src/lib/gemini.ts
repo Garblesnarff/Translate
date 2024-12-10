@@ -1,14 +1,23 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 const GEMINI_API_ENDPOINT = '/api/translate';
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
+const BASE_RETRY_DELAY = 1000;
+
+export enum TranslationErrorCode {
+  NETWORK_ERROR = 'NETWORK_ERROR',
+  API_ERROR = 'API_ERROR',
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  MAX_RETRIES_EXCEEDED = 'MAX_RETRIES_EXCEEDED',
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR'
+}
 
 export class TranslationError extends Error {
   constructor(
     message: string,
-    public readonly code: string,
-    public readonly details?: unknown
+    public readonly code: TranslationErrorCode,
+    public readonly details?: unknown,
+    public readonly httpStatus?: number
   ) {
     super(message);
     this.name = 'TranslationError';
@@ -18,6 +27,11 @@ export class TranslationError extends Error {
 export interface TranslationResult {
   translatedText: string;
   confidence: number;
+  metadata?: {
+    processingTime: number;
+    chunkCount: number;
+    totalChars: number;
+  };
 }
 
 interface TranslationState {
@@ -33,16 +47,18 @@ export const useTranslation = () => {
     error: null,
   });
 
-  const setProgress = (progress: number) => {
-    setState(prev => ({ ...prev, progress: Math.min(Math.max(progress, 0), 100) }));
-  };
-
-  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  const setProgress = useCallback((progress: number) => {
+    setState(prev => ({
+      ...prev,
+      progress: Math.min(Math.max(progress, 0), 100)
+    }));
+  }, []);
 
   const translate = async (text: string): Promise<TranslationResult> => {
     setState({ isTranslating: true, progress: 0, error: null });
-    let retries = 0;
+    const startTime = Date.now();
 
+    let retries = 0;
     while (retries <= MAX_RETRIES) {
       try {
         const response = await fetch(GEMINI_API_ENDPOINT, {
@@ -57,51 +73,65 @@ export const useTranslation = () => {
           const errorData = await response.json().catch(() => ({}));
           throw new TranslationError(
             errorData.message || 'Translation request failed',
-            response.status.toString(),
-            errorData.details
+            TranslationErrorCode.API_ERROR,
+            errorData.details,
+            response.status
           );
         }
 
         const reader = response.body?.getReader();
         let translatedText = '';
         let chunkCount = 0;
-        
+        const totalExpectedChunks = Math.ceil(text.length / 1000);
+
         if (reader) {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            
+
             translatedText += new TextDecoder().decode(value);
             chunkCount++;
-            // More granular progress updates based on chunks received
-            setProgress(Math.min((chunkCount * 15), 90));
+            setProgress(Math.min((chunkCount / totalExpectedChunks) * 90 + 10, 90));
           }
         }
 
         setProgress(100);
-        setState(prev => ({ ...prev, isTranslating: false, error: null }));
-        
-        return {
+
+        const result: TranslationResult = {
           translatedText,
           confidence: 0.95,
+          metadata: {
+            processingTime: Date.now() - startTime,
+            chunkCount,
+            totalChars: text.length
+          }
         };
+
+        setState(prev => ({ 
+          ...prev, 
+          isTranslating: false, 
+          error: null 
+        }));
+
+        return result;
+
       } catch (error) {
         retries++;
-        
+
         if (retries <= MAX_RETRIES) {
-          // Log retry attempt
           console.warn(`Translation attempt ${retries} failed, retrying...`);
-          setProgress(0); // Reset progress for retry
-          await sleep(RETRY_DELAY * retries); // Exponential backoff
+          setProgress(0);
+          await new Promise(resolve => 
+            setTimeout(resolve, BASE_RETRY_DELAY * Math.pow(2, retries - 1))
+          );
           continue;
         }
 
-        // Convert error to TranslationError if it isn't already
         const translationError = error instanceof TranslationError
           ? error
           : new TranslationError(
               error instanceof Error ? error.message : 'Unknown error occurred',
-              'UNKNOWN_ERROR',
+              TranslationErrorCode.UNKNOWN_ERROR,
               error
             );
 
@@ -110,13 +140,15 @@ export const useTranslation = () => {
           isTranslating: false, 
           error: translationError 
         }));
-        
+
         throw translationError;
       }
     }
 
-    // This should never be reached due to the throw in the catch block
-    throw new TranslationError('Maximum retries exceeded', 'MAX_RETRIES_EXCEEDED');
+    throw new TranslationError(
+      'Maximum retries exceeded', 
+      TranslationErrorCode.MAX_RETRIES_EXCEEDED
+    );
   };
 
   return {
