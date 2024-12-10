@@ -11,6 +11,11 @@ export interface PDFContent {
   pageCount: number;
 }
 
+export interface PDFPage {
+  pageNumber: number;
+  text: string;
+}
+
 export const extractPDFContent = async (file: File): Promise<PDFContent> => {
   if (!file.type.includes('pdf')) {
     throw new Error('Please upload a PDF file');
@@ -20,19 +25,15 @@ export const extractPDFContent = async (file: File): Promise<PDFContent> => {
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
     const pdf: PDFDocumentProxy = await loadingTask.promise;
-    
-    let text = '';
     const pageCount = pdf.numPages;
-
-    for (let i = 1; i <= pageCount; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .filter((item): item is TextItem => 'str' in item)
-        .map(item => item.str)
-        .join(' ');
-      text += pageText + '\n\n';
-    }
+    
+    // Only process first page initially
+    const page = await pdf.getPage(1);
+    const textContent = await page.getTextContent();
+    const text = textContent.items
+      .filter((item): item is TextItem => 'str' in item)
+      .map(item => item.str)
+      .join(' ');
 
     return {
       text: text.trim(),
@@ -77,4 +78,34 @@ export const generatePDF = async (translatedText: string): Promise<Blob> => {
   });
   
   return doc.output('blob');
+};
+export const extractPageContent = async (file: File, pageNumber: number): Promise<PDFPage> => {
+  if (!file.type.includes('pdf')) {
+    throw new Error('Please upload a PDF file');
+  }
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf: PDFDocumentProxy = await loadingTask.promise;
+    
+    if (pageNumber > pdf.numPages) {
+      throw new Error(`Page ${pageNumber} does not exist`);
+    }
+
+    const page = await pdf.getPage(pageNumber);
+    const textContent = await page.getTextContent();
+    const text = textContent.items
+      .filter((item): item is TextItem => 'str' in item)
+      .map(item => item.str)
+      .join(' ');
+
+    return {
+      pageNumber,
+      text: text.trim()
+    };
+  } catch (error) {
+    console.error('Error extracting PDF page content:', error);
+    throw error;
+  }
 };
