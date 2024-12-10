@@ -222,9 +222,10 @@ TRANSLATION REQUIREMENTS:
    - Example: If དགེ་བཤེས appears, translate as "Learned One (Geshe)"
 
 2. Terms Not in Dictionary:
-   - For terms not in the dictionary, provide a clear translation
-   - Keep important Buddhist terms in Sanskrit with English explanation
-   - Maintain consistency for repeated terms
+   - Use your knowledge of Tibetan to translate terms not found in the dictionary
+   - For Buddhist technical terms, provide Sanskrit with English explanation
+   - Keep literary and poetic nuances in the translation
+   - Maintain consistency for repeated terms throughout the text
 
 3. Formatting Rules:
    - Use "## " for section headers
