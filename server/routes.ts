@@ -76,30 +76,14 @@ export function registerRoutes(app: Express) {
     next();
   };
 
-  app.post('/api/dictionary/import', 
+  // Dictionary is built-in and initialized on server start
+  app.get('/api/dictionary/entries', 
     limiter,
     logRequest,
-    async (req: Request, res: Response, next: NextFunction) => {
+    async (_req: Request, res: Response, next: NextFunction) => {
       try {
-        if (!req.files?.dictionary || Array.isArray(req.files.dictionary)) {
-          throw createTranslationError(
-            'No dictionary file uploaded',
-            'INVALID_FILE',
-            400
-          );
-        }
-
-        const file = req.files.dictionary;
-        if (file.mimetype !== 'application/pdf') {
-          throw createTranslationError(
-            'Uploaded file must be a PDF',
-            'INVALID_FILE_TYPE',
-            400
-          );
-        }
-
-        await dictionary.importFromPDF(file.data);
-        res.json({ message: 'Dictionary imported successfully' });
+        const context = await dictionary.getDictionaryContext();
+        res.json({ entries: context });
       } catch (error) {
         next(error);
       }
@@ -218,6 +202,11 @@ export function registerRoutes(app: Express) {
 import { TibetanDictionary } from './dictionary';
 
 const dictionary = new TibetanDictionary();
+
+// Initialize the dictionary with default entries
+dictionary.initializeDefaultDictionary().catch(error => {
+  console.error("Failed to initialize dictionary:", error);
+});
 
 async function createTranslationPrompt(pageNumber: number, text: string): Promise<string> {
   const dictionaryContext = await dictionary.getDictionaryContext();

@@ -44,6 +44,7 @@
     "@replit/vite-plugin-shadcn-theme-json": "^0.0.4",
     "@tanstack/react-query": "^5.60.5",
     "@types/express-fileupload": "^1.5.1",
+    "@types/pdf-parse": "^1.1.4",
     "@types/pdfjs-dist": "^2.10.378",
     "@types/pg": "^8.11.10",
     "@types/react-window": "^1.8.8",
