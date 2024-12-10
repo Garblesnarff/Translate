@@ -23,9 +23,9 @@ const markdownComponents: Components = {
 
 function processMarkdown(text: string): { pages: string[] } {
   try {
-    const pages = text.split(/##\s*Translation of Tibetan Text \(Page \d+\)/g)
-      .filter(page => page.trim().length > 0);
-    return { pages };
+    // Split by page headers but keep the headers
+    const matches = text.match(/(?:##\s*Translation of Tibetan Text \(Page \d+\)[^#]*)/g);
+    return { pages: matches || [text] };
   } catch (e) {
     return { pages: [text] };
   }
@@ -102,7 +102,7 @@ export default function TranslationPane({
                   components={markdownComponents}
                   className="prose prose-stone dark:prose-invert max-w-none p-4"
                 >
-                  {`## Translation of Tibetan Text (Page ${currentPage})\n\n${pages[currentPage - 1] || ''}`}
+                  {pages[currentPage - 1] || ''}
                 </ReactMarkdown>
               </div>
             ) : (
