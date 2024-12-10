@@ -23,10 +23,17 @@ const markdownComponents: Components = {
 
 function processMarkdown(text: string): { pages: string[] } {
   try {
-    // Split by page headers but keep the headers
-    const matches = text.match(/(?:##\s*Translation of Tibetan Text \(Page \d+\)[^#]*)/g);
-    return { pages: matches || [text] };
+    // First check if there are page markers
+    const pages = text.split(/(?=##\s*Translation of Tibetan Text \(Page \d+\))/g)
+      .filter(page => page.trim().length > 0);
+    
+    if (pages.length > 0) {
+      return { pages };
+    }
+    // If no page markers found, treat as single page
+    return { pages: [text] };
   } catch (e) {
+    console.error('Error processing markdown:', e);
     return { pages: [text] };
   }
 }
@@ -102,7 +109,7 @@ export default function TranslationPane({
                   components={markdownComponents}
                   className="prose prose-stone dark:prose-invert max-w-none p-4"
                 >
-                  {pages[currentPage - 1] || ''}
+                  {pages[currentPage - 1]?.trim() || 'No translation available for this page'}
                 </ReactMarkdown>
               </div>
             ) : (
