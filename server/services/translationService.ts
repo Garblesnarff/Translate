@@ -1,12 +1,11 @@
-import { GoogleGenerativeAI, GenerateContentResult } from "@google/generative-ai";
+import { GenerateContentResult } from "@google/generative-ai";
 import { TibetanDictionary } from '../dictionary';
 import { TibetanTextProcessor } from './textProcessing/TextProcessor';
 import { PromptGenerator } from './translation/PromptGenerator';
+import { geminiService } from './translation/GeminiService';
 import { createTranslationError } from '../middleware/errorHandler';
 
 export class TranslationService {
-  private genAI: GoogleGenerativeAI;
-  private model: ReturnType<GoogleGenerativeAI['getGenerativeModel']>;
   private promptGenerator: PromptGenerator;
   private dictionary: TibetanDictionary;
   private textProcessor: TibetanTextProcessor;
@@ -15,21 +14,6 @@ export class TranslationService {
    * Initializes the translation service with required dependencies
    */
   constructor() {
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY environment variable is required');
-    }
-
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    this.model = this.genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-8b",
-      generationConfig: {
-        temperature: 0.1,
-        topK: 1,
-        topP: 0.8,
-        maxOutputTokens: 8192,
-      }
-    });
-    
     this.dictionary = new TibetanDictionary();
     this.promptGenerator = new PromptGenerator(this.dictionary);
     this.textProcessor = new TibetanTextProcessor({
@@ -59,24 +43,7 @@ export class TranslationService {
   }> {
     try {
       const prompt = await this.promptGenerator.createTranslationPrompt(chunk.pageNumber, chunk.content);
-      const result = await Promise.race([
-        this.model.generateContent({
-          contents: [{ 
-            role: "user", 
-            parts: [{ text: prompt }]
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            topK: 1,
-            topP: 0.8,
-            maxOutputTokens: 8192,
-            candidateCount: 1,
-          },
-        }) as Promise<GenerateContentResult>,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Translation timeout')), timeout)
-        )
-      ]) as GenerateContentResult;
+      const result = await geminiService.generateContent(prompt, timeout);
 
       const response = await result.response;
       const rawTranslation = response.text();
