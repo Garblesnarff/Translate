@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI, GenerateContentResult } from "@google/generative-ai";
 import { TibetanDictionary } from '../dictionary';
-import { TibetanTextProcessor } from '../textFormatter';
+import { TibetanTextProcessor } from './textProcessing/TextProcessor';
 import { createTranslationError } from '../middleware/errorHandler';
 
 export class TranslationService {
