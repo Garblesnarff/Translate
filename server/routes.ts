@@ -210,35 +210,36 @@ dictionary.initializeDefaultDictionary().catch(error => {
 
 async function createTranslationPrompt(pageNumber: number, text: string): Promise<string> {
   const dictionaryContext = await dictionary.getDictionaryContext();
-  return `Translate this Tibetan Buddhist text into clear English, following these specific guidelines.
-You MUST use the provided dictionary translations for accuracy and consistency.
+  return `Translate this Tibetan Buddhist text into clear English. This is critical: You MUST use the provided dictionary entries exactly as shown for consistent translations.
 
+DICTIONARY (Use these translations exactly as provided):
 ${dictionaryContext}
 
-TRANSLATION RULES:
-1. Dictionary Usage:
-   - ALWAYS use the provided dictionary translations when available
-   - If a term isn't in the dictionary, translate it naturally
-   - For new terms, maintain consistency throughout the text
+TRANSLATION REQUIREMENTS:
+1. Dictionary Terms (Highest Priority):
+   - You MUST use the exact translations from the dictionary above
+   - For terms in the dictionary, use the provided English translation with Tibetan in parentheses
+   - Example: If དགེ་བཤེས appears, translate as "Learned One (Geshe)"
 
-2. Buddhist Terms:
-   - Keep Sanskrit terms with English in parentheses on first use
-   - Preserve diacritical marks for Sanskrit terms (ā, ī, ṇ, ś, etc.)
-   - Always maintain these terms: Dharma, Karma, Buddha, Sangha, Vajra
+2. Terms Not in Dictionary:
+   - For terms not in the dictionary, provide a clear translation
+   - Keep important Buddhist terms in Sanskrit with English explanation
+   - Maintain consistency for repeated terms
 
-2. Names and Titles:
-   - Keep Tibetan personal names in transliteration
-   - Translate honorary titles according to the dictionary
-   - Include original Tibetan in parentheses for important titles
-   - Example: "Master Jampa Sönam (Bla ma Byams pa Bsod nams)"
+3. Formatting Rules:
+   - Use "## " for section headers
+   - One sentence per line for clarity
+   - Use bullet points (*) for lists
+   - Include original Tibetan in parentheses for key terms
+   - Keep proper spacing and paragraph structure
 
-3. Text Structure:
-   - Use clear section headers with "## " prefix
-   - Create proper paragraphs for narrative sections
-   - Use bullet points (*) only for lineage lists
-   - Separate sections with one blank line
-   - Each sentence in a paragraph on its own line
+4. Quality Checks:
+   - Double-check all dictionary terms are translated correctly
+   - Ensure consistent translation of repeated terms
+   - Verify all technical terms are properly explained
 
 Text to translate (Page ${pageNumber}):
-${text}`;
+${text}
+
+Remember: The dictionary translations provided above are authoritative and must be used exactly as shown.`;
 }
