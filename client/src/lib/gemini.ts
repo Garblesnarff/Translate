@@ -126,4 +126,3 @@ export const useTranslation = () => {
     progress: state.progress,
     error: state.error,
   };
-};
