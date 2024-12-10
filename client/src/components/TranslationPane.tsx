@@ -169,14 +169,16 @@ export default function TranslationPane({
             </div>
           )}
           {readOnly ? (
-            <List
-              height={window.innerHeight - 200}
-              itemCount={textChunks.length}
-              itemSize={200}
-              width="100%"
-            >
-              {Row}
-            </List>
+            <div className="h-[calc(100vh-14rem)]">
+              <List
+                height={window.innerHeight - 250}
+                itemCount={textChunks.length}
+                itemSize={200}
+                width="100%"
+              >
+                {Row}
+              </List>
+            </div>
           ) : (
             <Textarea
               value={text}
