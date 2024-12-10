@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -78,9 +79,15 @@ export default function UploadDialog({ onUpload }: UploadDialogProps) {
       <DialogTrigger asChild>
         <Button variant="outline">Upload PDF</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent 
+        className="sm:max-w-[425px]"
+        aria-describedby="upload-dialog-description"
+      >
         <DialogHeader>
           <DialogTitle>Upload Tibetan Document</DialogTitle>
+          <DialogDescription id="upload-dialog-description">
+            Upload a document containing Tibetan text for translation. Supported formats: PDF, HTML, TXT, DOC/DOCX.
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <Input
@@ -88,7 +95,12 @@ export default function UploadDialog({ onUpload }: UploadDialogProps) {
             accept=".pdf,.html,.txt,.doc,.docx"
             onChange={handleFileChange}
             disabled={isUploading}
+            aria-label="Choose file to upload"
+            aria-describedby="file-input-description"
           />
+          <p id="file-input-description" className="text-sm text-muted-foreground">
+            Maximum file size: 50MB
+          </p>
         </div>
       </DialogContent>
     </Dialog>
