@@ -51,7 +51,7 @@ ${text}`;
 export function registerRoutes(app: Express) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-pro",
+    model: "gemini-1.5-flash-8b",
     generationConfig: {
       temperature: 0.1,
       topK: 1,
