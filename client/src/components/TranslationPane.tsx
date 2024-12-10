@@ -155,24 +155,26 @@ export default function TranslationPane({
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
           )}
-          {readOnly ? (
-            <div className="h-[calc(100vh-14rem)]">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={markdownComponents}
-                className="prose prose-stone dark:prose-invert max-w-none p-4"
-              >
-                {processedText}
-              </ReactMarkdown>
-            </div>
-          ) : (
-            <Textarea
-              value={text}
-              onChange={handleTextChange}
-              className="min-h-[calc(100vh-14rem)] resize-none font-mono"
-              readOnly={readOnly}
-            />
-          )}
+          <div className="relative h-[calc(100vh-14rem)]">
+            {readOnly ? (
+              <div className="absolute inset-0 overflow-auto">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={markdownComponents}
+                  className="prose prose-stone dark:prose-invert max-w-none p-4"
+                >
+                  {processedText}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <Textarea
+                value={text}
+                onChange={handleTextChange}
+                className="absolute inset-0 resize-none font-mono p-4"
+                readOnly={readOnly}
+              />
+            )}
+          </div>
         </ScrollArea>
       </CardContent>
     </Card>
