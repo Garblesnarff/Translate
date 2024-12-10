@@ -1,34 +1,18 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import fileUpload from 'express-fileupload';
-import { GoogleGenerativeAI, GenerateContentResult } from "@google/generative-ai";
 import { splitTextIntoChunks } from "../client/src/lib/textChunker";
-import { TibetanTextProcessor } from "./textFormatter";
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
+import { requestLogger } from './middleware/requestLogger';
+import { errorHandler } from './middleware/errorHandler';
+import { translationService } from './services/translationService';
 
-// Validation schema
+/**
+ * Schema for validating translation requests
+ */
 const TranslationRequestSchema = z.object({
   text: z.string().min(1).max(100000),
 });
-
-interface TranslationError extends Error {
-  code: string;
-  status: number;
-  details?: unknown;
-}
-
-const createTranslationError = (
-  message: string,
-  code: string,
-  status: number = 500,
-  details?: unknown
-): TranslationError => {
-  const error = new Error(message) as TranslationError;
-  error.code = code;
-  error.status = status;
-  error.details = details;
-  return error;
-};
 
 // Configure rate limiter
 const limiter = rateLimit({
@@ -39,6 +23,10 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
+/**
+ * Registers all application routes and middleware
+ * @param app Express application instance
+ */
 export function registerRoutes(app: Express) {
   // Enable trust proxy to properly handle X-Forwarded-For header
   app.set('trust proxy', 1);
@@ -48,17 +36,6 @@ export function registerRoutes(app: Express) {
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
     abortOnLimit: true
   }));
-
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-  const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash-8b",
-    generationConfig: {
-      temperature: 0.1,
-      topK: 1,
-      topP: 0.8,
-      maxOutputTokens: 8192,
-    }
-  });
 
   const logRequest = (req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
