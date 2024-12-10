@@ -37,7 +37,7 @@ export class TranslationService {
   /**
    * Processes a translation request with error handling and retries
    */
-  public async translateText(chunk: { pageNumber: number; content: string }, timeout: number = 30000): Promise<{
+  public async translateText(chunk: { pageNumber: number; content: string }, timeout: number = 60000): Promise<{
     translation: string;
     confidence: number;
   }> {

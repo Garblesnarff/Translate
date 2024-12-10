@@ -97,10 +97,10 @@ export function registerRoutes(app: Express) {
           }
         }
 
-        // Check if any translations were successful
-        if (translations.length === 0 && errors.length > 0) {
+        // Continue even if some translations fail
+        if (translations.length === 0) {
           throw createTranslationError(
-            'All translation chunks failed',
+            'Translation failed for all pages',
             'TRANSLATION_FAILED',
             500,
             { errors }
