@@ -4,10 +4,14 @@ interface TextChunk {
 }
 
 export function splitTextIntoChunks(text: string): TextChunk[] {
-  // Split text by numbers followed by whitespace at the start of a line
+  // Handle empty or whitespace-only text
+  if (!text || !text.trim()) {
+    return [];
+  }
+
+  // First try to split by numbered paragraphs
   const chunks = text.split(/(?=^\s*\d+\s+)/m);
-  
-  return chunks
+  const numberedChunks = chunks
     .map((chunk, index) => {
       const pageMatch = chunk.match(/^\s*(\d+)\s+/);
       if (!pageMatch) return null;
@@ -23,6 +27,22 @@ export function splitTextIntoChunks(text: string): TextChunk[] {
       };
     })
     .filter((chunk): chunk is TextChunk => chunk !== null);
+
+  // If we found numbered chunks, return them
+  if (numberedChunks.length > 0) {
+    return numberedChunks;
+  }
+
+  // Otherwise, treat the entire text as a single chunk
+  const trimmedText = text.trim();
+  if (trimmedText) {
+    return [{
+      pageNumber: 1,
+      content: trimmedText
+    }];
+  }
+
+  return [];
 }
 
 export function combineTranslations(translations: { pageNumber: number; translation: string }[]): string {
