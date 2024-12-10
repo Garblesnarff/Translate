@@ -1,4 +1,5 @@
 import type { Express, Request, Response, NextFunction } from "express";
+import fileUpload from 'express-fileupload';
 import { GoogleGenerativeAI, GenerateContentResult } from "@google/generative-ai";
 import { splitTextIntoChunks } from "../client/src/lib/textChunker";
 import { TibetanTextProcessor } from "./textFormatter";
@@ -41,6 +42,12 @@ const limiter = rateLimit({
 export function registerRoutes(app: Express) {
   // Enable trust proxy to properly handle X-Forwarded-For header
   app.set('trust proxy', 1);
+  
+  // Enable file upload middleware
+  app.use(fileUpload({
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
+    abortOnLimit: true
+  }));
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
   const model = genAI.getGenerativeModel({ 
@@ -68,6 +75,36 @@ export function registerRoutes(app: Express) {
     });
     next();
   };
+
+  app.post('/api/dictionary/import', 
+    limiter,
+    logRequest,
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        if (!req.files?.dictionary || Array.isArray(req.files.dictionary)) {
+          throw createTranslationError(
+            'No dictionary file uploaded',
+            'INVALID_FILE',
+            400
+          );
+        }
+
+        const file = req.files.dictionary;
+        if (file.mimetype !== 'application/pdf') {
+          throw createTranslationError(
+            'Uploaded file must be a PDF',
+            'INVALID_FILE_TYPE',
+            400
+          );
+        }
+
+        await dictionary.importFromPDF(file.data);
+        res.json({ message: 'Dictionary imported successfully' });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
 
   app.post('/api/translate', 
     limiter,
@@ -100,12 +137,13 @@ export function registerRoutes(app: Express) {
 
         for (const chunk of chunks) {
           try {
+            const prompt = await createTranslationPrompt(chunk.pageNumber, chunk.content);
             const result = await Promise.race([
               model.generateContent({
                 contents: [{ 
                   role: "user", 
                   parts: [{ 
-                    text: createTranslationPrompt(chunk.pageNumber, chunk.content)
+                    text: prompt
                   }]
                 }],
               }) as Promise<GenerateContentResult>,
@@ -181,17 +219,23 @@ import { TibetanDictionary } from './dictionary';
 
 const dictionary = new TibetanDictionary();
 
-function createTranslationPrompt(pageNumber: number, text: string): string {
-  return `Translate this Tibetan Buddhist text into clear English, following these specific guidelines:
+async function createTranslationPrompt(pageNumber: number, text: string): Promise<string> {
+  const dictionaryContext = await dictionary.getDictionaryContext();
+  return `Translate this Tibetan Buddhist text into clear English, following these specific guidelines.
+You MUST use the provided dictionary translations for accuracy and consistency.
 
-${dictionary.getDictionaryContext()}
+${dictionaryContext}
 
 TRANSLATION RULES:
-1. Buddhist Terms:
-   - Use the provided dictionary translations consistently
-   - Maintain Sanskrit terms with English in parentheses on first use
-   - Keep diacritical marks for Sanskrit terms (ā, ī, ṇ, ś, etc.)
-   - Always preserve these terms: Dharma, Karma, Buddha, Sangha, Vajra
+1. Dictionary Usage:
+   - ALWAYS use the provided dictionary translations when available
+   - If a term isn't in the dictionary, translate it naturally
+   - For new terms, maintain consistency throughout the text
+
+2. Buddhist Terms:
+   - Keep Sanskrit terms with English in parentheses on first use
+   - Preserve diacritical marks for Sanskrit terms (ā, ī, ṇ, ś, etc.)
+   - Always maintain these terms: Dharma, Karma, Buddha, Sangha, Vajra
 
 2. Names and Titles:
    - Keep Tibetan personal names in transliteration
