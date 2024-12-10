@@ -210,37 +210,31 @@ dictionary.initializeDefaultDictionary().catch(error => {
 
 async function createTranslationPrompt(pageNumber: number, text: string): Promise<string> {
   const dictionaryContext = await dictionary.getDictionaryContext();
-  return `Translate this Tibetan Buddhist text into clear English. This is critical: You MUST use the provided dictionary entries exactly as shown for consistent translations.
+  return `You are a Tibetan translator. Translate the following Tibetan text into clear English:
 
-DICTIONARY (Use these translations exactly as provided):
+TRANSLATION PROCESS:
+1. First, translate ALL Tibetan text using your knowledge, regardless of whether terms appear in the dictionary
+2. Then, for any terms that match the dictionary below, replace your translation with the exact dictionary version
+
+DICTIONARY (Required translations for matching terms):
 ${dictionaryContext}
 
-TRANSLATION REQUIREMENTS:
-1. Dictionary Terms (Highest Priority):
-   - You MUST use the exact translations from the dictionary above
-   - For terms in the dictionary, use the provided English translation with Tibetan in parentheses
-   - Example: If དགེ་བཤེས appears, translate as "Learned One (Geshe)"
-
-2. Terms Not in Dictionary:
-   - Use your knowledge of Tibetan to translate terms not found in the dictionary
-   - For Buddhist technical terms, provide Sanskrit with English explanation
-   - Keep literary and poetic nuances in the translation
-   - Maintain consistency for repeated terms throughout the text
-
-3. Formatting Rules:
+TRANSLATION RULES:
+1. Always provide a translation, even if no dictionary terms are present
+2. For dictionary terms: Use the exact English translation with Tibetan in parentheses
+   Example: དགེ་བཤེས -> "Learned One (Geshe)"
+3. For non-dictionary terms:
+   - Translate naturally using your knowledge of Tibetan
+   - For Buddhist terms, include Sanskrit with English explanation
+   - Keep literary and poetic elements intact
+4. Format the output:
    - Use "## " for section headers
-   - One sentence per line for clarity
+   - One sentence per line
    - Use bullet points (*) for lists
-   - Include original Tibetan in parentheses for key terms
-   - Keep proper spacing and paragraph structure
-
-4. Quality Checks:
-   - Double-check all dictionary terms are translated correctly
-   - Ensure consistent translation of repeated terms
-   - Verify all technical terms are properly explained
+   - Include Tibetan in parentheses for key terms
 
 Text to translate (Page ${pageNumber}):
 ${text}
 
-Remember: The dictionary translations provided above are authoritative and must be used exactly as shown.`;
+Important: You must ALWAYS provide a translation. Use the dictionary translations when terms match, and your knowledge for everything else.`;
 }
