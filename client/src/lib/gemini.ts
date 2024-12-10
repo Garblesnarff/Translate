@@ -55,100 +55,68 @@ export const useTranslation = () => {
   }, []);
 
   const translate = async (text: string): Promise<TranslationResult> => {
-    setState({ isTranslating: true, progress: 0, error: null });
-    const startTime = Date.now();
-
     let retries = 0;
-    while (retries <= MAX_RETRIES) {
-      try {
-        const response = await fetch(GEMINI_API_ENDPOINT, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ text }),
-        });
+    const startTime = Date.now();
+    let translatedText = '';
+    let chunkCount = 0;
+    
+    setState(prev => ({ ...prev, isTranslating: true, error: null }));
+    setProgress(10);
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new TranslationError(
-            errorData.message || 'Translation request failed',
-            TranslationErrorCode.API_ERROR,
-            errorData.details,
-            response.status
-          );
-        }
+    try {
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
 
-        const reader = response.body?.getReader();
-        let translatedText = '';
-        let chunkCount = 0;
-        const totalExpectedChunks = Math.ceil(text.length / 1000);
-
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            translatedText += new TextDecoder().decode(value);
-            chunkCount++;
-            setProgress(Math.min((chunkCount / totalExpectedChunks) * 90 + 10, 90));
-          }
-        }
-
-        setProgress(100);
-
-        const result: TranslationResult = {
-          translatedText,
-          confidence: 0.95,
-          metadata: {
-            processingTime: Date.now() - startTime,
-            chunkCount,
-            totalChars: text.length
-          }
-        };
-
-        setState(prev => ({ 
-          ...prev, 
-          isTranslating: false, 
-          error: null 
-        }));
-
-        return result;
-
-      } catch (error) {
-        retries++;
-
-        if (retries <= MAX_RETRIES) {
-          console.warn(`Translation attempt ${retries} failed, retrying...`);
-          setProgress(0);
-          await new Promise(resolve => 
-            setTimeout(resolve, BASE_RETRY_DELAY * Math.pow(2, retries - 1))
-          );
-          continue;
-        }
-
-        const translationError = error instanceof TranslationError
-          ? error
-          : new TranslationError(
-              error instanceof Error ? error.message : 'Unknown error occurred',
-              TranslationErrorCode.UNKNOWN_ERROR,
-              error
-            );
-
-        setState(prev => ({ 
-          ...prev, 
-          isTranslating: false, 
-          error: translationError 
-        }));
-
-        throw translationError;
+      if (!response.ok) {
+        throw new Error(`Translation failed: ${response.statusText}`);
       }
-    }
 
-    throw new TranslationError(
-      'Maximum retries exceeded', 
-      TranslationErrorCode.MAX_RETRIES_EXCEEDED
-    );
+      const data = await response.json();
+      translatedText = data.translatedText;
+      
+      setProgress(100);
+      setState(prev => ({ ...prev, isTranslating: false, error: null }));
+
+      return {
+        translatedText,
+        confidence: data.metadata?.confidence || 0.95,
+        metadata: {
+          processingTime: Date.now() - startTime,
+          chunkCount: data.metadata?.chunkCount || 1,
+          totalChars: text.length
+        }
+      };
+    } catch (error) {
+      retries++;
+
+      if (retries <= MAX_RETRIES) {
+        console.warn(`Translation attempt ${retries} failed, retrying...`);
+        setProgress(0);
+        await new Promise(resolve => 
+          setTimeout(resolve, BASE_RETRY_DELAY * Math.pow(2, retries - 1))
+        );
+        continue;
+      }
+
+      const translationError = error instanceof TranslationError
+        ? error
+        : new TranslationError(
+            error instanceof Error ? error.message : 'Unknown error occurred',
+            TranslationErrorCode.UNKNOWN_ERROR,
+            error
+          );
+
+      setState(prev => ({ 
+        ...prev, 
+        isTranslating: false, 
+        error: translationError 
+      }));
+
+      throw translationError;
+    }
   };
 
   return {
