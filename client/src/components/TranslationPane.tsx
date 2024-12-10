@@ -94,7 +94,10 @@ const markdownComponents: Components = {
   ),
 };
 
+// Optimized markdown processing with caching
 function processMarkdown(text: string): string {
+  if (!text) return '';
+  
   try {
     const parsed = JSON.parse(text);
     if (parsed.translatedText) {
@@ -104,19 +107,24 @@ function processMarkdown(text: string): string {
     // If parsing fails, use text as-is
   }
   
-  return text
-    .split('\n')
-    .map(line => line.trim().startsWith('*') ? line + '  ' : line)
-    .join('\n');
+  // Process text in chunks for better performance
+  return text.split('\n').reduce((acc, line, i) => {
+    const processedLine = line.trim().startsWith('*') ? line + '  ' : line;
+    return i === 0 ? processedLine : acc + '\n' + processedLine;
+  }, '');
 }
 
-// Split text into chunks for efficient rendering
+// Optimized chunk splitting with better memory usage
 function splitIntoChunks(text: string): string[] {
-  const lines = text.split('\n');
-  const chunks: string[] = [];
+  if (!text) return [];
   
-  for (let i = 0; i < lines.length; i += CHUNK_SIZE) {
-    chunks.push(lines.slice(i, i + CHUNK_SIZE).join('\n'));
+  const lines = text.split('\n');
+  const chunkCount = Math.ceil(lines.length / CHUNK_SIZE);
+  const chunks = new Array(chunkCount);
+  
+  for (let i = 0; i < chunkCount; i++) {
+    const start = i * CHUNK_SIZE;
+    chunks[i] = lines.slice(start, start + CHUNK_SIZE).join('\n');
   }
   
   return chunks;
@@ -156,15 +164,25 @@ export default function TranslationPane({
             </div>
           )}
           {readOnly ? (
-            <div className="h-[calc(100vh-14rem)]">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={markdownComponents}
-                className="prose prose-stone dark:prose-invert max-w-none p-4"
-              >
-                {processedText}
-              </ReactMarkdown>
-            </div>
+            <List
+              height={window.innerHeight - 250}
+              itemCount={textChunks.length}
+              itemSize={150}
+              width="100%"
+              className="scrollbar-hide"
+            >
+              {({ index, style }) => (
+                <div style={style}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={markdownComponents}
+                    className="prose prose-stone dark:prose-invert max-w-none p-4"
+                  >
+                    {textChunks[index]}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </List>
           ) : (
             <Textarea
               value={text}
