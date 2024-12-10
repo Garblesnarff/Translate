@@ -26,6 +26,10 @@ author = "agent"
 task = "workflow.run"
 args = "Development Server"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Remove File"
+
 [[workflows.workflow]]
 name = "Development Server"
 author = "agent"
@@ -40,3 +44,17 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "tsx watch --clear-screen=false server/index.ts"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Remove File"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "rm server/textFormatter.ts"
