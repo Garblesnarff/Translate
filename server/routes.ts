@@ -100,9 +100,47 @@ export function registerRoutes(app: Express) {
       res.json({ translatedText: combinedText });
     } catch (error) {
       console.error('Translation error:', error);
-      res.status(500).json({ 
-        error: 'Translation failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
+      
+      // Determine the appropriate error status and message based on the error type
+      let statusCode = 500;
+      let errorMessage = 'Translation failed';
+      let errorCode = 'TRANSLATION_ERROR';
+      let errorDetails = error instanceof Error ? error.message : 'Unknown error';
+
+      if (error instanceof Error) {
+        if (error.message.includes('API key')) {
+          statusCode = 401;
+          errorMessage = 'Invalid API key';
+          errorCode = 'INVALID_API_KEY';
+        } else if (error.message.includes('timeout')) {
+          statusCode = 504;
+          errorMessage = 'Translation request timed out';
+          errorCode = 'TIMEOUT_ERROR';
+        } else if (error.message.includes('rate limit')) {
+          statusCode = 429;
+          errorMessage = 'Rate limit exceeded';
+          errorCode = 'RATE_LIMIT_ERROR';
+        } else if (error.message.includes('content filtered')) {
+          statusCode = 422;
+          errorMessage = 'Content was filtered by safety settings';
+          errorCode = 'CONTENT_FILTERED';
+        }
+      }
+
+      // Log detailed error information
+      console.error({
+        timestamp: new Date().toISOString(),
+        errorCode,
+        errorMessage,
+        errorDetails,
+        statusCode,
+      });
+
+      res.status(statusCode).json({ 
+        error: errorMessage,
+        code: errorCode,
+        details: errorDetails,
+        timestamp: new Date().toISOString()
       });
     }
   });

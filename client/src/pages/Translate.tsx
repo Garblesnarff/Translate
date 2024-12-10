@@ -19,8 +19,17 @@ export default function Translate() {
   };
 
   const handleTranslate = async () => {
-    const result = await translate(sourceText);
-    setTranslatedText(result.translatedText);
+    try {
+      const result = await translate(sourceText);
+      setTranslatedText(result.translatedText);
+    } catch (error) {
+      // TranslationError will be caught here
+      if (error instanceof Error) {
+        // Show error in the translation pane
+        setTranslatedText(`Error: ${error.message}`);
+      }
+      console.error('Translation error:', error);
+    }
   };
 
   const handleExport = async () => {
