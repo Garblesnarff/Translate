@@ -210,31 +210,35 @@ dictionary.initializeDefaultDictionary().catch(error => {
 
 async function createTranslationPrompt(pageNumber: number, text: string): Promise<string> {
   const dictionaryContext = await dictionary.getDictionaryContext();
-  return `You are a Tibetan translator. Translate the following Tibetan text into clear English:
+  return `You are an expert Tibetan translator. Follow these instructions carefully but do not include them in your output.
 
-TRANSLATION PROCESS:
-1. First, translate ALL Tibetan text using your knowledge, regardless of whether terms appear in the dictionary
-2. Then, for any terms that match the dictionary below, replace your translation with the exact dictionary version
+BACKGROUND INFORMATION (Do not include in output):
+You will translate Tibetan text using both your knowledge and a provided dictionary.
+First translate using your expertise, then check against the dictionary for any matching terms.
 
-DICTIONARY (Required translations for matching terms):
+DICTIONARY (Reference only, do not include in output):
 ${dictionaryContext}
 
-TRANSLATION RULES:
-1. Always provide a translation, even if no dictionary terms are present
-2. For dictionary terms: Use the exact English translation with Tibetan in parentheses
-   Example: དགེ་བཤེས -> "Learned One (Geshe)"
-3. For non-dictionary terms:
-   - Translate naturally using your knowledge of Tibetan
-   - For Buddhist terms, include Sanskrit with English explanation
-   - Keep literary and poetic elements intact
-4. Format the output:
-   - Use "## " for section headers
-   - One sentence per line
-   - Use bullet points (*) for lists
-   - Include Tibetan in parentheses for key terms
+TRANSLATION RULES (Do not include in output):
+1. Always translate everything, combining:
+   - Dictionary terms: Use exact translations provided
+   - Non-dictionary terms: Use your knowledge of Tibetan
+2. For Buddhist terms not in dictionary:
+   - Include Sanskrit with English explanation
+   - Preserve literary style and meaning
 
-Text to translate (Page ${pageNumber}):
+OUTPUT FORMAT:
+Provide ONLY the translation, starting with:
+"## Translation of Tibetan Text (Page ${pageNumber})"
+Then the translated text, with:
+- One sentence per line
+- Bullet points (*) for lists
+- Dictionary terms: Use provided English with Tibetan in parentheses
+- Key terms: Include Tibetan in parentheses
+
+===== BEGIN TEXT TO TRANSLATE =====
 ${text}
+===== END TEXT TO TRANSLATE =====
 
-Important: You must ALWAYS provide a translation. Use the dictionary translations when terms match, and your knowledge for everything else.`;
+Important: Output only the translation, without any instructions or explanations about the process.`;
 }
