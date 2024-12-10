@@ -78,13 +78,14 @@ export function registerRoutes(app: Express) {
         const errors = [];
         let confidenceScores = [];
 
-        // Process each chunk using the translation service
+        // Process each chunk sequentially
         for (const chunk of chunks) {
           try {
             const result = await translationService.translateText(chunk);
+            const pageTranslation = `## Translation of Tibetan Text (Page ${chunk.pageNumber})\n\n${result.translation}`;
             translations.push({
               pageNumber: chunk.pageNumber,
-              translation: result.translation,
+              translation: pageTranslation,
               confidence: result.confidence
             });
             confidenceScores.push(result.confidence);
