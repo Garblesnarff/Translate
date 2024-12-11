@@ -54,8 +54,14 @@ export const generatePDF = async (translatedText: string): Promise<Blob> => {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF();
   
-  // Use Times Roman which has better Unicode support
-  doc.setFont('Times', 'Roman');
+  // Add Noto Sans Tibetan font for Tibetan text support
+  const tibetanFont = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff')
+    .then(r => r.arrayBuffer());
+  
+  doc.addFileToVFS('NotoSansTibetan-Regular.ttf', tibetanFont);
+  doc.addFont('NotoSansTibetan-Regular.ttf', 'NotoSansTibetan', 'normal');
+  
+  doc.setFont('NotoSansTibetan');
   doc.setFontSize(12);
   
   const margin = 15;
