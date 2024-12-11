@@ -62,7 +62,7 @@ export const useTranslation = () => {
     let chunkCount = 0;
     
     setState(prev => ({ ...prev, isTranslating: true, error: null }));
-    setProgress(10);
+    setProgress(0);
 
     while (retries <= MAX_RETRIES) {
       try {

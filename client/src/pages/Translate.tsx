@@ -89,13 +89,16 @@ export default function Translate() {
           pages.push(translatedPage);
           
           // Update progress and state after each page
-          const progress = (pages.length / totalPages) * 100;
+          const progress = ((pages.length) / totalPages) * 100;
           setTranslationState(prev => ({
             ...prev,
             pages: [...prev.pages, translatedPage],
             currentPage: pages.length - 1,
             error: null
           }));
+
+          // Update translation progress
+          setProgress(progress);
 
           // Update state after each page is translated
           setTranslationState(prev => ({
