@@ -36,9 +36,7 @@ TRANSLATION RULES (Do not include in output):
    - Preserve literary style and meaning
 
 OUTPUT FORMAT:
-Provide ONLY the translation, starting with:
-"## Translation of Tibetan Text (Page ${pageNumber})"
-Then the translated text, with:
+Provide ONLY the translation with:
 - One sentence per line
 - Bullet points (*) for lists
 - Dictionary terms: Use provided English with Tibetan in parentheses
