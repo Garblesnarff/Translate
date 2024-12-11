@@ -108,10 +108,10 @@ export function registerRoutes(app: Express) {
           );
         }
 
-        // Combine translated chunks in order with proper page headers
+        // Combine translated chunks in order
         const combinedText = translations
           .sort((a, b) => a.pageNumber - b.pageNumber)
-          .map(t => t.translation)
+          .map(t => t.translation.replace(/^## Translation of Tibetan Text \(Page \d+\)\n*/, ''))
           .join('\n\n');
 
         // Calculate average confidence score
