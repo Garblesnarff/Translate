@@ -9,6 +9,7 @@ import UploadDialog from "../components/UploadDialog";
 import ProgressIndicator from "../components/ProgressIndicator";
 import { useTranslation } from "../lib/gemini";
 import { extractTextContent } from "../lib/textExtractor";
+import { useToast } from "@/hooks/use-toast";
 
 interface TranslationError {
   message: string;
@@ -27,6 +28,7 @@ type TranslationState = {
 };
 
 export default function Translate() {
+  const { toast } = useToast();
   const [sourceText, setSourceText] = useState("");
   const [translationState, setTranslationState] = useState<TranslationState>({
     pages: [],
@@ -36,32 +38,73 @@ export default function Translate() {
   const { translate, isTranslating, progress } = useTranslation();
 
   const handleFileUpload = async (file: File) => {
-    const content = await extractTextContent(file);
-    setSourceText(content.text);
+    try {
+      const content = await extractTextContent(file);
+      // Ensure we display the complete text
+      setSourceText(content.text);
+      // Reset translation state when new file is uploaded
+      setTranslationState({
+        pages: [],
+        currentPage: 0,
+        error: null
+      });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to process file",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleTranslate = async () => {
     try {
-      const chunks = sourceText.split(/\n\n(?=Page \d+:)/);
-      const pages: TranslationPage[] = [];
-      
+      // Split text into pages (either by explicit page markers or by paragraphs)
+      const pageTexts = sourceText
+        .split(/\n\n(?:Page \d+:|\n-{3,}|\f)/)
+        .filter(text => text.trim().length > 0);
+
+      if (pageTexts.length === 0) {
+        // If no page breaks found, treat the entire text as one page
+        pageTexts.push(sourceText);
+      }
+
       setTranslationState(prev => ({ ...prev, pages: [], error: null }));
+      const pages: TranslationPage[] = [];
 
-      for (let i = 0; i < chunks.length; i++) {
-        const pageNum = i + 1;
-        const result = await translate(chunks[i]);
-        
-        pages.push({
-          pageNumber: pageNum,
-          text: result.translatedText
-        });
+      for (let i = 0; i < pageTexts.length; i++) {
+        try {
+          const pageNum = i + 1;
+          console.log(`Translating page ${pageNum} of ${pageTexts.length}`);
+          
+          const result = await translate(pageTexts[i]);
+          
+          pages.push({
+            pageNumber: pageNum,
+            text: result.translatedText
+          });
 
-        setTranslationState(prev => ({
-          ...prev,
-          pages: [...pages],
-          currentPage: pages.length - 1,
-          error: null
-        }));
+          // Update state after each page is translated
+          setTranslationState(prev => ({
+            ...prev,
+            pages: [...pages],
+            currentPage: pages.length - 1,
+            error: null
+          }));
+        } catch (error) {
+          console.error(`Error translating page ${i + 1}:`, error);
+          // Continue with next page even if current one fails
+          pages.push({
+            pageNumber: i + 1,
+            text: `Error translating this page: ${error instanceof Error ? error.message : 'Unknown error'}`
+          });
+        }
+      }
+
+      // If no pages were translated successfully
+      if (pages.length === 0) {
+        throw new Error('Failed to translate any pages');
       }
     } catch (error) {
       console.error("Translation error:", error);
