@@ -26,17 +26,21 @@ export const extractPDFContent = async (file: File): Promise<PDFContent> => {
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
     const pdf: PDFDocumentProxy = await loadingTask.promise;
     const pageCount = pdf.numPages;
+    let fullText = '';
     
-    // Only process first page initially
-    const page = await pdf.getPage(1);
-    const textContent = await page.getTextContent();
-    const text = textContent.items
-      .filter((item): item is TextItem => 'str' in item)
-      .map(item => item.str)
-      .join(' ');
+    // Process all pages
+    for (let i = 1; i <= pageCount; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .filter((item): item is TextItem => 'str' in item)
+        .map(item => item.str)
+        .join(' ');
+      fullText += `Page ${i}:\n${pageText}\n\n`;
+    }
 
     return {
-      text: text.trim(),
+      text: fullText.trim(),
       pageCount,
     };
   } catch (error) {
