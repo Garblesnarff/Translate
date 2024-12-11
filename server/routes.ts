@@ -111,7 +111,7 @@ export function registerRoutes(app: Express) {
         // Combine translated chunks in order with proper page headers
         const combinedText = translations
           .sort((a, b) => a.pageNumber - b.pageNumber)
-          .map(t => `## Translation of Tibetan Text (Page ${t.pageNumber})\n\n${t.translation}`)
+          .map(t => t.translation)
           .join('\n\n');
 
         // Calculate average confidence score
