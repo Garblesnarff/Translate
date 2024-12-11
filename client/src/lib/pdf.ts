@@ -17,6 +17,40 @@ export interface PDFPage {
   text: string;
 }
 
+export const generatePDF = async (translatedText: string): Promise<Blob> => {
+  const { jsPDF } = await import('jspdf');
+  const doc = new jsPDF();
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(12);
+  
+  const margin = 15;
+  const pageWidth = doc.internal.pageSize.width;
+  const maxWidth = pageWidth - (2 * margin);
+  let yPosition = 20;
+  
+  const paragraphs = translatedText.split('\n');
+  
+  for (const paragraph of paragraphs) {
+    if (!paragraph.trim()) {
+      yPosition += 5;
+      continue;
+    }
+
+    const lines = doc.splitTextToSize(paragraph.trim(), maxWidth);
+    
+    if (yPosition + (lines.length * 7) > 280) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    
+    doc.text(lines, margin, yPosition);
+    yPosition += (lines.length * 7) + 3;
+  }
+  
+  return doc.output('blob');
+};
+
 export const extractPDFContent = async (file: File): Promise<PDFContent> => {
   if (!file.type.includes('pdf')) {
     throw new Error('Please upload a PDF file');
@@ -29,7 +63,6 @@ export const extractPDFContent = async (file: File): Promise<PDFContent> => {
     const pageCount = pdf.numPages;
     let fullText = '';
     
-    // Process all pages
     for (let i = 1; i <= pageCount; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
@@ -48,75 +81,6 @@ export const extractPDFContent = async (file: File): Promise<PDFContent> => {
     console.error('Error extracting PDF content:', error);
     throw error;
   }
-};
-
-export const generatePDF = async (translatedText: string): Promise<Blob> => {
-  const { jsPDF } = await import('jspdf');
-  const doc = new jsPDF();
-  
-  // Add Noto Sans Tibetan font for Tibetan text support
-  const tibetanFont = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff')
-    .then(r => r.arrayBuffer())
-    .then(buffer => {
-      const bytes = new Uint8Array(buffer);
-      return bytes.reduce((str, byte) => str + String.fromCharCode(byte), '');
-    });
-  
-  doc.addFileToVFS('NotoSansTibetan-Regular.ttf', tibetanFont);
-  doc.addFont('NotoSansTibetan-Regular.ttf', 'NotoSansTibetan', 'normal');
-  
-  doc.setFont('NotoSansTibetan');
-  doc.setFontSize(12);
-  
-  const margin = 15;
-  const pageWidth = doc.internal.pageSize.width;
-  const maxWidth = pageWidth - (2 * margin);
-  
-  const paragraphs = translatedText.split('\n');
-  let yPosition = 20;
-  
-  for (const paragraph of paragraphs) {
-    const trimmedParagraph = paragraph.trim();
-    if (!trimmedParagraph) {
-      yPosition += 5;
-      continue;
-    }
-
-    // Handle text wrapping manually
-    let words = trimmedParagraph.split(' ');
-    let currentLine = '';
-
-    for (let i = 0; i < words.length; i++) {
-      const word = words[i];
-      const testLine = currentLine + (currentLine ? ' ' : '') + word;
-      const metrics = doc.getTextWidth(testLine);
-
-      if (metrics > maxWidth && i > 0) {
-        doc.text(currentLine, margin, yPosition);
-        currentLine = word;
-        yPosition += 7;
-
-        if (yPosition > 280) {
-          doc.addPage();
-          yPosition = 20;
-        }
-      } else {
-        currentLine = testLine;
-      }
-    }
-
-    if (currentLine) {
-      doc.text(currentLine, margin, yPosition);
-      yPosition += 10;
-    }
-
-    if (yPosition > 280) {
-      doc.addPage();
-      yPosition = 20;
-    }
-  }
-  
-  return doc.output('blob');
 };
 
 export const extractPageContent = async (file: File, pageNumber: number): Promise<PDFPage> => {
