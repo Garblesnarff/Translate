@@ -36,12 +36,10 @@ export default function Translate() {
   const handleTranslate = async () => {
     try {
       const result = await translate(sourceText);
-      console.log("Translation result:", result);
-      setTranslationState(prev => ({
-        ...prev,
-        text: result.translatedText || "",
+      setTranslationState({
+        text: result.translatedText,
         error: null
-      }));
+      });
     } catch (error) {
       console.error("Translation error:", error);
       if (error instanceof Error) {

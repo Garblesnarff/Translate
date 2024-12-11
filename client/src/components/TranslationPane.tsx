@@ -48,7 +48,10 @@ export default function TranslationPane({
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   
-  const { pages } = useMemo(() => processMarkdown(text), [text]);
+  const { pages } = useMemo(() => {
+  if (!text) return { pages: [''] };
+  return processMarkdown(text);
+}, [text]);
   
   const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setIsLoading(true);
