@@ -56,7 +56,11 @@ export const generatePDF = async (translatedText: string): Promise<Blob> => {
   
   // Add Noto Sans Tibetan font for Tibetan text support
   const tibetanFont = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff')
-    .then(r => r.arrayBuffer());
+    .then(r => r.arrayBuffer())
+    .then(buffer => {
+      const bytes = new Uint8Array(buffer);
+      return bytes.reduce((str, byte) => str + String.fromCharCode(byte), '');
+    });
   
   doc.addFileToVFS('NotoSansTibetan-Regular.ttf', tibetanFont);
   doc.addFont('NotoSansTibetan-Regular.ttf', 'NotoSansTibetan', 'normal');
