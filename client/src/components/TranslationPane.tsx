@@ -49,7 +49,6 @@ export default function TranslationPane({
   const [currentPage, setCurrentPage] = useState(1);
   
   const { pages } = useMemo(() => {
-    if (!text) return { pages: [''] };
     return { pages: [text] };
   }, [text]);
   

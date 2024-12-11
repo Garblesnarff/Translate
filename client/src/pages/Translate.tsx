@@ -40,11 +40,11 @@ export default function Translate() {
   const handleFileUpload = async (file: File) => {
     try {
       const content = await extractTextContent(file);
-      // Ensure we display the complete text
+      // Display complete text without any processing
       setSourceText(content.text);
       // Reset translation state when new file is uploaded
       setTranslationState({
-        pages: [],
+        pages: [{text: content.text, pageNumber: 1}],
         currentPage: 0,
         error: null
       });
