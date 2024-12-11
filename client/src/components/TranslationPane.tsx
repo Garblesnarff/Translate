@@ -50,11 +50,6 @@ export default function TranslationPane({
   
   const { pages } = useMemo(() => {
     if (!text) return { pages: [''] };
-    // Handle multi-page format
-    const pageMatches = text.match(/## Translation of Tibetan Text \(Page \d+\)[^\n]*(?:\n(?!## Translation of)|$)*/g);
-    if (pageMatches) {
-      return { pages: pageMatches };
-    }
     return { pages: [text] };
   }, [text]);
   
