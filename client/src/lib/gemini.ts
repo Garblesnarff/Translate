@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 
 const GEMINI_API_ENDPOINT = '/api/translate';
@@ -102,21 +103,22 @@ export const useTranslation = () => {
           continue;
         }
 
-      const translationError = error instanceof TranslationError
-        ? error
-        : new TranslationError(
-            error instanceof Error ? error.message : 'Unknown error occurred',
-            TranslationErrorCode.UNKNOWN_ERROR,
-            error
-          );
+        const translationError = error instanceof TranslationError
+          ? error
+          : new TranslationError(
+              error instanceof Error ? error.message : 'Unknown error occurred',
+              TranslationErrorCode.UNKNOWN_ERROR,
+              error
+            );
 
-      setState(prev => ({ 
-        ...prev, 
-        isTranslating: false, 
-        error: translationError 
-      }));
+        setState(prev => ({ 
+          ...prev, 
+          isTranslating: false, 
+          error: translationError 
+        }));
 
-      throw translationError;
+        throw translationError;
+      }
     }
   };
 
@@ -126,3 +128,4 @@ export const useTranslation = () => {
     progress: state.progress,
     error: state.error,
   };
+};
