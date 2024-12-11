@@ -111,7 +111,7 @@ export default function TranslationPane({
                   components={markdownComponents}
                   className="prose prose-stone dark:prose-invert max-w-none p-4"
                 >
-                  {(pages[currentPage - 1] || '').replace(/^## Translation of Tibetan Text \(Page \d+\)\n+/g, '').trim() || 'No translation available for this page'}
+                  {(pages[currentPage - 1] || '').trim() || 'No translation available for this page'}
                 </ReactMarkdown>
               </div>
             ) : (
