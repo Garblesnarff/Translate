@@ -83,7 +83,7 @@ export function registerRoutes(app: Express) {
           console.log(`Translating page ${chunk.pageNumber}`);
           try {
             const result = await translationService.translateText(chunk);
-            const pageTranslation = `## Translation of Tibetan Text (Page ${chunk.pageNumber})\n\n${result.translation}`;
+            const pageTranslation = result.translation;
             translations.push({
               pageNumber: chunk.pageNumber,
               translation: pageTranslation,
