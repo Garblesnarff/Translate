@@ -73,12 +73,6 @@ export default function Translate() {
       const totalPages = pageTexts.length;
       setTranslationState(prev => ({ ...prev, pages: [], error: null }));
       const pages: TranslationPage[] = [];
-      
-      // Update progress based on completed pages
-      const updateProgress = (completedPages: number) => {
-        const progressPercent = (completedPages / totalPages) * 100;
-        setProgress(progressPercent);
-      };
 
       for (let i = 0; i < pageTexts.length; i++) {
         try {
@@ -87,12 +81,21 @@ export default function Translate() {
           
           const result = await translate(pageTexts[i]);
           
-          pages.push({
+          const translatedPage = {
             pageNumber: pageNum,
             text: result.translatedText
-          });
+          };
           
-          updateProgress(pages.length);
+          pages.push(translatedPage);
+          
+          // Update progress and state after each page
+          const progress = (pages.length / totalPages) * 100;
+          setTranslationState(prev => ({
+            ...prev,
+            pages: [...prev.pages, translatedPage],
+            currentPage: pages.length - 1,
+            error: null
+          }));
 
           // Update state after each page is translated
           setTranslationState(prev => ({
