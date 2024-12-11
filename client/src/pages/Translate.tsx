@@ -36,25 +36,30 @@ export default function Translate() {
   const handleTranslate = async () => {
     try {
       const result = await translate(sourceText);
-      setTranslationState({
-        text: result.translatedText,
+      console.log("Translation result:", result);
+      setTranslationState(prev => ({
+        ...prev,
+        text: result.translatedText || "",
         error: null
-      });
+      }));
     } catch (error) {
+      console.error("Translation error:", error);
       if (error instanceof Error) {
         const translationError = {
           message: error.message,
           code: 'code' in error ? (error as any).code : undefined
         };
-        setTranslationState({
+        setTranslationState(prev => ({
+          ...prev,
           text: "",
           error: translationError
-        });
+        }));
       } else {
-        setTranslationState({
+        setTranslationState(prev => ({
+          ...prev,
           text: "",
           error: { message: "An unexpected error occurred during translation" }
-        });
+        }));
       }
     }
   };
