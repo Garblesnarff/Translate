@@ -60,8 +60,11 @@ export default function TranslationPane({
               size="sm"
               onClick={async () => {
                 const { generatePDF } = await import('../lib/pdf');
-                // Get all pages text
-                const allPagesText = pages.map(page => page.trim()).join('\n\n---\n\n');
+                const allPages = (window as any).translationState?.pages || [];
+                const allPagesText = allPages
+                  .sort((a: any, b: any) => a.pageNumber - b.pageNumber)
+                  .map((page: any) => page.text)
+                  .join('\n\n---\n\n');
                 const pdfBlob = await generatePDF(allPagesText);
                 const url = URL.createObjectURL(pdfBlob);
                 const a = document.createElement('a');
