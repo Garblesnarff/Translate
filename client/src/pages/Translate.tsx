@@ -15,15 +15,22 @@ interface TranslationError {
   code?: string;
 }
 
-type TranslationState = {
+interface TranslationPage {
+  pageNumber: number;
   text: string;
+}
+
+type TranslationState = {
+  pages: TranslationPage[];
+  currentPage: number;
   error?: TranslationError | null;
 };
 
 export default function Translate() {
   const [sourceText, setSourceText] = useState("");
   const [translationState, setTranslationState] = useState<TranslationState>({
-    text: "",
+    pages: [],
+    currentPage: 0,
     error: null
   });
   const { translate, isTranslating, progress } = useTranslation();
@@ -35,11 +42,27 @@ export default function Translate() {
 
   const handleTranslate = async () => {
     try {
-      const result = await translate(sourceText);
-      setTranslationState({
-        text: result.translatedText,
-        error: null
-      });
+      const chunks = sourceText.split(/\n\n(?=Page \d+:)/);
+      const pages: TranslationPage[] = [];
+      
+      setTranslationState(prev => ({ ...prev, pages: [], error: null }));
+
+      for (let i = 0; i < chunks.length; i++) {
+        const pageNum = i + 1;
+        const result = await translate(chunks[i]);
+        
+        pages.push({
+          pageNumber: pageNum,
+          text: result.translatedText
+        });
+
+        setTranslationState(prev => ({
+          ...prev,
+          pages: [...pages],
+          currentPage: pages.length - 1,
+          error: null
+        }));
+      }
     } catch (error) {
       console.error("Translation error:", error);
       if (error instanceof Error) {
@@ -49,17 +72,24 @@ export default function Translate() {
         };
         setTranslationState(prev => ({
           ...prev,
-          text: "",
+          pages: [],
           error: translationError
         }));
       } else {
         setTranslationState(prev => ({
           ...prev,
-          text: "",
+          pages: [],
           error: { message: "An unexpected error occurred during translation" }
         }));
       }
     }
+  };
+
+  const handlePageChange = (pageIndex: number) => {
+    setTranslationState(prev => ({
+      ...prev,
+      currentPage: pageIndex
+    }));
   };
 
   return (
@@ -109,12 +139,38 @@ export default function Translate() {
                 </Alert>
               </div>
             ) : (
-              <TranslationPane
-                title="Translation"
-                text={translationState.text}
-                onChange={(text) => setTranslationState(prev => ({ ...prev, text }))}
-                readOnly
-              />
+              <div className="flex flex-col h-full">
+                <TranslationPane
+                  title={`Translation - Page ${translationState.currentPage + 1}/${translationState.pages.length}`}
+                  text={translationState.pages[translationState.currentPage]?.text || ''}
+                  onChange={(text) => {
+                    const newPages = [...translationState.pages];
+                    if (newPages[translationState.currentPage]) {
+                      newPages[translationState.currentPage].text = text;
+                      setTranslationState(prev => ({ ...prev, pages: newPages }));
+                    }
+                  }}
+                  readOnly
+                />
+                {translationState.pages.length > 1 && (
+                  <div className="flex justify-center gap-2 p-2 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePageChange(Math.max(0, translationState.currentPage - 1))}
+                      disabled={translationState.currentPage === 0}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePageChange(Math.min(translationState.pages.length - 1, translationState.currentPage + 1))}
+                      disabled={translationState.currentPage === translationState.pages.length - 1}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </div>
             )}
           </ResizablePanel>
         </ResizablePanelGroup>
