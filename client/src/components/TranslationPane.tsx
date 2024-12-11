@@ -23,15 +23,9 @@ const markdownComponents: Components = {
 
 function processMarkdown(text: string): { pages: string[] } {
   try {
-    // First check if there are page markers
-    const pages = text.split(/(?=##\s*Translation of Tibetan Text \(Page \d+\))/g)
-      .filter(page => page.trim().length > 0);
-    
-    if (pages.length > 0) {
-      return { pages };
-    }
-    // If no page markers found, treat as single page
-    return { pages: [text] };
+    // Remove any translation headers and process the text
+    const cleanText = text.replace(/##\s*Translation of Tibetan Text \(Page \d+\)\s*/g, '');
+    return { pages: [cleanText] };
   } catch (e) {
     console.error('Error processing markdown:', e);
     return { pages: [text] };
