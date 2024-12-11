@@ -1,3 +1,4 @@
+
 import * as pdfjsLib from 'pdfjs-dist';
 import type { TextItem, PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 
@@ -45,20 +46,7 @@ export const extractPDFContent = async (file: File): Promise<PDFContent> => {
     };
   } catch (error) {
     console.error('Error extracting PDF content:', error);
-    if (error instanceof Error) {
-      // Check for common PDF.js errors
-      if (error.message.includes('Invalid PDF structure')) {
-        throw new Error('The PDF file appears to be corrupted or invalid');
-      } else if (error.message.includes('Password required')) {
-        throw new Error('The PDF file is password protected');
-      } else if (error.message.includes('Missing PDF')) {
-        throw new Error('The file does not appear to be a valid PDF');
-      } else if (error.message.includes('worker')) {
-        throw new Error('PDF worker failed to load. Please try again.');
-      }
-      throw new Error(`PDF processing error: ${error.message}`);
-    }
-    throw new Error('Failed to process the PDF file. Please try again.');
+    throw error;
   }
 };
 
@@ -66,36 +54,61 @@ export const generatePDF = async (translatedText: string): Promise<Blob> => {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF();
   
-  // Use a Unicode-compatible font
-  doc.addFont('https://cdn.jsdelivr.net/npm/noto-sans@latest/fonts/NotoSans-Regular.ttf', 'NotoSans', 'normal');
-  doc.setFont('NotoSans');
+  // Use Times Roman which has better Unicode support
+  doc.setFont('Times', 'Roman');
   doc.setFontSize(12);
   
   const margin = 15;
   const pageWidth = doc.internal.pageSize.width;
   const maxWidth = pageWidth - (2 * margin);
   
-  const paragraphs = translatedText.split('\n\n');
+  const paragraphs = translatedText.split('\n');
   let yPosition = 20;
   
-  paragraphs.forEach((paragraph: string) => {
-    const lines = doc.splitTextToSize(paragraph.trim(), maxWidth);
-    
-    if (yPosition + (lines.length * 7) > 280) {
+  for (const paragraph of paragraphs) {
+    const trimmedParagraph = paragraph.trim();
+    if (!trimmedParagraph) {
+      yPosition += 5;
+      continue;
+    }
+
+    // Handle text wrapping manually
+    let words = trimmedParagraph.split(' ');
+    let currentLine = '';
+
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const testLine = currentLine + (currentLine ? ' ' : '') + word;
+      const metrics = doc.getTextWidth(testLine);
+
+      if (metrics > maxWidth && i > 0) {
+        doc.text(currentLine, margin, yPosition);
+        currentLine = word;
+        yPosition += 7;
+
+        if (yPosition > 280) {
+          doc.addPage();
+          yPosition = 20;
+        }
+      } else {
+        currentLine = testLine;
+      }
+    }
+
+    if (currentLine) {
+      doc.text(currentLine, margin, yPosition);
+      yPosition += 10;
+    }
+
+    if (yPosition > 280) {
       doc.addPage();
       yPosition = 20;
     }
-    
-    lines.forEach((line: string) => {
-      doc.text(line, margin, yPosition);
-      yPosition += 7;
-    });
-    
-    yPosition += 5; // Add space between paragraphs
-  });
+  }
   
   return doc.output('blob');
 };
+
 export const extractPageContent = async (file: File, pageNumber: number): Promise<PDFPage> => {
   if (!file.type.includes('pdf')) {
     throw new Error('Please upload a PDF file');
