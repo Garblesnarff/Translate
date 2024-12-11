@@ -60,7 +60,9 @@ export default function TranslationPane({
               size="sm"
               onClick={async () => {
                 const { generatePDF } = await import('../lib/pdf');
-                const pdfBlob = await generatePDF(text);
+                // Get all pages text
+                const allPagesText = pages.map(page => page.trim()).join('\n\n---\n\n');
+                const pdfBlob = await generatePDF(allPagesText);
                 const url = URL.createObjectURL(pdfBlob);
                 const a = document.createElement('a');
                 a.href = url;

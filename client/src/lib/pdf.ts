@@ -66,19 +66,32 @@ export const generatePDF = async (translatedText: string): Promise<Blob> => {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF();
   
-  doc.setFont('Times', 'Roman');
+  // Use a Unicode-compatible font
+  doc.addFont('https://cdn.jsdelivr.net/npm/noto-sans@latest/fonts/NotoSans-Regular.ttf', 'NotoSans', 'normal');
+  doc.setFont('NotoSans');
   doc.setFontSize(12);
   
-  const splitText = doc.splitTextToSize(translatedText, 180);
+  const margin = 15;
+  const pageWidth = doc.internal.pageSize.width;
+  const maxWidth = pageWidth - (2 * margin);
+  
+  const paragraphs = translatedText.split('\n\n');
   let yPosition = 20;
   
-  splitText.forEach((text: string) => {
-    if (yPosition > 280) {
+  paragraphs.forEach((paragraph: string) => {
+    const lines = doc.splitTextToSize(paragraph.trim(), maxWidth);
+    
+    if (yPosition + (lines.length * 7) > 280) {
       doc.addPage();
       yPosition = 20;
     }
-    doc.text(text, 15, yPosition);
-    yPosition += 7;
+    
+    lines.forEach((line: string) => {
+      doc.text(line, margin, yPosition);
+      yPosition += 7;
+    });
+    
+    yPosition += 5; // Add space between paragraphs
   });
   
   return doc.output('blob');
