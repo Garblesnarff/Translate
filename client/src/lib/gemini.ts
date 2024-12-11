@@ -120,6 +120,17 @@ export const useTranslation = () => {
         throw translationError;
       }
     }
+    
+    // Return default translation result if all retries are exhausted
+    return {
+      translatedText: '',
+      confidence: 0,
+      metadata: {
+        processingTime: Date.now() - startTime,
+        chunkCount: 0,
+        totalChars: text.length
+      }
+    };
   };
 
   return {
