@@ -49,9 +49,14 @@ export default function TranslationPane({
   const [currentPage, setCurrentPage] = useState(1);
   
   const { pages } = useMemo(() => {
-  if (!text) return { pages: [''] };
-  return processMarkdown(text);
-}, [text]);
+    if (!text) return { pages: [''] };
+    // Handle multi-page format
+    const pageMatches = text.match(/## Translation of Tibetan Text \(Page \d+\)[^\n]*(?:\n(?!## Translation of)|$)*/g);
+    if (pageMatches) {
+      return { pages: pageMatches };
+    }
+    return { pages: [text] };
+  }, [text]);
   
   const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setIsLoading(true);
