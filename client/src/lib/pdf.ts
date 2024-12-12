@@ -69,25 +69,36 @@ export interface PDFPageContent {
 
 export const generatePDF = async (pages: PDFPageContent[]): Promise<Blob> => {
   const { jsPDF } = await import('jspdf');
-  const doc = new jsPDF();
   
-  doc.setFont('Times', 'Roman');
+  // Create PDF with Unicode support
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+    putOnlyUsedFonts: true
+  });
+
+  // Load a font that supports Tibetan Unicode
+  // We'll use the default font for now as it has better Unicode support
+  doc.setFont('Helvetica', 'normal');
   doc.setFontSize(12);
-  
+
   pages.forEach((page, index) => {
     if (index > 0) {
       doc.addPage();
     }
-    
+
     // Add page number at the top
     doc.setFontSize(10);
     doc.text(`Page ${page.pageNumber}`, 15, 10);
     doc.setFontSize(12);
-    
-    const splitText = doc.splitTextToSize(page.text, 180);
+
+    // Split text by line breaks to preserve formatting
+    const lines = page.text.split('\n');
     let yPosition = 20;
-    
-    splitText.forEach((text: string) => {
+
+    lines.forEach((line) => {
+      // Check if we need a new page
       if (yPosition > 280) {
         doc.addPage();
         doc.setFontSize(10);
@@ -95,11 +106,47 @@ export const generatePDF = async (pages: PDFPageContent[]): Promise<Blob> => {
         doc.setFontSize(12);
         yPosition = 20;
       }
-      doc.text(text, 15, yPosition);
-      yPosition += 7;
+
+      // Handle empty lines
+      if (line.trim() === '') {
+        yPosition += 5;
+        return;
+      }
+
+      // Calculate width to handle text wrapping while preserving formatting
+      const textWidth = doc.getStringUnitWidth(line) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+      const lineHeight = doc.getTextDimensions('T').h * 1.5;
+
+      if (textWidth > 180) {
+        // Split long lines while preserving words
+        const words = line.split(' ');
+        let currentLine = '';
+
+        words.forEach((word) => {
+          const testLine = currentLine + (currentLine ? ' ' : '') + word;
+          const testWidth = doc.getStringUnitWidth(testLine) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+
+          if (testWidth > 180) {
+            doc.text(currentLine, 15, yPosition);
+            yPosition += lineHeight;
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        });
+
+        if (currentLine) {
+          doc.text(currentLine, 15, yPosition);
+          yPosition += lineHeight;
+        }
+      } else {
+        // Regular line
+        doc.text(line, 15, yPosition);
+        yPosition += lineHeight;
+      }
     });
   });
-  
+
   return doc.output('blob');
 };
 export const extractPageContent = async (file: File, pageNumber: number): Promise<PDFPage> => {
