@@ -138,5 +138,6 @@ export const useTranslation = () => {
     isTranslating: state.isTranslating,
     progress: state.progress,
     error: state.error,
+    setProgress,
   };
 };
