@@ -77,51 +77,52 @@ export default function TranslationPane({
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-xl font-bold">{title}</CardTitle>
         <div className="flex items-center gap-2">
-          {readOnly && text.trim() && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                const { generatePDF } = await import('../lib/pdf');
-                const pdfBlob = await generatePDF(text);
-                const url = URL.createObjectURL(pdfBlob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'translation.pdf';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }}
-            >
-              Export PDF
-            </Button>
-          )}
-          {/* Page navigation controls - only shown in read-only mode with multiple pages */}
-          {readOnly && totalPages > 1 && (
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage <= 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm">
-              Page {currentPage} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            {readOnly && text.trim() && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  const { generatePDF } = await import('../lib/pdf');
+                  const pdfBlob = await generatePDF(text);
+                  const url = URL.createObjectURL(pdfBlob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'translation.pdf';
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Export PDF
+              </Button>
+            )}
+            {/* Page navigation controls - only shown in read-only mode with multiple pages */}
+            {readOnly && totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
-        </div>
-        )}
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[calc(100vh-12rem)]">
