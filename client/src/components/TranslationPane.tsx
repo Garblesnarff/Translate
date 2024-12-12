@@ -8,16 +8,6 @@ import remarkGfm from 'remark-gfm';
 import { useMemo, useState, useCallback } from 'react';
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
-/**
- * Props for the TranslationPane component
- * @property {string} title - The title displayed at the top of the pane
- * @property {string} text - The text content to display/edit
- * @property {function} onChange - Callback function when text content changes
- * @property {boolean} readOnly - Whether the content is editable
- * @property {number} totalPages - Total number of available pages
- * @property {number} currentPage - Current active page number
- * @property {function} onPageChange - Callback function when page changes
- */
 interface TranslationPaneProps {
   title: string;
   text: string;
@@ -34,13 +24,6 @@ const markdownComponents: Components = {
   // Customize markdown rendering components here if needed
 };
 
-/**
- * TranslationPane Component
- * 
- * A dual-purpose component that can display either editable text content
- * or formatted read-only content with pagination controls.
- * Handles both Tibetan source text and English translations.
- */
 export default function TranslationPane({
   title,
   text,
@@ -48,7 +31,8 @@ export default function TranslationPane({
   readOnly = false,
   totalPages = 1,
   currentPage = 1,
-  onPageChange
+  onPageChange,
+  allPages
 }: TranslationPaneProps) {
   // Loading state for text changes
   const [isLoading, setIsLoading] = useState(false);
@@ -85,7 +69,7 @@ export default function TranslationPane({
                 onClick={async () => {
                   try {
                     const { generatePDF } = await import('../lib/pdf');
-                    const pagesToExport = allPages || [{ pageNumber: currentPage || 1, text }];
+                    const pagesToExport = allPages ? allPages : [{ pageNumber: currentPage, text }];
                     const pdfBlob = await generatePDF(pagesToExport);
                     const url = URL.createObjectURL(pdfBlob);
                     const a = document.createElement('a');
@@ -103,7 +87,6 @@ export default function TranslationPane({
                 Export PDF
               </Button>
             )}
-            {/* Page navigation controls - only shown in read-only mode with multiple pages */}
             {readOnly && totalPages > 1 && (
               <div className="flex items-center gap-2">
                 <Button
