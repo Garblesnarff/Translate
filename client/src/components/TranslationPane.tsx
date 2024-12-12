@@ -77,7 +77,6 @@ export default function TranslationPane({
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-xl font-bold">{title}</CardTitle>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
             {readOnly && text.trim() && (
               <Button
                 variant="outline"
@@ -122,7 +121,7 @@ export default function TranslationPane({
                 </Button>
               </div>
             )}
-          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[calc(100vh-12rem)]">
