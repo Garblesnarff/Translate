@@ -1,5 +1,6 @@
+
 import mammoth from 'mammoth';
-import { PDFContent, extractPDFContent } from './pdf';
+import { PDFContent } from './pdf';
 
 export interface ExtractedContent {
   text: string;
@@ -26,8 +27,19 @@ export async function extractTextContent(file: File): Promise<ExtractedContent> 
 
     switch (true) {
       case format.includes('pdf'): {
-        const content: PDFContent = await extractPDFContent(file);
-        text = content.text;
+        const arrayBuffer = await file.arrayBuffer();
+        const pdfjsLib = await import('pdfjs-dist');
+        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const pageText = content.items
+            .map((item: any) => item.str)
+            .join(' ');
+          fullText += pageText + '\n';
+        }
+        text = fullText;
         break;
       }
       case format.includes('html'):
@@ -38,7 +50,7 @@ export async function extractTextContent(file: File): Promise<ExtractedContent> 
         text = await extractFromDOCX(file);
         break;
       default:
-        text = await file.text(); // For plain text files
+        text = await file.text();
     }
 
     return {
@@ -46,24 +58,6 @@ export async function extractTextContent(file: File): Promise<ExtractedContent> 
       sourceFormat: format,
     };
   } catch (error) {
-    console.error('Error extracting text content:', error);
-    
-    // Create a more user-friendly error message based on file type
-    const extension = file.name.split('.').pop()?.toLowerCase();
-    let errorMessage = 'Unknown error occurred';
-    
-    if (error instanceof Error) {
-      if (error.message.includes('PDF')) {
-        errorMessage = 'Could not read PDF file. The file might be corrupted or password protected.';
-      } else if (['doc', 'docx'].includes(extension || '')) {
-        errorMessage = 'Could not read Word document. Please ensure it\'s not corrupted.';
-      } else if (['html', 'htm'].includes(extension || '')) {
-        errorMessage = 'Could not read HTML file. Please ensure it contains valid HTML content.';
-      } else {
-        errorMessage = error.message;
-      }
-    }
-    
-    throw new Error(`Failed to extract text from ${file.name}: ${errorMessage}`);
+    throw new Error(`Failed to extract text from ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
