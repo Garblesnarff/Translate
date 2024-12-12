@@ -209,6 +209,12 @@ export default function Translate() {
                     }
                   }}
                   readOnly
+                  currentPage={translationState.currentPage + 1}
+                  totalPages={translationState.pages.length}
+                  allPages={translationState.pages.map(page => ({
+                    pageNumber: page.pageNumber,
+                    text: page.text
+                  }))}
                 />
                 {translationState.pages.length > 1 && (
                   <div className="flex justify-center gap-2 p-2 border-t">

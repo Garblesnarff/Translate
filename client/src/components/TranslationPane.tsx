@@ -26,6 +26,7 @@ interface TranslationPaneProps {
   totalPages?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
+  allPages?: Array<{ pageNumber: number; text: string }>;
 }
 
 // Define markdown rendering components
@@ -82,16 +83,21 @@ export default function TranslationPane({
                 variant="outline"
                 size="sm"
                 onClick={async () => {
-                  const { generatePDF } = await import('../lib/pdf');
-                  const pdfBlob = await generatePDF(text);
-                  const url = URL.createObjectURL(pdfBlob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = 'translation.pdf';
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                  URL.revokeObjectURL(url);
+                  try {
+                    const { generatePDF } = await import('../lib/pdf');
+                    const pagesToExport = allPages || [{ pageNumber: currentPage || 1, text }];
+                    const pdfBlob = await generatePDF(pagesToExport);
+                    const url = URL.createObjectURL(pdfBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'translation.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  } catch (error) {
+                    console.error('Error generating PDF:', error);
+                  }
                 }}
               >
                 Export PDF

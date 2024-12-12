@@ -62,23 +62,42 @@ export const extractPDFContent = async (file: File): Promise<PDFContent> => {
   }
 };
 
-export const generatePDF = async (translatedText: string): Promise<Blob> => {
+export interface PDFPageContent {
+  pageNumber: number;
+  text: string;
+}
+
+export const generatePDF = async (pages: PDFPageContent[]): Promise<Blob> => {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF();
   
   doc.setFont('Times', 'Roman');
   doc.setFontSize(12);
   
-  const splitText = doc.splitTextToSize(translatedText, 180);
-  let yPosition = 20;
-  
-  splitText.forEach((text: string) => {
-    if (yPosition > 280) {
+  pages.forEach((page, index) => {
+    if (index > 0) {
       doc.addPage();
-      yPosition = 20;
     }
-    doc.text(text, 15, yPosition);
-    yPosition += 7;
+    
+    // Add page number at the top
+    doc.setFontSize(10);
+    doc.text(`Page ${page.pageNumber}`, 15, 10);
+    doc.setFontSize(12);
+    
+    const splitText = doc.splitTextToSize(page.text, 180);
+    let yPosition = 20;
+    
+    splitText.forEach((text: string) => {
+      if (yPosition > 280) {
+        doc.addPage();
+        doc.setFontSize(10);
+        doc.text(`Page ${page.pageNumber} (continued)`, 15, 10);
+        doc.setFontSize(12);
+        yPosition = 20;
+      }
+      doc.text(text, 15, yPosition);
+      yPosition += 7;
+    });
   });
   
   return doc.output('blob');
