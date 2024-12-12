@@ -1,56 +1,115 @@
+import * as pdfjsLib from 'pdfjs-dist';
+import type { TextItem, PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 
-import { jsPDF } from 'jspdf';
+// Configure worker
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+}
 
-export const generatePDF = async (text: string): Promise<Blob> => {
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4'
-  });
+export interface PDFContent {
+  text: string;
+  pageCount: number;
+}
 
-  // Set font and styling
-  doc.setFont('helvetica');
-  doc.setFontSize(12);
-  
-  const margin = 20;
-  const pageWidth = doc.internal.pageSize.width;
-  const maxWidth = pageWidth - (margin * 2);
-  const lineHeight = 7;
-  let yPosition = margin;
+export interface PDFPage {
+  pageNumber: number;
+  text: string;
+}
 
-  const lines = text.split('\n');
-  
-  for (const line of lines) {
-    // Check if we need a new page
-    if (yPosition > doc.internal.pageSize.height - margin) {
-      doc.addPage();
-      yPosition = margin;
-    }
-
-    // Handle empty lines
-    if (!line.trim()) {
-      yPosition += lineHeight;
-      continue;
-    }
-
-    // Handle bullet points
-    if (line.trim().startsWith('*')) {
-      doc.text(line.trim(), margin, yPosition);
-      yPosition += lineHeight;
-      continue;
-    }
-
-    // Handle regular text with proper wrapping
-    const textLines = doc.splitTextToSize(line.trim(), maxWidth);
-    textLines.forEach((textLine: string) => {
-      if (yPosition > doc.internal.pageSize.height - margin) {
-        doc.addPage();
-        yPosition = margin;
-      }
-      doc.text(textLine, margin, yPosition);
-      yPosition += lineHeight;
-    });
+export const extractPDFContent = async (file: File): Promise<PDFContent> => {
+  if (!file.type.includes('pdf')) {
+    throw new Error('Please upload a PDF file');
   }
 
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf: PDFDocumentProxy = await loadingTask.promise;
+    const pageCount = pdf.numPages;
+    let fullText = '';
+    
+    // Process all pages
+    for (let i = 1; i <= pageCount; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .filter((item): item is TextItem => 'str' in item)
+        .map(item => item.str)
+        .join(' ');
+      fullText += `Page ${i}:\n${pageText}\n\n`;
+    }
+
+    return {
+      text: fullText.trim(),
+      pageCount,
+    };
+  } catch (error) {
+    console.error('Error extracting PDF content:', error);
+    if (error instanceof Error) {
+      // Check for common PDF.js errors
+      if (error.message.includes('Invalid PDF structure')) {
+        throw new Error('The PDF file appears to be corrupted or invalid');
+      } else if (error.message.includes('Password required')) {
+        throw new Error('The PDF file is password protected');
+      } else if (error.message.includes('Missing PDF')) {
+        throw new Error('The file does not appear to be a valid PDF');
+      } else if (error.message.includes('worker')) {
+        throw new Error('PDF worker failed to load. Please try again.');
+      }
+      throw new Error(`PDF processing error: ${error.message}`);
+    }
+    throw new Error('Failed to process the PDF file. Please try again.');
+  }
+};
+
+export const generatePDF = async (translatedText: string): Promise<Blob> => {
+  const { jsPDF } = await import('jspdf');
+  const doc = new jsPDF();
+  
+  doc.setFont('Times', 'Roman');
+  doc.setFontSize(12);
+  
+  const splitText = doc.splitTextToSize(translatedText, 180);
+  let yPosition = 20;
+  
+  splitText.forEach((text: string) => {
+    if (yPosition > 280) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    doc.text(text, 15, yPosition);
+    yPosition += 7;
+  });
+  
   return doc.output('blob');
+};
+export const extractPageContent = async (file: File, pageNumber: number): Promise<PDFPage> => {
+  if (!file.type.includes('pdf')) {
+    throw new Error('Please upload a PDF file');
+  }
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf: PDFDocumentProxy = await loadingTask.promise;
+    
+    if (pageNumber > pdf.numPages) {
+      throw new Error(`Page ${pageNumber} does not exist`);
+    }
+
+    const page = await pdf.getPage(pageNumber);
+    const textContent = await page.getTextContent();
+    const text = textContent.items
+      .filter((item): item is TextItem => 'str' in item)
+      .map(item => item.str)
+      .join(' ');
+
+    return {
+      pageNumber,
+      text: text.trim()
+    };
+  } catch (error) {
+    console.error('Error extracting PDF page content:', error);
+    throw error;
+  }
 };
