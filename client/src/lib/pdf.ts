@@ -215,16 +215,20 @@ export const generatePDF = async (text: string): Promise<Blob> => {
     format: 'a4'
   });
 
-  // Load Noto Sans Tibetan font for Tibetan text support
-  const tibetanFont = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff')
-    .then(r => r.arrayBuffer())
-    .then(buffer => {
-      const bytes = new Uint8Array(buffer);
-      return bytes.reduce((str, byte) => str + String.fromCharCode(byte), '');
-    });
+  // Set default font first
+  doc.setFont('helvetica', 'normal');
   
-  doc.addFileToVFS('NotoSansTibetan-Regular.ttf', tibetanFont);
-  doc.addFont('NotoSansTibetan-Regular.ttf', 'NotoSansTibetan', 'normal');
+  try {
+    // Load Noto Sans Tibetan font
+    const tibetanFontResponse = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff');
+    const arrayBuffer = await tibetanFontResponse.arrayBuffer();
+    const tibetanFont = arrayBuffer.toString('base64');
+    
+    doc.addFileToVFS('NotoSansTibetan-Regular.ttf', tibetanFont);
+    doc.addFont('NotoSansTibetan-Regular.ttf', 'NotoSansTibetan', 'normal');
+  } catch (error) {
+    console.warn('Failed to load Tibetan font:', error);
+  }
   
   let yPosition = 20;
   const margin = 20;
@@ -249,16 +253,25 @@ export const generatePDF = async (text: string): Promise<Blob> => {
     let xPosition = margin;
 
     parts.forEach(part => {
-      if (part.startsWith('(') && part.endsWith(')')) {
-        // Tibetan text in parentheses
-        doc.setFont('NotoSansTibetan', 'normal');
+      if (!part.trim()) return;
+      
+      try {
+        if (part.startsWith('(') && part.endsWith(')')) {
+          // Tibetan text in parentheses
+          doc.setFont('NotoSansTibetan', 'normal');
+        } else {
+          // English text
+          doc.setFont('helvetica', 'normal');
+        }
+        
         doc.text(part, xPosition, yPosition);
-      } else if (part.trim()) {
-        // English text
-        doc.setFont('Helvetica', 'normal');
+        const width = doc.getTextWidth(part.trim()) || doc.getStringUnitWidth(part.trim()) * doc.getFontSize();
+        xPosition += width + 1; // Add small spacing between parts
+      } catch (error) {
+        console.warn('Error processing text part:', error);
         doc.text(part, xPosition, yPosition);
+        xPosition += 5; // Fallback spacing if width calculation fails
       }
-      xPosition += doc.getTextWidth(part);
     });
 
     yPosition += lineHeight;
