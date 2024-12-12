@@ -114,8 +114,9 @@ export const generatePDF = async (pages: PDFPageContent[]): Promise<Blob> => {
       }
 
       // Calculate width to handle text wrapping while preserving formatting
-      const textWidth = doc.getStringUnitWidth(line) * doc.internal.getFontSize() / doc.internal.scaleFactor;
-      const lineHeight = doc.getTextDimensions('T').h * 1.5;
+      // Use getTextWidth for more accurate measurements
+      const textWidth = (doc as any).getTextWidth(line);
+      const lineHeight = 7; // Standard line height in points
 
       if (textWidth > 180) {
         // Split long lines while preserving words
@@ -124,7 +125,7 @@ export const generatePDF = async (pages: PDFPageContent[]): Promise<Blob> => {
 
         words.forEach((word) => {
           const testLine = currentLine + (currentLine ? ' ' : '') + word;
-          const testWidth = doc.getStringUnitWidth(testLine) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+          const testWidth = (doc as any).getTextWidth(testLine);
 
           if (testWidth > 180) {
             doc.text(currentLine, 15, yPosition);
