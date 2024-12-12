@@ -35,7 +35,7 @@ export default function Translate() {
     currentPage: 0,
     error: null
   });
-  const { translate, isTranslating, progress } = useTranslation();
+  const { translate, isTranslating, progress, setProgress } = useTranslation();
 
   const handleFileUpload = async (file: File) => {
     try {
