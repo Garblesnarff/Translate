@@ -215,43 +215,35 @@ export const generatePDF = async (text: string): Promise<Blob> => {
     format: 'a4'
   });
 
-  // Set default font first
   doc.setFont('helvetica', 'normal');
-  
-  try {
-    // Load Noto Sans Tibetan font
-    // Use standard fonts for now to ensure text width calculations work
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(12);
-  } catch (error) {
-    console.warn('Failed to load Tibetan font:', error);
-  }
+  doc.setFontSize(12);
   
   let yPosition = 20;
   const margin = 20;
-  const lineHeight = 7;
+  const lineHeight = 8;
+  const maxWidth = 170;
   
   text.split('\n').forEach(line => {
+    if (line.trim() === '') {
+      yPosition += lineHeight;
+      return;
+    }
+
     if (yPosition > 280) {
       doc.addPage();
       yPosition = 20;
     }
 
-    // Handle bullet points
-    if (line.trim().startsWith('*')) {
-      doc.setFont('Helvetica', 'normal');
-      doc.text(line.trim(), margin, yPosition);
+    const formattedLine = line.trim();
+    const wrappedText = doc.splitTextToSize(formattedLine, maxWidth);
+    
+    wrappedText.forEach(textLine => {
+      doc.text(textLine, margin, yPosition);
       yPosition += lineHeight;
-      return;
-    }
+    });
 
-    // Split line into English and Tibetan parts
-    const parts = line.split(/(\([^\)]+\))/g);
-    let xPosition = margin;
-
-    doc.text(line.trim(), margin, yPosition);
-
-    yPosition += lineHeight;
+    // Add extra spacing after each paragraph
+    yPosition += 2;
   });
 
   return doc.output('blob');
