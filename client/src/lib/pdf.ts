@@ -220,12 +220,9 @@ export const generatePDF = async (text: string): Promise<Blob> => {
   
   try {
     // Load Noto Sans Tibetan font
-    const tibetanFontResponse = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff');
-    const arrayBuffer = await tibetanFontResponse.arrayBuffer();
-    const tibetanFont = arrayBuffer.toString('base64');
-    
-    doc.addFileToVFS('NotoSansTibetan-Regular.ttf', tibetanFont);
-    doc.addFont('NotoSansTibetan-Regular.ttf', 'NotoSansTibetan', 'normal');
+    // Use standard fonts for now to ensure text width calculations work
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(12);
   } catch (error) {
     console.warn('Failed to load Tibetan font:', error);
   }
@@ -252,27 +249,7 @@ export const generatePDF = async (text: string): Promise<Blob> => {
     const parts = line.split(/(\([^\)]+\))/g);
     let xPosition = margin;
 
-    parts.forEach(part => {
-      if (!part.trim()) return;
-      
-      try {
-        if (part.startsWith('(') && part.endsWith(')')) {
-          // Tibetan text in parentheses
-          doc.setFont('NotoSansTibetan', 'normal');
-        } else {
-          // English text
-          doc.setFont('helvetica', 'normal');
-        }
-        
-        doc.text(part, xPosition, yPosition);
-        const width = doc.getTextWidth(part.trim()) || doc.getStringUnitWidth(part.trim()) * doc.getFontSize();
-        xPosition += width + 1; // Add small spacing between parts
-      } catch (error) {
-        console.warn('Error processing text part:', error);
-        doc.text(part, xPosition, yPosition);
-        xPosition += 5; // Fallback spacing if width calculation fails
-      }
-    });
+    doc.text(line.trim(), margin, yPosition);
 
     yPosition += lineHeight;
   });
