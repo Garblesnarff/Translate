@@ -28,11 +28,12 @@ class PDFGenerator {
     });
 
     this.currentY = this.margins.top;
-    this.lineHeight = 16; // Increased line height
+    this.lineHeight = 16;
 
-    // Configure font
-    this.doc.setFont('Helvetica');
-    this.doc.setFontSize(11); // Slightly smaller font size
+    // Configure font with fallback for Tibetan
+    this.doc.addFont('https://cdn.jsdelivr.net/npm/tibetan-fonts@1.0.0/fonts/Jomolhari/Jomolhari.ttf', 'Jomolhari', 'normal');
+    this.doc.setFont('Jomolhari');
+    this.doc.setFontSize(11);
   }
 
   private cleanText(text: string): string {
@@ -46,11 +47,11 @@ class PDFGenerator {
 
   private writeLine(text: string, indent: number = 0): void {
     const pageWidth = this.doc.internal.pageSize.width;
-    const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
+    const maxWidth = pageWidth - this.margins.left - this.margins.right - indent - 20; // Additional margin
     const cleanedText = this.cleanText(text);
-
-    // Split text into words
-    const words = cleanedText.split(' ');
+    
+    // Split preserving Tibetan in parentheses
+    const segments = cleanedText.match(/\([^)]+\)|[^\s]+|\s+/g) || [];
     let currentLine = '';
     let currentWidth = 0;
 
