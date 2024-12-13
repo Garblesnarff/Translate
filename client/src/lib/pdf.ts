@@ -41,12 +41,19 @@ class PDFGenerator {
 
     // Load Noto Sans Tibetan font
     fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff')
-      .then(response => response.arrayBuffer())
-      .then(buffer => {
-        const base64String = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-        this.doc.addFont(base64String, 'NotoSansTibetan', 'normal', 'Identity-H');
-        this.doc.setFont('NotoSansTibetan', 'normal');
-        this.doc.setFontSize(11);
+      .then(response => response.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result?.toString().split(',')[1];
+          if (base64) {
+            this.doc.addFileToVFS('NotoSansTibetan.ttf', base64);
+            this.doc.addFont('NotoSansTibetan.ttf', 'NotoSansTibetan', 'normal');
+            this.doc.setFont('NotoSansTibetan');
+            this.doc.setFontSize(11);
+          }
+        };
+        reader.readAsDataURL(blob);
       })
       .catch(err => {
         console.error('Failed to load Tibetan font:', err);
@@ -69,10 +76,17 @@ class PDFGenerator {
     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
     const cleanedText = this.cleanText(text);
 
-    // Split text into words
-    const words = cleanedText.split(' ');
-    let currentLine = '';
-    let currentWidth = 0;
+    // Get lines split by jsPDF
+    const lines = this.doc.splitTextToSize(cleanedText, maxWidth);
+    
+    for (const line of lines) {
+      if (this.currentY > this.doc.internal.pageSize.height - this.margins.bottom) {
+        this.doc.addPage();
+        this.currentY = this.margins.top;
+      }
+      this.doc.text(line, this.margins.left + indent, this.currentY);
+      this.currentY += this.lineHeight;
+    }
 
     for (const word of words) {
       const wordWidth = this.measureWidth(word + ' ');
