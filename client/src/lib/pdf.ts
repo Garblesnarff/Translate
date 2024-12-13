@@ -30,13 +30,25 @@ class PDFGenerator {
     this.currentY = this.margins.top;
     this.lineHeight = 16;
 
-    // Configure default font
-    this.doc.setFont('Helvetica');
-    this.doc.setFontSize(11);
+    // Configure Noto Sans Tibetan font
+    const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff';
+    fetch(fontUrl)
+      .then(response => response.arrayBuffer())
+      .then(fontBuffer => {
+        this.doc.addFileToVFS('NotoSansTibetan.woff', fontBuffer);
+        this.doc.addFont('NotoSansTibetan.woff', 'NotoSansTibetan', 'normal');
+        this.doc.setFont('NotoSansTibetan');
+        this.doc.setFontSize(11);
+      })
+      .catch(err => {
+        console.error('Failed to load Tibetan font:', err);
+        this.doc.setFont('Helvetica');
+        this.doc.setFontSize(11);
+      });
   }
 
   private cleanText(text: string): string {
-    // Only remove vertical bars and plus-minus signs, preserve Tibetan text
+    // Only clean special characters, preserve Tibetan Unicode
     return text.replace(/[|±]/g, '');
   }
 
@@ -46,16 +58,16 @@ class PDFGenerator {
 
   private writeLine(text: string, indent: number = 0): void {
     const pageWidth = this.doc.internal.pageSize.width;
-    const maxWidth = pageWidth - this.margins.left - this.margins.right - indent - 20; // Additional margin
+    const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
     const cleanedText = this.cleanText(text);
-    
-    // Split preserving Tibetan in parentheses
-    const segments = cleanedText.match(/\([^)]+\)|[^\s]+|\s+/g) || [];
+
+    // Split text into words
+    const words = cleanedText.split(' ');
     let currentLine = '';
     let currentWidth = 0;
 
-    for (const segment of segments) {
-      const wordWidth = this.measureWidth(segment + ' ');
+    for (const word of words) {
+      const wordWidth = this.measureWidth(word + ' ');
 
       if (currentWidth + wordWidth > maxWidth) {
         // Write current line and start new one
