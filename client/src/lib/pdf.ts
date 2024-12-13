@@ -29,24 +29,11 @@ class PDFGenerator {
 
     this.currentY = this.margins.top;
     this.lineHeight = 16;
-
-    // Configure Noto Sans Tibetan font
-    const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff';
-    fetch(fontUrl)
-      .then(response => response.arrayBuffer())
-      .then(fontBuffer => {
-        // Convert ArrayBuffer to base64 string
-        const base64String = btoa(Array.from(new Uint8Array(fontBuffer), c => String.fromCharCode(c)).join(''));
-        this.doc.addFileToVFS('NotoSansTibetan.woff', base64String);
-        this.doc.addFont('NotoSansTibetan.woff', 'NotoSansTibetan', 'normal');
-        this.doc.setFont('NotoSansTibetan');
-        this.doc.setFontSize(11);
-      })
-      .catch(err => {
-        console.error('Failed to load Tibetan font:', err);
-        this.doc.setFont('Helvetica');
-        this.doc.setFontSize(11);
-      });
+    
+    // Use built-in Unicode font
+    this.doc.addFont('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@4.5.11/files/noto-sans-all-400-normal.woff', 'Noto Sans', 'normal', 'Identity-H');
+    this.doc.setFont('Noto Sans', 'normal');
+    this.doc.setFontSize(11);
   }
 
   private cleanText(text: string): string {
