@@ -75,18 +75,9 @@ class PDFGenerator {
     const pageWidth = this.doc.internal.pageSize.width;
     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
     const cleanedText = this.cleanText(text);
-
-    // Get lines split by jsPDF
-    const lines = this.doc.splitTextToSize(cleanedText, maxWidth);
-    
-    for (const line of lines) {
-      if (this.currentY > this.doc.internal.pageSize.height - this.margins.bottom) {
-        this.doc.addPage();
-        this.currentY = this.margins.top;
-      }
-      this.doc.text(line, this.margins.left + indent, this.currentY);
-      this.currentY += this.lineHeight;
-    }
+    const words = cleanedText.split(' ');
+    let currentLine = '';
+    let currentWidth = 0;
 
     for (const word of words) {
       const wordWidth = this.measureWidth(word + ' ');
