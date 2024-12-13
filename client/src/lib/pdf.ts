@@ -30,10 +30,28 @@ class PDFGenerator {
     this.currentY = this.margins.top;
     this.lineHeight = 16;
     
-    // Use built-in Unicode font
-    this.doc.addFont('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@4.5.11/files/noto-sans-all-400-normal.woff', 'Noto Sans', 'normal', 'Identity-H');
-    this.doc.setFont('Noto Sans', 'normal');
-    this.doc.setFontSize(11);
+    // Configure font
+    const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff';
+    fetch(fontUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result?.toString().split(',')[1];
+          if (base64) {
+            this.doc.addFileToVFS('NotoSansTibetan.ttf', base64);
+            this.doc.addFont('NotoSansTibetan.ttf', 'NotoSansTibetan', 'normal');
+            this.doc.setFont('NotoSansTibetan');
+            this.doc.setFontSize(11);
+          }
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(err => {
+        console.error('Failed to load font:', err);
+        this.doc.setFont('Helvetica');
+        this.doc.setFontSize(11);
+      });
   }
 
   private cleanText(text: string): string {
