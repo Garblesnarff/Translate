@@ -24,39 +24,47 @@ class PDFGenerator {
       orientation: 'portrait',
       unit: 'pt',
       format: 'a4',
-      putOnlyUsedFonts: true
+      putOnlyUsedFonts: true,
+      hotfixes: ['px_scaling'],
+      filters: ['ASCIIHexEncode']
     });
 
     this.currentY = this.margins.top;
     this.lineHeight = 16;
     
-    // Configure default font with Unicode support
-    this.doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'pt',
-      format: 'a4',
-      putOnlyUsedFonts: true,
-      hotfixes: ['px_scaling']
-    });
+    // Set default font while Tibetan font loads
+    this.doc.setFont('Helvetica', 'normal');
+    this.doc.setFontSize(11);
 
-    // Load Noto Sans Tibetan font
+    // Load Noto Sans Tibetan font with Identity-H encoding
     fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff')
       .then(response => response.blob())
       .then(blob => {
         const reader = new FileReader();
-        reader.onload = () => {
-          const base64 = reader.result?.toString().split(',')[1];
-          if (base64) {
-            this.doc.addFileToVFS('NotoSansTibetan.ttf', base64);
-            this.doc.addFont('NotoSansTibetan.ttf', 'NotoSansTibetan', 'normal');
-            this.doc.setFont('NotoSansTibetan');
-            this.doc.setFontSize(11);
-          }
-        };
-        reader.readAsDataURL(blob);
+        return new Promise((resolve, reject) => {
+          reader.onload = () => {
+            const base64 = reader.result?.toString().split(',')[1];
+            if (base64) {
+              try {
+                this.doc.addFileToVFS('NotoSansTibetan.ttf', base64);
+                this.doc.addFont('NotoSansTibetan.ttf', 'NotoSansTibetan', 'normal', 'Identity-H');
+                this.doc.setFont('NotoSansTibetan', 'normal');
+                this.doc.setFontSize(11);
+                resolve(true);
+              } catch (error) {
+                reject(error);
+              }
+            }
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
       })
       .catch(err => {
         console.error('Failed to load Tibetan font:', err);
+        // Fallback to default font
+        this.doc.setFont('Helvetica', 'normal');
+        this.doc.setFontSize(11);
         this.doc.setFont('Helvetica', 'normal');
         this.doc.setFontSize(11);
       });
