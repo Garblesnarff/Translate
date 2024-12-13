@@ -36,29 +36,28 @@ class PDFGenerator {
     this.doc.setFont('Helvetica', 'normal');
     this.doc.setFontSize(11);
 
-    // Load Noto Sans Tibetan font with Identity-H encoding
-    fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff')
-      .then(response => response.blob())
-      .then(blob => {
-        const reader = new FileReader();
-        return new Promise((resolve, reject) => {
-          reader.onload = () => {
-            const base64 = reader.result?.toString().split(',')[1];
-            if (base64) {
-              try {
-                this.doc.addFileToVFS('NotoSansTibetan.ttf', base64);
-                this.doc.addFont('NotoSansTibetan.ttf', 'NotoSansTibetan', 'normal', 'Identity-H');
-                this.doc.setFont('NotoSansTibetan', 'normal');
-                this.doc.setFontSize(11);
-                resolve(true);
-              } catch (error) {
-                reject(error);
-              }
-            }
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
+    // Load built-in Helvetica font first
+    this.doc.setFont('Helvetica', 'normal');
+    this.doc.setFontSize(11);
+
+    // Load Arial Unicode MS for Tibetan support
+    fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff2')
+      .then(response => response.arrayBuffer())
+      .then(async buffer => {
+        try {
+          const fontData = Buffer.from(buffer).toString('base64');
+          this.doc.addFileToVFS('NotoSansTibetan.ttf', fontData);
+          this.doc.addFont('NotoSansTibetan.ttf', 'NotoSansTibetan', 'normal', 'Identity-H', 'DejaVuSans');
+          this.doc.setFont('NotoSansTibetan', undefined, undefined, {encoding: "Identity-H"});
+          this.doc.setFontSize(11);
+          return true;
+        } catch (error) {
+          console.error('Font loading error:', error);
+          // Fallback to Helvetica
+          this.doc.setFont('Helvetica', 'normal');
+          this.doc.setFontSize(11);
+          return false;
+        }
       })
       .catch(err => {
         console.error('Failed to load Tibetan font:', err);
