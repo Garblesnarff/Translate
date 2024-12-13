@@ -30,9 +30,8 @@ class PDFGenerator {
     this.currentY = this.margins.top;
     this.lineHeight = 16;
 
-    // Configure font with fallback for Tibetan
-    this.doc.addFont('https://cdn.jsdelivr.net/npm/tibetan-fonts@1.0.0/fonts/Jomolhari/Jomolhari.ttf', 'Jomolhari', 'normal');
-    this.doc.setFont('Jomolhari');
+    // Configure default font
+    this.doc.setFont('Helvetica');
     this.doc.setFontSize(11);
   }
 
@@ -55,8 +54,8 @@ class PDFGenerator {
     let currentLine = '';
     let currentWidth = 0;
 
-    for (const word of words) {
-      const wordWidth = this.measureWidth(word + ' ');
+    for (const segment of segments) {
+      const wordWidth = this.measureWidth(segment + ' ');
 
       if (currentWidth + wordWidth > maxWidth) {
         // Write current line and start new one
