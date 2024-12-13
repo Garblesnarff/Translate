@@ -36,7 +36,7 @@ class PDFGenerator {
       .then(response => response.arrayBuffer())
       .then(fontBuffer => {
         // Convert ArrayBuffer to base64 string
-        const base64String = btoa(String.fromCharCode(...new Uint8Array(fontBuffer)));
+        const base64String = btoa(Array.from(new Uint8Array(fontBuffer), c => String.fromCharCode(c)).join(''));
         this.doc.addFileToVFS('NotoSansTibetan.woff', base64String);
         this.doc.addFont('NotoSansTibetan.woff', 'NotoSansTibetan', 'normal');
         this.doc.setFont('NotoSansTibetan');
