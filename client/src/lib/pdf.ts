@@ -42,8 +42,9 @@ class PDFGenerator {
     // Load Noto Sans Tibetan font
     fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff')
       .then(response => response.arrayBuffer())
-      .then(fontBuffer => {
-        this.doc.addFont(fontBuffer, 'NotoSansTibetan', 'normal', 'Identity-H');
+      .then(buffer => {
+        const base64String = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+        this.doc.addFont(base64String, 'NotoSansTibetan', 'normal', 'Identity-H');
         this.doc.setFont('NotoSansTibetan', 'normal');
         this.doc.setFontSize(11);
       })
