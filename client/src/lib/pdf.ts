@@ -36,17 +36,22 @@ class PDFGenerator {
       unit: 'pt',
       format: 'a4',
       putOnlyUsedFonts: true,
-      hotfixes: ['px_scaling'],
-      fonts: [{
-        family: 'NotoSansTibetan',
-        style: 'normal',
-        src: 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff'
-      }]
+      hotfixes: ['px_scaling']
     });
-    
-    this.doc.addFont('NotoSansTibetan', 'NotoSansTibetan', 'normal', 'Identity-H');
-    this.doc.setFont('NotoSansTibetan', 'normal');
-    this.doc.setFontSize(11);
+
+    // Load Noto Sans Tibetan font
+    fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff')
+      .then(response => response.arrayBuffer())
+      .then(fontBuffer => {
+        this.doc.addFont(fontBuffer, 'NotoSansTibetan', 'normal', 'Identity-H');
+        this.doc.setFont('NotoSansTibetan', 'normal');
+        this.doc.setFontSize(11);
+      })
+      .catch(err => {
+        console.error('Failed to load Tibetan font:', err);
+        this.doc.setFont('Helvetica', 'normal');
+        this.doc.setFontSize(11);
+      });
   }
 
   private cleanText(text: string): string {
