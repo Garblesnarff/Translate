@@ -47,8 +47,8 @@ class PDFGenerator {
         try {
           const fontData = Buffer.from(buffer).toString('base64');
           this.doc.addFileToVFS('NotoSansTibetan.ttf', fontData);
-          this.doc.addFont('NotoSansTibetan.ttf', 'NotoSansTibetan', 'normal', 'Identity-H', 'DejaVuSans');
-          this.doc.setFont('NotoSansTibetan', undefined, undefined, {encoding: "Identity-H"});
+          this.doc.addFont('NotoSansTibetan.ttf', 'NotoSansTibetan', 'normal', 'Identity-H');
+          this.doc.setFont('NotoSansTibetan');
           this.doc.setFontSize(11);
           return true;
         } catch (error) {
