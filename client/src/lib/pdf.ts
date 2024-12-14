@@ -1,4 +1,3 @@
-// client/src/lib/pdf.ts
 
 import { jsPDF } from 'jspdf';
 import type { PDFPageContent } from '../types/pdf';
@@ -19,6 +18,20 @@ class PDFGenerator {
     left: 40
   };
 
+  constructor() {
+    this.doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4',
+      putOnlyUsedFonts: true,
+      hotfixes: ['px_scaling']
+    });
+
+    this.currentY = this.margins.top;
+    this.lineHeight = 16;
+    this.doc.setFontSize(11);
+  }
+
   private async loadFont(): Promise<void> {
     try {
       const response = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff2');
@@ -33,37 +46,7 @@ class PDFGenerator {
     }
   }
 
-  constructor() {
-    this.doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'pt',
-      format: 'a4',
-      putOnlyUsedFonts: true,
-      hotfixes: ['px_scaling']
-    });
-
-    this.currentY = this.margins.top;
-    this.lineHeight = 16;
-    this.doc.setFontSize(11);
-          console.error('Font loading error:', error);
-          // Fallback to Helvetica
-          this.doc.setFont('Helvetica', 'normal');
-          this.doc.setFontSize(11);
-          return false;
-        }
-      })
-      .catch(err => {
-        console.error('Failed to load Tibetan font:', err);
-        // Fallback to default font
-        this.doc.setFont('Helvetica', 'normal');
-        this.doc.setFontSize(11);
-        this.doc.setFont('Helvetica', 'normal');
-        this.doc.setFontSize(11);
-      });
-  }
-
   private cleanText(text: string): string {
-    // Only clean special characters, preserve Tibetan Unicode
     return text.replace(/[|±]/g, '');
   }
 
@@ -83,7 +66,6 @@ class PDFGenerator {
       const wordWidth = this.measureWidth(word + ' ');
 
       if (currentWidth + wordWidth > maxWidth) {
-        // Write current line and start new one
         if (this.currentY > this.doc.internal.pageSize.height - this.margins.bottom) {
           this.doc.addPage();
           this.currentY = this.margins.top;
@@ -99,7 +81,6 @@ class PDFGenerator {
       }
     }
 
-    // Write remaining text
     if (currentLine.trim()) {
       if (this.currentY > this.doc.internal.pageSize.height - this.margins.bottom) {
         this.doc.addPage();
@@ -109,7 +90,6 @@ class PDFGenerator {
       this.currentY += this.lineHeight;
     }
 
-    // Add paragraph spacing
     this.currentY += this.lineHeight * 0.5;
   }
 
@@ -130,9 +110,7 @@ class PDFGenerator {
           this.currentY = this.margins.top;
         }
 
-        // Write page title
         this.writeTitle(`Page ${page.pageNumber}`);
-        // Process each line of text
         const lines = page.text.split('\n');
         for (const line of lines) {
           const trimmedLine = line.trim();
@@ -142,7 +120,6 @@ class PDFGenerator {
           }
 
           if (trimmedLine.startsWith('*')) {
-            // Handle bullet points
             this.writeLine(`• ${trimmedLine.substring(1).trim()}`, 20);
           } else {
             this.writeLine(trimmedLine);
