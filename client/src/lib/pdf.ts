@@ -19,39 +19,32 @@ class PDFGenerator {
     left: 40
   };
 
+  private async loadFont(): Promise<void> {
+    try {
+      const response = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff2');
+      const buffer = await response.arrayBuffer();
+      const fontData = Buffer.from(buffer).toString('base64');
+      this.doc.addFileToVFS('NotoSansTibetan.ttf', fontData);
+      this.doc.addFont('NotoSansTibetan.ttf', 'NotoSansTibetan', 'normal');
+      this.doc.setFont('NotoSansTibetan');
+    } catch (error) {
+      console.error('Font loading error:', error);
+      this.doc.setFont('Helvetica', 'normal');
+    }
+  }
+
   constructor() {
     this.doc = new jsPDF({
       orientation: 'portrait',
       unit: 'pt',
       format: 'a4',
       putOnlyUsedFonts: true,
-      hotfixes: ['px_scaling'],
-      filters: ['ASCIIHexEncode']
+      hotfixes: ['px_scaling']
     });
 
     this.currentY = this.margins.top;
     this.lineHeight = 16;
-    
-    // Set default font while Tibetan font loads
-    this.doc.setFont('Helvetica', 'normal');
     this.doc.setFontSize(11);
-
-    // Load built-in Helvetica font first
-    this.doc.setFont('Helvetica', 'normal');
-    this.doc.setFontSize(11);
-
-    // Load Arial Unicode MS for Tibetan support
-    fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff2')
-      .then(response => response.arrayBuffer())
-      .then(async buffer => {
-        try {
-          const fontData = Buffer.from(buffer).toString('base64');
-          this.doc.addFileToVFS('NotoSansTibetan.ttf', fontData);
-          this.doc.addFont('NotoSansTibetan.ttf', 'NotoSansTibetan', 'normal', 'Identity-H');
-          this.doc.setFont('NotoSansTibetan');
-          this.doc.setFontSize(11);
-          return true;
-        } catch (error) {
           console.error('Font loading error:', error);
           // Fallback to Helvetica
           this.doc.setFont('Helvetica', 'normal');
@@ -130,6 +123,7 @@ class PDFGenerator {
 
   public async generatePDF(pages: PDFPageContent[]): Promise<Blob> {
     try {
+      await this.loadFont();
       pages.forEach((page, index) => {
         if (index > 0) {
           this.doc.addPage();
