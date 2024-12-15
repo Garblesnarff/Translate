@@ -23,13 +23,21 @@ export class PDFGenerator {
   }
 
   private async loadFonts(): Promise<void> {
-    const fontPath = 'server/services/pdf/noto-sans-tibetan.ttf';
-    const fontData = await fs.readFile(fontPath);
-    this.doc.addFileToVFS('noto-sans-tibetan.ttf', fontData.toString('base64'));
-    this.doc.addFont('noto-sans-tibetan.ttf', 'Noto Sans Tibetan', 'normal');
-    this.doc.setFont('Noto Sans Tibetan');
-    this.doc.setFontSize(11);
-    this.doc.setLineHeightFactor(1.5);
+    try {
+      const fontPath = 'server/services/pdf/noto-sans-tibetan.ttf';
+      const fontData = await fs.readFile(fontPath);
+      this.doc.addFileToVFS('noto-sans-tibetan.ttf', fontData.toString('base64'));
+      this.doc.addFont('noto-sans-tibetan.ttf', 'Noto Sans Tibetan', 'normal');
+      this.doc.setFont('Noto Sans Tibetan');
+      this.doc.setFontSize(11);
+      this.doc.setLineHeightFactor(1.5);
+    } catch (error) {
+      console.error('Error loading Tibetan font:', error);
+      // Fallback to a standard font if Tibetan font fails to load
+      this.doc.setFont('Helvetica');
+      this.doc.setFontSize(11);
+      this.doc.setLineHeightFactor(1.5);
+    }
   }
 
   private writeLine(text: string, indent: number = 0): void {
