@@ -55,7 +55,31 @@ export function registerRoutes(app: Express) {
     }
   );
 
-  app.post('/api/translate', 
+  import { PDFGenerator } from './services/pdf/PDFGenerator';
+
+app.post('/api/generate-pdf', 
+  limiter,
+  requestLogger,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const pages = req.body.pages;
+      if (!Array.isArray(pages)) {
+        throw createTranslationError('Invalid pages data', 'INVALID_INPUT', 400);
+      }
+
+      const pdfGenerator = new PDFGenerator();
+      const pdfBuffer = await pdfGenerator.generatePDF(pages);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=translation.pdf');
+      res.send(pdfBuffer);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+app.post('/api/translate', 
     limiter,
     requestLogger,
     async (req: Request, res: Response, next: NextFunction) => {
