@@ -24,31 +24,27 @@ export class PDFGenerator {
   }
 
   private async loadFonts(): Promise<void> {
-    try {
-      const fontPath = path.join(process.cwd(), 'public', 'fonts', 'arial-unicode-ms.ttf');
-      const fontData = await fs.readFile(fontPath);
-      this.doc.addFileToVFS('arial-unicode-ms.ttf', fontData.toString('base64'));
-      this.doc.addFont('arial-unicode-ms.ttf', 'Arial Unicode MS', 'normal');
-      this.doc.setFont('Arial Unicode MS');
-      this.doc.setFontSize(11);
-    } catch (error) {
-      console.error('Error loading fonts:', error);
-      this.doc.setFont('Helvetica');
-      this.doc.setFontSize(11);
-    }
+    this.doc.setFont('Helvetica');
+    this.doc.setFontSize(11);
+    // Set proper line height for text wrapping
+    this.doc.setLineHeightFactor(1.5);
   }
 
   private writeLine(text: string, indent: number = 0): void {
     const maxWidth = this.doc.internal.pageSize.width - this.margins.left - this.margins.right - indent;
-    const lines = this.doc.splitTextToSize(text, maxWidth);
+    const textLines = text.split(/\r?\n/);
     
-    lines.forEach((line: string) => {
-      if (this.currentY > this.doc.internal.pageSize.height - this.margins.bottom) {
-        this.doc.addPage();
-        this.currentY = this.margins.top;
-      }
-      this.doc.text(line, this.margins.left + indent, this.currentY);
-      this.currentY += 16;
+    textLines.forEach((textLine: string) => {
+      const wrappedLines = this.doc.splitTextToSize(textLine, maxWidth);
+      
+      wrappedLines.forEach((line: string) => {
+        if (this.currentY > this.doc.internal.pageSize.height - this.margins.bottom) {
+          this.doc.addPage();
+          this.currentY = this.margins.top;
+        }
+        this.doc.text(line, this.margins.left + indent, this.currentY);
+        this.currentY += 16;
+      });
     });
     
     this.currentY += 8;
