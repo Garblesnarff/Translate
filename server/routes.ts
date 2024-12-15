@@ -7,6 +7,7 @@ import { requestLogger } from './middleware/requestLogger';
 import { errorHandler, createTranslationError } from './middleware/errorHandler';
 import { translationService } from './services/translationService';
 import { TibetanDictionary } from './dictionary';
+import { PDFGenerator } from './services/pdf/PDFGenerator';
 
 /**
  * Schema for validating translation requests
@@ -54,8 +55,6 @@ export function registerRoutes(app: Express) {
       }
     }
   );
-
-  import { PDFGenerator } from './services/pdf/PDFGenerator';
 
 app.post('/api/generate-pdf', 
   limiter,
