@@ -2,6 +2,7 @@
 import { jsPDF } from 'jspdf';
 import type { PDFPageContent } from '../../../client/src/types/pdf';
 import { promises as fs } from 'fs';
+import path from 'path';
 
 export class PDFGenerator {
   private doc: jsPDF;
@@ -12,6 +13,7 @@ export class PDFGenerator {
     bottom: 40,
     left: 40
   };
+  private fontLoaded: boolean = false;
 
   constructor() {
     this.doc = new jsPDF({
@@ -24,58 +26,52 @@ export class PDFGenerator {
 
   private async loadFonts(): Promise<void> {
     try {
-      const fontPath = 'server/services/pdf/noto-sans-tibetan.ttf';
-      const fontData = await fs.readFile(fontPath);
-      this.doc.addFileToVFS('noto-sans-tibetan.ttf', fontData.toString('base64'));
-      this.doc.addFont('noto-sans-tibetan.ttf', 'Noto Sans Tibetan', 'normal');
-      this.doc.setFont('Noto Sans Tibetan');
-      this.doc.setFontSize(11);
-      this.doc.setLineHeightFactor(1.5);
+      const fontPath = path.join(process.cwd(), 'server/services/pdf/NotoSansTibetan-Regular.ttf');
+      const fontBuffer = await fs.readFile(fontPath);
+      const fontBase64 = fontBuffer.toString('base64');
+      
+      this.doc.addFileToVFS('NotoSansTibetan-Regular.ttf', fontBase64);
+      this.doc.addFont('NotoSansTibetan-Regular.ttf', 'NotoSansTibetan', 'normal');
+      
+      this.fontLoaded = true;
     } catch (error) {
       console.error('Error loading Tibetan font:', error);
-      // Fallback to a standard font if Tibetan font fails to load
-      this.doc.setFont('Helvetica');
-      this.doc.setFontSize(11);
-      this.doc.setLineHeightFactor(1.5);
+      this.fontLoaded = false;
     }
   }
 
   private writeLine(text: string, indent: number = 0): void {
     const maxWidth = this.doc.internal.pageSize.width - this.margins.left - this.margins.right - indent;
     
-    // Special handling for Tibetan text in parentheses
-    const segments = text.split(/(\([^\)]+\))/g);
+    if (this.fontLoaded) {
+      this.doc.setFont('NotoSansTibetan');
+    } else {
+      this.doc.setFont('Helvetica');
+    }
     
-    segments.forEach((segment) => {
-      if (segment.startsWith('(') && segment.endsWith(')')) {
-        // Tibetan text
-        this.doc.setFont('Noto Sans Tibetan');
-        this.doc.setFontSize(12); // Slightly larger for Tibetan
-      } else {
-        // English text
-        this.doc.setFont('Helvetica');
-        this.doc.setFontSize(11);
+    this.doc.setFontSize(11);
+    
+    const lines = this.doc.splitTextToSize(text, maxWidth);
+    lines.forEach((line: string) => {
+      if (this.currentY > this.doc.internal.pageSize.height - this.margins.bottom) {
+        this.doc.addPage();
+        this.currentY = this.margins.top;
       }
-      
-      const wrappedLines = this.doc.splitTextToSize(segment, maxWidth);
-      wrappedLines.forEach((line: string) => {
-        if (this.currentY > this.doc.internal.pageSize.height - this.margins.bottom) {
-          this.doc.addPage();
-          this.currentY = this.margins.top;
-        }
-        this.doc.text(line, this.margins.left + indent, this.currentY);
-        this.currentY += 16;
-      });
+      this.doc.text(line, this.margins.left + indent, this.currentY);
+      this.currentY += 16;
     });
     
     this.currentY += 8;
   }
 
   private writeTitle(text: string): void {
-    this.doc.setFont('Helvetica');
+    if (this.fontLoaded) {
+      this.doc.setFont('NotoSansTibetan');
+    } else {
+      this.doc.setFont('Helvetica');
+    }
     this.doc.setFontSize(14);
     this.writeLine(text);
-    this.doc.setFontSize(11);
     this.currentY += 8;
   }
 
