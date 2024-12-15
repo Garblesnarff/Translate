@@ -1,6 +1,7 @@
 
 import { jsPDF } from 'jspdf';
 import type { PDFPageContent } from '../../../client/src/types/pdf';
+import { promises as fs } from 'fs';
 
 export class PDFGenerator {
   private doc: jsPDF;
@@ -22,8 +23,10 @@ export class PDFGenerator {
   }
 
   private async loadFonts(): Promise<void> {
-    // Add Noto Sans Tibetan font for Tibetan text support
-    this.doc.addFont('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff', 'Noto Sans Tibetan', 'normal');
+    const fontPath = 'server/services/pdf/noto-sans-tibetan.ttf';
+    const fontData = await fs.readFile(fontPath);
+    this.doc.addFileToVFS('noto-sans-tibetan.ttf', fontData.toString('base64'));
+    this.doc.addFont('noto-sans-tibetan.ttf', 'Noto Sans Tibetan', 'normal');
     this.doc.setFont('Noto Sans Tibetan');
     this.doc.setFontSize(11);
     this.doc.setLineHeightFactor(1.5);
