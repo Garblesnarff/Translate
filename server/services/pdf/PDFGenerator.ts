@@ -1,8 +1,6 @@
 
 import { jsPDF } from 'jspdf';
 import type { PDFPageContent } from '../../../client/src/types/pdf';
-import { promises as fs } from 'fs';
-import path from 'path';
 
 export class PDFGenerator {
   private doc: jsPDF;
@@ -24,19 +22,31 @@ export class PDFGenerator {
   }
 
   private async loadFonts(): Promise<void> {
-    this.doc.setFont('Helvetica');
+    // Add Noto Sans Tibetan font for Tibetan text support
+    this.doc.addFont('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tibetan/files/noto-sans-tibetan-tibetan-400-normal.woff', 'Noto Sans Tibetan', 'normal');
+    this.doc.setFont('Noto Sans Tibetan');
     this.doc.setFontSize(11);
-    // Set proper line height for text wrapping
     this.doc.setLineHeightFactor(1.5);
   }
 
   private writeLine(text: string, indent: number = 0): void {
     const maxWidth = this.doc.internal.pageSize.width - this.margins.left - this.margins.right - indent;
-    const textLines = text.split(/\r?\n/);
     
-    textLines.forEach((textLine: string) => {
-      const wrappedLines = this.doc.splitTextToSize(textLine, maxWidth);
+    // Special handling for Tibetan text in parentheses
+    const segments = text.split(/(\([^\)]+\))/g);
+    
+    segments.forEach((segment) => {
+      if (segment.startsWith('(') && segment.endsWith(')')) {
+        // Tibetan text
+        this.doc.setFont('Noto Sans Tibetan');
+        this.doc.setFontSize(12); // Slightly larger for Tibetan
+      } else {
+        // English text
+        this.doc.setFont('Helvetica');
+        this.doc.setFontSize(11);
+      }
       
+      const wrappedLines = this.doc.splitTextToSize(segment, maxWidth);
       wrappedLines.forEach((line: string) => {
         if (this.currentY > this.doc.internal.pageSize.height - this.margins.bottom) {
           this.doc.addPage();
@@ -51,6 +61,7 @@ export class PDFGenerator {
   }
 
   private writeTitle(text: string): void {
+    this.doc.setFont('Helvetica');
     this.doc.setFontSize(14);
     this.writeLine(text);
     this.doc.setFontSize(11);
