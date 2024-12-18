@@ -74,47 +74,67 @@ export default function Translate() {
       setTranslationState(prev => ({ ...prev, pages: [], error: null }));
       const pages: TranslationPage[] = [];
 
-      for (let i = 0; i < pageTexts.length; i++) {
-        try {
-          const pageNum = i + 1;
-          console.log(`Translating page ${pageNum} of ${pageTexts.length}`);
-          
-          const result = await translate(pageTexts[i]);
-          
-          const translatedPage = {
-            pageNumber: pageNum,
-            text: result.translatedText
-          };
-          
-          pages.push(translatedPage);
-          
-          // Update progress and state after each page
-          const progress = ((pages.length) / totalPages) * 100;
-          setTranslationState(prev => ({
-            ...prev,
-            pages: [...prev.pages, translatedPage],
-            currentPage: pages.length - 1,
-            error: null
-          }));
+      // Split pages into odd and even
+      const oddPages = pageTexts.map((text, i) => ({ text, index: i })).filter(p => (p.index + 1) % 2 === 1);
+      const evenPages = pageTexts.map((text, i) => ({ text, index: i })).filter(p => (p.index + 1) % 2 === 0);
 
-          // Update translation progress
-          setProgress(progress);
+      console.log('Starting parallel translation of odd and even pages...');
+      
+      // Translate odd and even pages in parallel
+      try {
+        const [oddResults, evenResults] = await Promise.all([
+          // Process odd pages
+          Promise.all(oddPages.map(async ({ text, index }) => {
+            try {
+              console.log(`Translating odd page ${index + 1}`);
+              const result = await translate(text);
+              return {
+                pageNumber: index + 1,
+                text: result.translatedText
+              };
+            } catch (error) {
+              console.error(`Error translating page ${index + 1}:`, error);
+              return {
+                pageNumber: index + 1,
+                text: `Error translating this page: ${error instanceof Error ? error.message : 'Unknown error'}`
+              };
+            }
+          })),
+          // Process even pages
+          Promise.all(evenPages.map(async ({ text, index }) => {
+            try {
+              console.log(`Translating even page ${index + 1}`);
+              const result = await translate(text);
+              return {
+                pageNumber: index + 1,
+                text: result.translatedText
+              };
+            } catch (error) {
+              console.error(`Error translating page ${index + 1}:`, error);
+              return {
+                pageNumber: index + 1,
+                text: `Error translating this page: ${error instanceof Error ? error.message : 'Unknown error'}`
+              };
+            }
+          }))
+        ]);
 
-          // Update state after each page is translated
-          setTranslationState(prev => ({
-            ...prev,
-            pages: [...pages],
-            currentPage: pages.length - 1,
-            error: null
-          }));
-        } catch (error) {
-          console.error(`Error translating page ${i + 1}:`, error);
-          // Continue with next page even if current one fails
-          pages.push({
-            pageNumber: i + 1,
-            text: `Error translating this page: ${error instanceof Error ? error.message : 'Unknown error'}`
-          });
-        }
+        // Combine results and sort by page number
+        pages = [...oddResults, ...evenResults].sort((a, b) => a.pageNumber - b.pageNumber);
+        
+        // Update progress to 100% since all pages are done
+        setProgress(100);
+        
+        // Update final state with all translated pages
+        setTranslationState(prev => ({
+          ...prev,
+          pages,
+          currentPage: 0,
+          error: null
+        }));
+      } catch (error) {
+        console.error('Error in parallel translation:', error);
+        throw error;
       }
 
       // If no pages were translated successfully
