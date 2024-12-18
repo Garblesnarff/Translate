@@ -101,23 +101,60 @@ app.post('/api/translate',
         const errors = [];
         let confidenceScores = [];
 
-        // Process each chunk sequentially with proper page formatting
-        for (const chunk of chunks) {
-          console.log(`Translating page ${chunk.pageNumber}`);
-          try {
-            const result = await translationService.translateText(chunk);
-            const pageTranslation = result.translation;
-            translations.push({
-              pageNumber: chunk.pageNumber,
-              translation: pageTranslation,
-              confidence: result.confidence
-            });
-            confidenceScores.push(result.confidence);
-          } catch (error) {
+        // Split chunks into odd and even pages
+        const oddChunks = chunks.filter(chunk => chunk.pageNumber % 2 === 1);
+        const evenChunks = chunks.filter(chunk => chunk.pageNumber % 2 === 0);
+
+        // Process odd and even pages in parallel
+        console.log('Starting parallel translation of odd and even pages...');
+        const [oddResults, evenResults] = await Promise.all([
+          Promise.all(oddChunks.map(async chunk => {
+            try {
+              console.log(`Translating odd page ${chunk.pageNumber}`);
+              const result = await translationService.translateText(chunk);
+              return {
+                pageNumber: chunk.pageNumber,
+                translation: result.translation,
+                confidence: result.confidence
+              };
+            } catch (error) {
+              console.error(`Error translating page ${chunk.pageNumber}:`, error);
+              return {
+                pageNumber: chunk.pageNumber,
+                error: error instanceof Error ? error.message : 'Unknown error'
+              };
+            }
+          })),
+          Promise.all(evenChunks.map(async chunk => {
+            try {
+              console.log(`Translating even page ${chunk.pageNumber}`);
+              const result = await translationService.translateText(chunk);
+              return {
+                pageNumber: chunk.pageNumber,
+                translation: result.translation,
+                confidence: result.confidence
+              };
+            } catch (error) {
+              console.error(`Error translating page ${chunk.pageNumber}:`, error);
+              return {
+                pageNumber: chunk.pageNumber,
+                error: error instanceof Error ? error.message : 'Unknown error'
+              };
+            }
+          }))
+        ]);
+
+        // Combine and process results
+        const allResults = [...oddResults, ...evenResults];
+        for (const result of allResults) {
+          if ('error' in result) {
             errors.push({
-              pageNumber: chunk.pageNumber,
-              error: error instanceof Error ? error.message : 'Unknown error'
+              pageNumber: result.pageNumber,
+              error: result.error
             });
+          } else {
+            translations.push(result);
+            confidenceScores.push(result.confidence);
           }
         }
 
