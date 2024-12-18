@@ -1,0 +1,765 @@
+02:01:03 PM [express] serving on port 5000
+2:01:07 PM [vite] Pre-transform error: Transform failed with 1 error:
+/home/runner/workspace/client/src/lib/pdf.ts:54:7: ERROR: Unexpected ")"
+2:01:08 PM [vite] Internal server error: Transform failed with 1 error:
+/home/runner/workspace/client/src/lib/pdf.ts:54:7: ERROR: Unexpected ")"
+  Plugin: vite:esbuild
+  File: /home/runner/workspace/client/src/lib/pdf.ts:54:7
+  
+  Unexpected ")"
+  52 |            return false;
+  53 |          }
+  54 |        })
+     |         ^
+  55 |        .catch(err => {
+  56 |          console.error('Failed to load Tibetan font:', err);
+  
+      at failureErrorWithLog (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1472:15)
+      at /home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:755:50
+      at responseCallbacks.<computed> (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:622:9)
+      at handleIncomingPacket (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:677:12)
+      at Socket.readFromStdout (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:600:7)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:191:23) (x2)
+
+ ERROR(TypeScript)  Declaration or statement expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:54:8
+
+    52 |           return false;
+    53 |         }
+  > 54 |       })
+       |        ^
+    55 |       .catch(err => {
+    56 |         console.error('Failed to load Tibetan font:', err);
+    57 |         // Fallback to default font
+
+ ERROR(TypeScript)  Declaration or statement expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:55:7
+
+    53 |         }
+    54 |       })
+  > 55 |       .catch(err => {
+       |       ^
+    56 |         console.error('Failed to load Tibetan font:', err);
+    57 |         // Fallback to default font
+    58 |         this.doc.setFont('Helvetica', 'normal');
+
+ ERROR(TypeScript)  'try' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:55:8
+
+    53 |         }
+    54 |       })
+  > 55 |       .catch(err => {
+       |        ^^^^^
+    56 |         console.error('Failed to load Tibetan font:', err);
+    57 |         // Fallback to default font
+    58 |         this.doc.setFont('Helvetica', 'normal');
+
+ ERROR(TypeScript)  ')' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:55:18
+
+    53 |         }
+    54 |       })
+  > 55 |       .catch(err => {
+       |                  ^^
+    56 |         console.error('Failed to load Tibetan font:', err);
+    57 |         // Fallback to default font
+    58 |         this.doc.setFont('Helvetica', 'normal');
+
+ ERROR(TypeScript)  Declaration or statement expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:62:8
+
+    60 |         this.doc.setFont('Helvetica', 'normal');
+    61 |         this.doc.setFontSize(11);
+  > 62 |       });
+       |        ^
+    63 |   }
+    64 |
+    65 |   private cleanText(text: string): string {
+
+ ERROR(TypeScript)  Declaration or statement expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:63:3
+
+    61 |         this.doc.setFontSize(11);
+    62 |       });
+  > 63 |   }
+       |   ^
+    64 |
+    65 |   private cleanText(text: string): string {
+    66 |     // Only clean special characters, preserve Tibetan Unicode
+
+ ERROR(TypeScript)  Declaration or statement expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:65:3
+
+    63 |   }
+    64 |
+  > 65 |   private cleanText(text: string): string {
+       |   ^^^^^^^
+    66 |     // Only clean special characters, preserve Tibetan Unicode
+    67 |     return text.replace(/[|±]/g, '');
+    68 |   }
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:65:25
+
+    63 |   }
+    64 |
+  > 65 |   private cleanText(text: string): string {
+       |                         ^
+    66 |     // Only clean special characters, preserve Tibetan Unicode
+    67 |     return text.replace(/[|±]/g, '');
+    68 |   }
+
+ ERROR(TypeScript)  ';' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:65:34
+
+    63 |   }
+    64 |
+  > 65 |   private cleanText(text: string): string {
+       |                                  ^
+    66 |     // Only clean special characters, preserve Tibetan Unicode
+    67 |     return text.replace(/[|±]/g, '');
+    68 |   }
+
+ ERROR(TypeScript)  Unexpected keyword or identifier.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:65:36
+
+    63 |   }
+    64 |
+  > 65 |   private cleanText(text: string): string {
+       |                                    ^^^^^^
+    66 |     // Only clean special characters, preserve Tibetan Unicode
+    67 |     return text.replace(/[|±]/g, '');
+    68 |   }
+
+ ERROR(TypeScript)  Declaration or statement expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:70:3
+
+    68 |   }
+    69 |
+  > 70 |   private measureWidth(text: string): number {
+       |   ^^^^^^^
+    71 |     return this.doc.getStringUnitWidth(text) * this.doc.getFontSize();
+    72 |   }
+    73 |
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:70:28
+
+    68 |   }
+    69 |
+  > 70 |   private measureWidth(text: string): number {
+       |                            ^
+    71 |     return this.doc.getStringUnitWidth(text) * this.doc.getFontSize();
+    72 |   }
+    73 |
+
+ ERROR(TypeScript)  ';' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:70:37
+
+    68 |   }
+    69 |
+  > 70 |   private measureWidth(text: string): number {
+       |                                     ^
+    71 |     return this.doc.getStringUnitWidth(text) * this.doc.getFontSize();
+    72 |   }
+    73 |
+
+ ERROR(TypeScript)  Unexpected keyword or identifier.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:70:39
+
+    68 |   }
+    69 |
+  > 70 |   private measureWidth(text: string): number {
+       |                                       ^^^^^^
+    71 |     return this.doc.getStringUnitWidth(text) * this.doc.getFontSize();
+    72 |   }
+    73 |
+
+ ERROR(TypeScript)  Declaration or statement expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:74:3
+
+    72 |   }
+    73 |
+  > 74 |   private writeLine(text: string, indent: number = 0): void {
+       |   ^^^^^^^
+    75 |     const pageWidth = this.doc.internal.pageSize.width;
+    76 |     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
+    77 |     const cleanedText = this.cleanText(text);
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:74:25
+
+    72 |   }
+    73 |
+  > 74 |   private writeLine(text: string, indent: number = 0): void {
+       |                         ^
+    75 |     const pageWidth = this.doc.internal.pageSize.width;
+    76 |     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
+    77 |     const cleanedText = this.cleanText(text);
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:74:41
+
+    72 |   }
+    73 |
+  > 74 |   private writeLine(text: string, indent: number = 0): void {
+       |                                         ^
+    75 |     const pageWidth = this.doc.internal.pageSize.width;
+    76 |     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
+    77 |     const cleanedText = this.cleanText(text);
+
+ ERROR(TypeScript)  ';' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:74:54
+
+    72 |   }
+    73 |
+  > 74 |   private writeLine(text: string, indent: number = 0): void {
+       |                                                      ^
+    75 |     const pageWidth = this.doc.internal.pageSize.width;
+    76 |     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
+    77 |     const cleanedText = this.cleanText(text);
+
+ ERROR(TypeScript)  ':' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:75:11
+
+    73 |
+    74 |   private writeLine(text: string, indent: number = 0): void {
+  > 75 |     const pageWidth = this.doc.internal.pageSize.width;
+       |           ^^^^^^^^^
+    76 |     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
+    77 |     const cleanedText = this.cleanText(text);
+    78 |     const words = cleanedText.split(' ');
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:75:55
+
+    73 |
+    74 |   private writeLine(text: string, indent: number = 0): void {
+  > 75 |     const pageWidth = this.doc.internal.pageSize.width;
+       |                                                       ^
+    76 |     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
+    77 |     const cleanedText = this.cleanText(text);
+    78 |     const words = cleanedText.split(' ');
+
+ ERROR(TypeScript)  ':' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:76:11
+
+    74 |   private writeLine(text: string, indent: number = 0): void {
+    75 |     const pageWidth = this.doc.internal.pageSize.width;
+  > 76 |     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
+       |           ^^^^^^^^
+    77 |     const cleanedText = this.cleanText(text);
+    78 |     const words = cleanedText.split(' ');
+    79 |     let currentLine = '';
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:76:81
+
+    74 |   private writeLine(text: string, indent: number = 0): void {
+    75 |     const pageWidth = this.doc.internal.pageSize.width;
+  > 76 |     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
+       |                                                                                 ^
+    77 |     const cleanedText = this.cleanText(text);
+    78 |     const words = cleanedText.split(' ');
+    79 |     let currentLine = '';
+
+ ERROR(TypeScript)  ':' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:77:11
+
+    75 |     const pageWidth = this.doc.internal.pageSize.width;
+    76 |     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
+  > 77 |     const cleanedText = this.cleanText(text);
+       |           ^^^^^^^^^^^
+    78 |     const words = cleanedText.split(' ');
+    79 |     let currentLine = '';
+    80 |     let currentWidth = 0;
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:77:45
+
+    75 |     const pageWidth = this.doc.internal.pageSize.width;
+    76 |     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
+  > 77 |     const cleanedText = this.cleanText(text);
+       |                                             ^
+    78 |     const words = cleanedText.split(' ');
+    79 |     let currentLine = '';
+    80 |     let currentWidth = 0;
+
+ ERROR(TypeScript)  ':' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:78:11
+
+    76 |     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
+    77 |     const cleanedText = this.cleanText(text);
+  > 78 |     const words = cleanedText.split(' ');
+       |           ^^^^^
+    79 |     let currentLine = '';
+    80 |     let currentWidth = 0;
+    81 |
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:78:41
+
+    76 |     const maxWidth = pageWidth - this.margins.left - this.margins.right - indent;
+    77 |     const cleanedText = this.cleanText(text);
+  > 78 |     const words = cleanedText.split(' ');
+       |                                         ^
+    79 |     let currentLine = '';
+    80 |     let currentWidth = 0;
+    81 |
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:79:9
+
+    77 |     const cleanedText = this.cleanText(text);
+    78 |     const words = cleanedText.split(' ');
+  > 79 |     let currentLine = '';
+       |         ^^^^^^^^^^^
+    80 |     let currentWidth = 0;
+    81 |
+    82 |     for (const word of words) {
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:79:25
+
+    77 |     const cleanedText = this.cleanText(text);
+    78 |     const words = cleanedText.split(' ');
+  > 79 |     let currentLine = '';
+       |                         ^
+    80 |     let currentWidth = 0;
+    81 |
+    82 |     for (const word of words) {
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:80:9
+
+    78 |     const words = cleanedText.split(' ');
+    79 |     let currentLine = '';
+  > 80 |     let currentWidth = 0;
+       |         ^^^^^^^^^^^^
+    81 |
+    82 |     for (const word of words) {
+    83 |       const wordWidth = this.measureWidth(word + ' ');
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:80:25
+
+    78 |     const words = cleanedText.split(' ');
+    79 |     let currentLine = '';
+  > 80 |     let currentWidth = 0;
+       |                         ^
+    81 |
+    82 |     for (const word of words) {
+    83 |       const wordWidth = this.measureWidth(word + ' ');
+
+ ERROR(TypeScript)  Identifier expected. 'const' is a reserved word that cannot be used here.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:82:10
+
+    80 |     let currentWidth = 0;
+    81 |
+  > 82 |     for (const word of words) {
+       |          ^^^^^
+    83 |       const wordWidth = this.measureWidth(word + ' ');
+    84 |
+    85 |       if (currentWidth + wordWidth > maxWidth) {
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:82:16
+
+    80 |     let currentWidth = 0;
+    81 |
+  > 82 |     for (const word of words) {
+       |                ^^^^
+    83 |       const wordWidth = this.measureWidth(word + ' ');
+    84 |
+    85 |       if (currentWidth + wordWidth > maxWidth) {
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:82:21
+
+    80 |     let currentWidth = 0;
+    81 |
+  > 82 |     for (const word of words) {
+       |                     ^^
+    83 |       const wordWidth = this.measureWidth(word + ' ');
+    84 |
+    85 |       if (currentWidth + wordWidth > maxWidth) {
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:82:24
+
+    80 |     let currentWidth = 0;
+    81 |
+  > 82 |     for (const word of words) {
+       |                        ^^^^^
+    83 |       const wordWidth = this.measureWidth(word + ' ');
+    84 |
+    85 |       if (currentWidth + wordWidth > maxWidth) {
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:103:5
+
+    101 |
+    102 |     // Write remaining text
+  > 103 |     if (currentLine.trim()) {
+        |     ^^
+    104 |       if (this.currentY > this.doc.internal.pageSize.height - this.margins.bottom) {
+    105 |         this.doc.addPage();
+    106 |         this.currentY = this.margins.top;
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:103:20
+
+    101 |
+    102 |     // Write remaining text
+  > 103 |     if (currentLine.trim()) {
+        |                    ^
+    104 |       if (this.currentY > this.doc.internal.pageSize.height - this.margins.bottom) {
+    105 |         this.doc.addPage();
+    106 |         this.currentY = this.margins.top;
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:103:27
+
+    101 |
+    102 |     // Write remaining text
+  > 103 |     if (currentLine.trim()) {
+        |                           ^
+    104 |       if (this.currentY > this.doc.internal.pageSize.height - this.margins.bottom) {
+    105 |         this.doc.addPage();
+    106 |         this.currentY = this.margins.top;
+
+ ERROR(TypeScript)  Property assignment expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:103:29
+
+    101 |
+    102 |     // Write remaining text
+  > 103 |     if (currentLine.trim()) {
+        |                             ^
+    104 |       if (this.currentY > this.doc.internal.pageSize.height - this.margins.bottom) {
+    105 |         this.doc.addPage();
+    106 |         this.currentY = this.margins.top;
+
+ ERROR(TypeScript)  Declaration or statement expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:114:3
+
+    112 |     // Add paragraph spacing
+    113 |     this.currentY += this.lineHeight * 0.5;
+  > 114 |   }
+        |   ^
+    115 |
+    116 |   private writeTitle(text: string): void {
+    117 |     const originalSize = this.doc.getFontSize();
+
+ ERROR(TypeScript)  Declaration or statement expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:116:3
+
+    114 |   }
+    115 |
+  > 116 |   private writeTitle(text: string): void {
+        |   ^^^^^^^
+    117 |     const originalSize = this.doc.getFontSize();
+    118 |     this.doc.setFontSize(14);
+    119 |     this.writeLine(text);
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:116:26
+
+    114 |   }
+    115 |
+  > 116 |   private writeTitle(text: string): void {
+        |                          ^
+    117 |     const originalSize = this.doc.getFontSize();
+    118 |     this.doc.setFontSize(14);
+    119 |     this.writeLine(text);
+
+ ERROR(TypeScript)  ';' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:116:35
+
+    114 |   }
+    115 |
+  > 116 |   private writeTitle(text: string): void {
+        |                                   ^
+    117 |     const originalSize = this.doc.getFontSize();
+    118 |     this.doc.setFontSize(14);
+    119 |     this.writeLine(text);
+
+ ERROR(TypeScript)  ':' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:117:11
+
+    115 |
+    116 |   private writeTitle(text: string): void {
+  > 117 |     const originalSize = this.doc.getFontSize();
+        |           ^^^^^^^^^^^^
+    118 |     this.doc.setFontSize(14);
+    119 |     this.writeLine(text);
+    120 |     this.doc.setFontSize(originalSize);
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:117:48
+
+    115 |
+    116 |   private writeTitle(text: string): void {
+  > 117 |     const originalSize = this.doc.getFontSize();
+        |                                                ^
+    118 |     this.doc.setFontSize(14);
+    119 |     this.writeLine(text);
+    120 |     this.doc.setFontSize(originalSize);
+
+ ERROR(TypeScript)  ':' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:118:9
+
+    116 |   private writeTitle(text: string): void {
+    117 |     const originalSize = this.doc.getFontSize();
+  > 118 |     this.doc.setFontSize(14);
+        |         ^
+    119 |     this.writeLine(text);
+    120 |     this.doc.setFontSize(originalSize);
+    121 |     this.currentY += this.lineHeight * 0.5;
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:118:29
+
+    116 |   private writeTitle(text: string): void {
+    117 |     const originalSize = this.doc.getFontSize();
+  > 118 |     this.doc.setFontSize(14);
+        |                             ^
+    119 |     this.writeLine(text);
+    120 |     this.doc.setFontSize(originalSize);
+    121 |     this.currentY += this.lineHeight * 0.5;
+
+ ERROR(TypeScript)  ':' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:119:9
+
+    117 |     const originalSize = this.doc.getFontSize();
+    118 |     this.doc.setFontSize(14);
+  > 119 |     this.writeLine(text);
+        |         ^
+    120 |     this.doc.setFontSize(originalSize);
+    121 |     this.currentY += this.lineHeight * 0.5;
+    122 |   }
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:119:25
+
+    117 |     const originalSize = this.doc.getFontSize();
+    118 |     this.doc.setFontSize(14);
+  > 119 |     this.writeLine(text);
+        |                         ^
+    120 |     this.doc.setFontSize(originalSize);
+    121 |     this.currentY += this.lineHeight * 0.5;
+    122 |   }
+
+ ERROR(TypeScript)  ':' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:120:9
+
+    118 |     this.doc.setFontSize(14);
+    119 |     this.writeLine(text);
+  > 120 |     this.doc.setFontSize(originalSize);
+        |         ^
+    121 |     this.currentY += this.lineHeight * 0.5;
+    122 |   }
+    123 |
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:120:39
+
+    118 |     this.doc.setFontSize(14);
+    119 |     this.writeLine(text);
+  > 120 |     this.doc.setFontSize(originalSize);
+        |                                       ^
+    121 |     this.currentY += this.lineHeight * 0.5;
+    122 |   }
+    123 |
+
+ ERROR(TypeScript)  ':' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:121:9
+
+    119 |     this.writeLine(text);
+    120 |     this.doc.setFontSize(originalSize);
+  > 121 |     this.currentY += this.lineHeight * 0.5;
+        |         ^
+    122 |   }
+    123 |
+    124 |   public async generatePDF(pages: PDFPageContent[]): Promise<Blob> {
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:121:43
+
+    119 |     this.writeLine(text);
+    120 |     this.doc.setFontSize(originalSize);
+  > 121 |     this.currentY += this.lineHeight * 0.5;
+        |                                           ^
+    122 |   }
+    123 |
+    124 |   public async generatePDF(pages: PDFPageContent[]): Promise<Blob> {
+
+ ERROR(TypeScript)  Declaration or statement expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:124:3
+
+    122 |   }
+    123 |
+  > 124 |   public async generatePDF(pages: PDFPageContent[]): Promise<Blob> {
+        |   ^^^^^^
+    125 |     try {
+    126 |       await this.loadFont();
+    127 |       pages.forEach((page, index) => {
+
+ ERROR(TypeScript)  Unexpected keyword or identifier.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:124:10
+
+    122 |   }
+    123 |
+  > 124 |   public async generatePDF(pages: PDFPageContent[]): Promise<Blob> {
+        |          ^^^^^
+    125 |     try {
+    126 |       await this.loadFont();
+    127 |       pages.forEach((page, index) => {
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:124:33
+
+    122 |   }
+    123 |
+  > 124 |   public async generatePDF(pages: PDFPageContent[]): Promise<Blob> {
+        |                                 ^
+    125 |     try {
+    126 |       await this.loadFont();
+    127 |       pages.forEach((page, index) => {
+
+ ERROR(TypeScript)  An element access expression should take an argument.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:124:50
+
+    122 |   }
+    123 |
+  > 124 |   public async generatePDF(pages: PDFPageContent[]): Promise<Blob> {
+        |                                                  ^
+    125 |     try {
+    126 |       await this.loadFont();
+    127 |       pages.forEach((page, index) => {
+
+ ERROR(TypeScript)  ';' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:124:52
+
+    122 |   }
+    123 |
+  > 124 |   public async generatePDF(pages: PDFPageContent[]): Promise<Blob> {
+        |                                                    ^
+    125 |     try {
+    126 |       await this.loadFont();
+    127 |       pages.forEach((page, index) => {
+
+ ERROR(TypeScript)  ':' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:125:9
+
+    123 |
+    124 |   public async generatePDF(pages: PDFPageContent[]): Promise<Blob> {
+  > 125 |     try {
+        |         ^
+    126 |       await this.loadFont();
+    127 |       pages.forEach((page, index) => {
+    128 |         if (index > 0) {
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:126:13
+
+    124 |   public async generatePDF(pages: PDFPageContent[]): Promise<Blob> {
+    125 |     try {
+  > 126 |       await this.loadFont();
+        |             ^^^^
+    127 |       pages.forEach((page, index) => {
+    128 |         if (index > 0) {
+    129 |           this.doc.addPage();
+
+ ERROR(TypeScript)  ':' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:126:17
+
+    124 |   public async generatePDF(pages: PDFPageContent[]): Promise<Blob> {
+    125 |     try {
+  > 126 |       await this.loadFont();
+        |                 ^
+    127 |       pages.forEach((page, index) => {
+    128 |         if (index > 0) {
+    129 |           this.doc.addPage();
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:126:28
+
+    124 |   public async generatePDF(pages: PDFPageContent[]): Promise<Blob> {
+    125 |     try {
+  > 126 |       await this.loadFont();
+        |                            ^
+    127 |       pages.forEach((page, index) => {
+    128 |         if (index > 0) {
+    129 |           this.doc.addPage();
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:127:12
+
+    125 |     try {
+    126 |       await this.loadFont();
+  > 127 |       pages.forEach((page, index) => {
+        |            ^
+    128 |         if (index > 0) {
+    129 |           this.doc.addPage();
+    130 |           this.currentY = this.margins.top;
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:151:9
+
+    149 |           }
+    150 |         }
+  > 151 |       });
+        |         ^
+    152 |
+    153 |       return this.doc.output('blob');
+    154 |     } catch (error) {
+
+ ERROR(TypeScript)  ':' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:153:14
+
+    151 |       });
+    152 |
+  > 153 |       return this.doc.output('blob');
+        |              ^^^^
+    154 |     } catch (error) {
+    155 |       console.error('Error generating PDF:', error);
+    156 |       throw new Error('Failed to generate PDF');
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:153:37
+
+    151 |       });
+    152 |
+  > 153 |       return this.doc.output('blob');
+        |                                     ^
+    154 |     } catch (error) {
+    155 |       console.error('Error generating PDF:', error);
+    156 |       throw new Error('Failed to generate PDF');
+
+ ERROR(TypeScript)  ',' expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:154:7
+
+    152 |
+    153 |       return this.doc.output('blob');
+  > 154 |     } catch (error) {
+        |       ^^^^^
+    155 |       console.error('Error generating PDF:', error);
+    156 |       throw new Error('Failed to generate PDF');
+    157 |     }
+
+ ERROR(TypeScript)  Declaration or statement expected.
+ FILE  /home/runner/workspace/client/src/lib/pdf.ts:159:1
+
+    157 |     }
+    158 |   }
+  > 159 | }
+        | ^
+    160 |
+    161 | export const generatePDF = async (pages: PDFPageContent[]): Promise<Blob> => {
+    162 |   const generator = new PDFGenerator();
+
+[TypeScript] Found 67 errors. Watching for file changes.

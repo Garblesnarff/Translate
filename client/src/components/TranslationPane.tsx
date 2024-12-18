@@ -1,3 +1,5 @@
+// client/src/components/TranslationPane.tsx
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -7,6 +9,10 @@ import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useMemo, useState, useCallback } from 'react';
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { generatePDF } from '@/lib/pdf';
+import type { PDFPageContent } from '@/types/pdf';
+
 
 interface TranslationPaneProps {
   title: string;
@@ -16,7 +22,7 @@ interface TranslationPaneProps {
   totalPages?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
-  allPages?: Array<{ pageNumber: number; text: string }>;
+  allPages?: Array<PDFPageContent>;
 }
 
 // Define markdown rendering components
@@ -34,87 +40,106 @@ export default function TranslationPane({
   onPageChange,
   allPages
 }: TranslationPaneProps) {
-  // Loading state for text changes
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
-  // Memoize pages array to prevent unnecessary recalculations
   const { pages } = useMemo(() => {
     return { pages: [text] };
   }, [text]);
 
-  // Handle text content changes with loading indicator
   const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setIsLoading(true);
     onChange(e.target.value);
-    // Brief delay to show loading state
     setTimeout(() => setIsLoading(false), 100);
   }, [onChange]);
 
-  // Handle page navigation with bounds checking
   const handlePageChange = useCallback((newPage: number) => {
     if (onPageChange && newPage >= 1 && newPage <= totalPages) {
       onPageChange(newPage);
     }
   }, [onPageChange, totalPages]);
 
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const pagesToExport = allPages ?? [{ pageNumber: currentPage, text }];
+      const pdfBlob = await generatePDF(pagesToExport);
+
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'translation.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Success",
+        description: "PDF exported successfully",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Export failed",
+        description: error instanceof Error ? error.message : "Failed to generate PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <Card className="h-full bg-background/95">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-xl font-bold">{title}</CardTitle>
         <div className="flex items-center gap-2">
-            {readOnly && text.trim() && (
+          {readOnly && text.trim() && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                'Export PDF'
+              )}
+            </Button>
+          )}
+          {readOnly && totalPages > 1 && (
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                size="sm"
-                onClick={async () => {
-                  try {
-                    const { generatePDF } = await import('../lib/pdf');
-                    const pagesToExport = allPages ? allPages : [{ pageNumber: currentPage, text }];
-                    const pdfBlob = await generatePDF(pagesToExport);
-                    const url = URL.createObjectURL(pdfBlob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'translation.pdf';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                  } catch (error) {
-                    console.error('Error generating PDF:', error);
-                  }
-                }}
+                size="icon"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage <= 1}
               >
-                Export PDF
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-            )}
-            {readOnly && totalPages > 1 && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+              <span className="text-sm">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[calc(100vh-12rem)]">
-          {/* Loading indicator */}
           {isLoading && (
             <div className="flex justify-center items-center p-4">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -122,7 +147,6 @@ export default function TranslationPane({
           )}
           <div className="relative h-[calc(100vh-14rem)]">
             {readOnly ? (
-              // Read-only view with markdown formatting
               <div className="absolute inset-0 overflow-auto">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
@@ -133,7 +157,6 @@ export default function TranslationPane({
                 </ReactMarkdown>
               </div>
             ) : (
-              // Editable textarea view
               <Textarea
                 value={text}
                 onChange={handleTextChange}

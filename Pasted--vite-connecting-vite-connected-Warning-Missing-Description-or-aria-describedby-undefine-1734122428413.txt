@@ -10,20 +10,17 @@ at t.value (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.r
 at new t (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
 at t.value (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
 at https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
-jsPDF PubSub Error Cannot read properties of undefined (reading 'widths') 
+Error generating PDF: 
 TypeError {}
 
 at t.value (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
 at new t (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
 at t.value (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
 at https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
-Cannot read properties of undefined (reading 'widths')
-at Vt.getCharWidthsArray (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/jspdf.js?v=d6cd9173:8375:212)
-at Vt.getStringUnitWidth (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/jspdf.js?v=d6cd9173:8380:154)
-at t2.getTextWidth (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/jspdf.js?v=d6cd9173:4382:17)
-at https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/src/lib/pdf.ts:185:24
-at Array.forEach (<anonymous>)
-at https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/src/lib/pdf.ts:177:11
-at Array.forEach (<anonymous>)
-at generatePDF (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/src/lib/pdf.ts:164:20)
-at async onClick (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/src/components/TranslationPane.tsx:68:31)
+Error generating PDF: 
+Error {}
+
+at t.value (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://f2b00924-5b8e-4539-af3f-1dc9a7bb19c1-00-28gakhlajqi8r.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400

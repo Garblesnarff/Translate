@@ -1,0 +1,65 @@
+Here's a clear set of requirements for implementing parallel translation processing while maintaining the current translation quality:
+
+Current System Preservation
+
+Copy- Maintain existing translation quality and formatting
+- Keep current dictionary integration
+- Preserve all Buddhist term handling
+- Retain existing error handling and retry logic
+
+Parallel Processing Implementation
+
+Copy- Create two identical GeminiService instances in GeminiService.ts
+- One instance dedicated to even-numbered pages
+- One instance dedicated to odd-numbered pages
+- Both instances should use identical configuration settings
+
+Translation Service Modifications
+
+Copy- Modify translateText method to distribute pages by number
+- Even pages go to evenGeminiService
+- Odd pages go to oddGeminiService
+- Maintain page order in final output regardless of completion order
+
+Core Requirements
+
+Copy- No changes to translation prompts or processing
+- No changes to text formatting or term handling
+- Only modify the execution pattern to enable parallel processing
+
+Error Handling
+
+Copy- Each instance should maintain independent error handling
+- If one instance fails, other should continue
+- Maintain existing retry logic per instance
+The key implementation point would be in translationService.ts, where you'd modify the translateText method to look something like:
+typescriptCopypublic async translateText(chunks: { pageNumber: number; content: string }[]): Promise<{
+  translations: Array<{
+    pageNumber: number;
+    translation: string;
+    confidence: number;
+  }>;
+}> {
+  // Split chunks into even and odd pages
+  const evenChunks = chunks.filter(chunk => chunk.pageNumber % 2 === 0);
+  const oddChunks = chunks.filter(chunk => chunk.pageNumber % 2 === 1);
+
+  // Process both sets of pages in parallel
+  const [evenResults, oddResults] = await Promise.all([
+    Promise.all(evenChunks.map(chunk => this.evenGeminiService.translateChunk(chunk))),
+    Promise.all(oddChunks.map(chunk => this.oddGeminiService.translateChunk(chunk)))
+  ]);
+
+  // Combine and sort results by page number
+  const allResults = [...evenResults, ...oddResults]
+    .sort((a, b) => a.pageNumber - b.pageNumber);
+
+  return { translations: allResults };
+}
+This approach should:
+
+Double translation throughput
+Maintain existing translation quality
+Keep all current formatting and processing
+Preserve proper page ordering
+Handle errors gracefully
