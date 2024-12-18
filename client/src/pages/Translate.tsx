@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -120,7 +119,7 @@ export default function Translate() {
         ]);
 
         // Combine results and sort by page number
-        pages = [...oddResults, ...evenResults].sort((a, b) => a.pageNumber - b.pageNumber);
+        const sortedPages = [...oddResults, ...evenResults].sort((a, b) => a.pageNumber - b.pageNumber);
         
         // Update progress to 100% since all pages are done
         setProgress(100);
@@ -128,7 +127,7 @@ export default function Translate() {
         // Update final state with all translated pages
         setTranslationState(prev => ({
           ...prev,
-          pages,
+          pages: sortedPages,
           currentPage: 0,
           error: null
         }));
