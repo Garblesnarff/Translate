@@ -73,67 +73,69 @@ export default function Translate() {
       setTranslationState(prev => ({ ...prev, pages: [], error: null }));
       const pages: TranslationPage[] = [];
 
-      // Split pages into odd and even
-      const oddPages = pageTexts.map((text, i) => ({ text, index: i })).filter(p => (p.index + 1) % 2 === 1);
-      const evenPages = pageTexts.map((text, i) => ({ text, index: i })).filter(p => (p.index + 1) % 2 === 0);
-
-      console.log('Starting parallel translation of odd and even pages...');
+      console.log('Starting parallel translation in pairs...');
       
-      // Translate odd and even pages in parallel
-      try {
-        const [oddResults, evenResults] = await Promise.all([
-          // Process odd pages
-          Promise.all(oddPages.map(async ({ text, index }) => {
+      // Process pages in pairs
+      for (let i = 0; i < pageTexts.length; i += 2) {
+        const currentPair = [];
+        
+        // First page of the pair (odd page)
+        currentPair.push(
+          (async () => {
             try {
-              console.log(`Translating odd page ${index + 1}`);
-              const result = await translate(text);
+              console.log(`Translating page ${i + 1}`);
+              const result = await translate(pageTexts[i]);
               return {
-                pageNumber: index + 1,
+                pageNumber: i + 1,
                 text: result.translatedText
               };
             } catch (error) {
-              console.error(`Error translating page ${index + 1}:`, error);
+              console.error(`Error translating page ${i + 1}:`, error);
               return {
-                pageNumber: index + 1,
+                pageNumber: i + 1,
                 text: `Error translating this page: ${error instanceof Error ? error.message : 'Unknown error'}`
               };
             }
-          })),
-          // Process even pages
-          Promise.all(evenPages.map(async ({ text, index }) => {
-            try {
-              console.log(`Translating even page ${index + 1}`);
-              const result = await translate(text);
-              return {
-                pageNumber: index + 1,
-                text: result.translatedText
-              };
-            } catch (error) {
-              console.error(`Error translating page ${index + 1}:`, error);
-              return {
-                pageNumber: index + 1,
-                text: `Error translating this page: ${error instanceof Error ? error.message : 'Unknown error'}`
-              };
-            }
-          }))
-        ]);
+          })()
+        );
 
-        // Combine results and sort by page number
-        const sortedPages = [...oddResults, ...evenResults].sort((a, b) => a.pageNumber - b.pageNumber);
-        
-        // Update progress to 100% since all pages are done
-        setProgress(100);
-        
-        // Update final state with all translated pages
+        // Second page of the pair (even page) if it exists
+        if (i + 1 < pageTexts.length) {
+          currentPair.push(
+            (async () => {
+              try {
+                console.log(`Translating page ${i + 2}`);
+                const result = await translate(pageTexts[i + 1]);
+                return {
+                  pageNumber: i + 2,
+                  text: result.translatedText
+                };
+              } catch (error) {
+                console.error(`Error translating page ${i + 2}:`, error);
+                return {
+                  pageNumber: i + 2,
+                  text: `Error translating this page: ${error instanceof Error ? error.message : 'Unknown error'}`
+                };
+              }
+            })()
+          );
+        }
+
+        // Wait for both pages in the pair to complete
+        const pairResults = await Promise.all(currentPair);
+        pages.push(...pairResults);
+
+        // Update progress
+        const progressVal = Math.min(((i + 2) / pageTexts.length) * 100, 100);
+        setProgress(progressVal);
+
+        // Update state with the new pages
         setTranslationState(prev => ({
           ...prev,
-          pages: sortedPages,
-          currentPage: 0,
+          pages: [...pages],
+          currentPage: Math.min(pages.length - 1, 0),
           error: null
         }));
-      } catch (error) {
-        console.error('Error in parallel translation:', error);
-        throw error;
       }
 
       // If no pages were translated successfully

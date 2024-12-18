@@ -101,51 +101,64 @@ app.post('/api/translate',
         const errors = [];
         let confidenceScores = [];
 
-        // Split chunks into odd and even pages
-        const oddChunks = chunks.filter(chunk => chunk.pageNumber % 2 === 1);
-        const evenChunks = chunks.filter(chunk => chunk.pageNumber % 2 === 0);
+        console.log('Starting parallel translation in pairs...');
+        const results = [];
 
-        // Process odd and even pages in parallel
-        console.log('Starting parallel translation of odd and even pages...');
-        const [oddResults, evenResults] = await Promise.all([
-          Promise.all(oddChunks.map(async chunk => {
-            try {
-              console.log(`Translating odd page ${chunk.pageNumber}`);
-              const result = await translationService.translateText(chunk);
-              return {
-                pageNumber: chunk.pageNumber,
-                translation: result.translation,
-                confidence: result.confidence
-              };
-            } catch (error) {
-              console.error(`Error translating page ${chunk.pageNumber}:`, error);
-              return {
-                pageNumber: chunk.pageNumber,
-                error: error instanceof Error ? error.message : 'Unknown error'
-              };
-            }
-          })),
-          Promise.all(evenChunks.map(async chunk => {
-            try {
-              console.log(`Translating even page ${chunk.pageNumber}`);
-              const result = await translationService.translateText(chunk);
-              return {
-                pageNumber: chunk.pageNumber,
-                translation: result.translation,
-                confidence: result.confidence
-              };
-            } catch (error) {
-              console.error(`Error translating page ${chunk.pageNumber}:`, error);
-              return {
-                pageNumber: chunk.pageNumber,
-                error: error instanceof Error ? error.message : 'Unknown error'
-              };
-            }
-          }))
-        ]);
+        // Process chunks in pairs
+        for (let i = 0; i < chunks.length; i += 2) {
+          const currentPair = [];
+          
+          // First chunk of the pair
+          currentPair.push(
+            (async () => {
+              try {
+                console.log(`Translating page ${chunks[i].pageNumber}`);
+                const result = await translationService.translateText(chunks[i]);
+                return {
+                  pageNumber: chunks[i].pageNumber,
+                  translation: result.translation,
+                  confidence: result.confidence
+                };
+              } catch (error) {
+                console.error(`Error translating page ${chunks[i].pageNumber}:`, error);
+                return {
+                  pageNumber: chunks[i].pageNumber,
+                  error: error instanceof Error ? error.message : 'Unknown error'
+                };
+              }
+            })()
+          );
 
-        // Combine and process results
-        const allResults = [...oddResults, ...evenResults];
+          // Second chunk of the pair if it exists
+          if (i + 1 < chunks.length) {
+            currentPair.push(
+              (async () => {
+                try {
+                  console.log(`Translating page ${chunks[i + 1].pageNumber}`);
+                  const result = await translationService.translateText(chunks[i + 1]);
+                  return {
+                    pageNumber: chunks[i + 1].pageNumber,
+                    translation: result.translation,
+                    confidence: result.confidence
+                  };
+                } catch (error) {
+                  console.error(`Error translating page ${chunks[i + 1].pageNumber}:`, error);
+                  return {
+                    pageNumber: chunks[i + 1].pageNumber,
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                  };
+                }
+              })()
+            );
+          }
+
+          // Wait for both chunks in the pair to complete
+          const pairResults = await Promise.all(currentPair);
+          results.push(...pairResults);
+        }
+
+        // Process results
+        const allResults = results;
         for (const result of allResults) {
           if ('error' in result) {
             errors.push({
