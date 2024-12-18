@@ -2,7 +2,7 @@ import { GenerateContentResult } from "@google/generative-ai";
 import { TibetanDictionary } from '../dictionary';
 import { TibetanTextProcessor } from './textProcessing/TextProcessor';
 import { PromptGenerator } from './translation/PromptGenerator';
-import { geminiService } from './translation/GeminiService';
+import { oddPagesGeminiService, evenPagesGeminiService } from './translation/GeminiService';
 import { createTranslationError } from '../middleware/errorHandler';
 
 export class TranslationService {
@@ -35,6 +35,13 @@ export class TranslationService {
   }
 
   /**
+   * Get the appropriate Gemini service based on page number
+   */
+  private getGeminiService(pageNumber: number) {
+    return pageNumber % 2 === 0 ? evenPagesGeminiService : oddPagesGeminiService;
+  }
+
+  /**
    * Processes a translation request with error handling and retries
    */
   public async translateText(chunk: { pageNumber: number; content: string }, timeout: number = 60000): Promise<{
@@ -42,6 +49,7 @@ export class TranslationService {
     confidence: number;
   }> {
     try {
+      const geminiService = this.getGeminiService(chunk.pageNumber);
       const prompt = await this.promptGenerator.createTranslationPrompt(chunk.pageNumber, chunk.content);
       const result = await geminiService.generateContent(prompt, timeout);
 

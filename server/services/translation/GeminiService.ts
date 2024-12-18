@@ -6,13 +6,15 @@ import { GoogleGenerativeAI, GenerativeModel, GenerateContentResult } from "@goo
 export class GeminiService {
   private genAI: GoogleGenerativeAI;
   private model: GenerativeModel;
+  private pageType: 'odd' | 'even';
 
-  constructor() {
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY environment variable is required');
+  constructor(apiKey: string, pageType: 'odd' | 'even') {
+    if (!apiKey) {
+      throw new Error(`GEMINI_API_KEY_${pageType.toUpperCase()} environment variable is required`);
     }
 
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    this.pageType = pageType;
+    this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({ 
       model: "gemini-2.0-flash-exp",
       generationConfig: {
@@ -51,6 +53,12 @@ export class GeminiService {
       )
     ]) as Promise<GenerateContentResult>;
   }
+
+  public getPageType(): 'odd' | 'even' {
+    return this.pageType;
+  }
 }
 
-export const geminiService = new GeminiService();
+// Create two separate instances for odd and even pages
+export const oddPagesGeminiService = new GeminiService(process.env.GEMINI_API_KEY_ODD || '', 'odd');
+export const evenPagesGeminiService = new GeminiService(process.env.GEMINI_API_KEY_EVEN || '', 'even');
