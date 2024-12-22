@@ -29,6 +29,7 @@ type TranslationState = {
 export default function Translate() {
   const { toast } = useToast();
   const [sourceText, setSourceText] = useState("");
+  const [documentTitle, setDocumentTitle] = useState("");
   const [translationState, setTranslationState] = useState<TranslationState>({
     pages: [],
     currentPage: 0,
@@ -36,11 +37,12 @@ export default function Translate() {
   });
   const { translate, isTranslating, progress, setProgress } = useTranslation();
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = async (file: File, fileName: string) => {
     try {
       const content = await extractTextContent(file);
       // Set the complete source text
       setSourceText(content.text);
+      setDocumentTitle(fileName); // Set the document title
       // Reset translation state when new file is uploaded
       setTranslationState({
         pages: [],
@@ -199,7 +201,7 @@ export default function Translate() {
         >
           <ResizablePanel defaultSize={50} minSize={30}>
             <TranslationPane
-              title="Source Text"
+              title={documentTitle || "Source Text"} // Use documentTitle if available
               text={sourceText}
               onChange={setSourceText}
             />

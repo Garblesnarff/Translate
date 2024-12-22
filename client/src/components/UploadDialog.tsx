@@ -14,7 +14,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 interface UploadDialogProps {
-  onUpload: (file: File) => Promise<void>;
+  onUpload: (file: File, fileName: string) => Promise<void>;
 }
 
 export default function UploadDialog({ onUpload }: UploadDialogProps) {
@@ -59,7 +59,8 @@ export default function UploadDialog({ onUpload }: UploadDialogProps) {
 
     setIsUploading(true);
     try {
-      await onUpload(file);
+      const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove file extension
+      await onUpload(file, fileName);
       setOpen(false);
       toast({
         title: "Success",

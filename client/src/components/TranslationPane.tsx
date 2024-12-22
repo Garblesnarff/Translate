@@ -17,6 +17,7 @@ import type { PDFPageContent } from '@/types/pdf';
 interface TranslationPaneProps {
   title: string;
   text: string;
+  documentTitle?: string;
   onChange: (text: string) => void;
   readOnly?: boolean;
   totalPages?: number;
@@ -94,7 +95,7 @@ export default function TranslationPane({
   return (
     <Card className="h-full bg-background/95">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-xl font-bold">{title}</CardTitle>
+        <CardTitle className="text-xl font-bold">{documentTitle || title}</CardTitle>
         <div className="flex items-center gap-2">
           {readOnly && text.trim() && (
             <Button
