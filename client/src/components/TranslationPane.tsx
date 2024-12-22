@@ -45,6 +45,7 @@ export default function TranslationPane({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [fileName, setFileName] = useState(''); // Added state for filename
 
   const { pages } = useMemo(() => {
     return { pages: [text] };
@@ -63,18 +64,19 @@ export default function TranslationPane({
   }, [onPageChange, totalPages]);
 
   const handleExport = async () => {
+    setIsExporting(true);
     try {
-      setIsExporting(true);
+      const finalFileName = fileName.trim() || 'translation';
       const pagesToExport = allPages ?? [{ pageNumber: currentPage, text }];
       const pdfBlob = await generatePDF(pagesToExport);
 
       const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'translation.pdf';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${finalFileName}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
       toast({
@@ -99,21 +101,30 @@ export default function TranslationPane({
         <CardTitle className="text-xl font-bold">{documentTitle || title}</CardTitle>
         <div className="flex items-center gap-2">
           {readOnly && text.trim() && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              disabled={isExporting}
-            >
-              {isExporting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Exporting...
-                </>
-              ) : (
-                'Export PDF'
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="PDF filename"
+                className="h-9 w-40 rounded-md border border-input bg-background px-3 text-sm"
+                onChange={(e) => setFileName(e.target.value)}
+                value={fileName}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Exporting
+                  </>
+                ) : (
+                  'Export PDF'
+                )}
+              </Button>
+            </div>
           )}
           {readOnly && totalPages > 1 && (
             <div className="flex items-center gap-2">
