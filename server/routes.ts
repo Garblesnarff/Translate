@@ -9,15 +9,24 @@ import { translationService } from './services/translationService';
 import { TibetanDictionary } from './dictionary';
 import { PDFGenerator } from './services/pdf/PDFGenerator';
 import { spawn } from 'child_process';
-import { promisify } from 'util';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+// Get __filename and __dirname equivalent
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 
 // Function to execute Python script
 async function executeDataGatheringCrew(text: string) {
-  return new Promise((resolve, reject) => {
-    const pythonProcess = spawn('python3', [
-      'client/src/data_gathering_crew/main.py'
-    ]);
-    
+    return new Promise((resolve, reject) => {
+      const pythonScriptPath = path.resolve(
+        process.cwd(), 'client', 'src', 'data_gathering_crew', 'main.py'
+    );
+      console.log("python path:", pythonScriptPath);
+    const pythonProcess = spawn('python3', [pythonScriptPath]);
+
     let result = '';
     let error = '';
 
@@ -42,11 +51,10 @@ async function executeDataGatheringCrew(text: string) {
   });
 }
 
-
 // Schema for validating translation requests
 const TranslationRequestSchema = z.object({
-  text: z.string().min(1).max(100000),
-});
+    text: z.string().min(1).max(100000),
+  });
 
 // Configure rate limiter
 const limiter = rateLimit({
@@ -181,10 +189,10 @@ export function registerRoutes(app: Express) {
                 );
               }
 
-              // Wait for both chunks in the pair to complete
-              const pairResults = await Promise.all(currentPair);
-              results.push(...pairResults);
-            }
+                // Wait for both chunks in the pair to complete
+                const pairResults = await Promise.all(currentPair);
+                results.push(...pairResults);
+              }
 
           // Process results
             const allResults = results;
@@ -263,21 +271,21 @@ export function registerRoutes(app: Express) {
       }
     );
 
-    app.post('/api/data-gather',
-      limiter,
-      requestLogger,
-      async (req: Request, res: Response, next: NextFunction) => {
-        try {
-          const validatedData = TranslationRequestSchema.parse(req.body);
-          const { text } = validatedData;
-          const result = await executeDataGatheringCrew(text);
-          res.json({ result });
-        } catch (error) {
-          next(error);
+      app.post('/api/data-gather',
+          limiter,
+          requestLogger,
+        async (req: Request, res: Response, next: NextFunction) => {
+          try {
+            const validatedData = TranslationRequestSchema.parse(req.body);
+            const { text } = validatedData;
+            const result = await executeDataGatheringCrew(text);
+             res.json({ result });
+           } catch (error) {
+              next(error);
+          }
         }
-      }
-    );
+      );
 
     // Register error handler
-    app.use(errorHandler);
+      app.use(errorHandler);
 }
