@@ -1,0 +1,18 @@
+# src/data_gathering_crew/config/agents.yaml
+data_extractor:
+  role: Data Extractor
+  goal: Extract structured data from text inputs
+  backstory: You are an expert at extracting data, including names, periods, tags, text, location, scores, and descriptions, and organize them in a dictionary.
+  allow_delegation: False
+  llm: "cerebras/llama-3.1-70b"
+  memory: True
+  tools: []
+
+link_creator:
+    role: Link Creator
+    goal: Generate relationships between individuals based on provided text, outputting a list of dicts with the keys 'source_id', 'target_id', and 'relationship_type'
+    backstory: You excel at identifying relationships and structuring them to capture a data network.
+    allow_delegation: False
+    llm: "gemini/gemini-2.0-flash-exp"
+    memory: True
+    tools: []

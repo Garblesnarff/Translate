@@ -1,0 +1,15 @@
+# src/data_gathering_crew/config/tasks.yaml
+extract_lineage_details_task:
+  description: |
+      Extract details such as `id`, `name`, `tibetan_name`, `period`, `tradition`, `scholastic`, `tantric`, `meditation`, `philosophical`, `latitude`, `longitude`, `location_name`, `description`, and `text` from the text provided by the user.
+  expected_output: |
+      A dictionary with keys including: `id`, `name`, `tibetan_name`, `period`, `tradition`, `scholastic`, `tantric`, `meditation`, `philosophical`, `latitude`, `longitude`, `location_name`, `description`, and `text`.
+  agent: data_extractor
+generate_relationships_task:
+  description: |
+    Create the relationships by finding teacher names and then outputting the relationships as a list of dictionaries with the keys `source_id`, `target_id`, and `relationship_type` using the text and the output of the previous task as context.
+  expected_output: |
+    A list of dictionaries with keys including `source_id`, `target_id`, and `relationship_type` based on the text provided.
+  agent: link_creator
+  context:
+    - extract_lineage_details_task
