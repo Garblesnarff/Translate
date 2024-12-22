@@ -34,6 +34,7 @@ const markdownComponents: Components = {
 export default function TranslationPane({
   title,
   text,
+  documentTitle,
   onChange,
   readOnly = false,
   totalPages = 1,
