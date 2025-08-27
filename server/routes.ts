@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler, createTranslationError } from './middleware/errorHandler';
-import { translationService } from './services/translationService';
+import { translationService, TranslationConfig } from './services/translationService';
 import { TibetanDictionary } from './dictionary';
 import { PDFGenerator } from './services/pdf/PDFGenerator';
 import { db } from '@db/index';
@@ -113,7 +113,23 @@ app.post('/api/translate',
         console.log('Starting parallel translation in pairs...');
         const results = [];
 
-        // Process chunks in pairs
+        // Determine translation configuration based on query parameters or defaults
+        const useEnhancedMode = req.query.enhanced !== 'false'; // Default to enhanced mode
+        const translationConfig: TranslationConfig = {
+          useHelperAI: req.query.useHelperAI !== 'false',
+          useMultiPass: req.query.useMultiPass !== 'false',
+          maxIterations: parseInt(req.query.maxIterations as string) || 3,
+          qualityThreshold: parseFloat(req.query.qualityThreshold as string) || 0.8,
+          useChainOfThought: req.query.useChainOfThought === 'true',
+          enableQualityAnalysis: req.query.enableQualityAnalysis !== 'false',
+          timeout: 120000 // 2 minutes for enhanced processing
+        };
+
+        console.log(`Translation mode: ${useEnhancedMode ? 'Enhanced' : 'Legacy'}`);
+        console.log(`Helper AI: ${translationConfig.useHelperAI ? 'Enabled' : 'Disabled'}`);
+        console.log(`Multi-pass: ${translationConfig.useMultiPass ? 'Enabled' : 'Disabled'}`);
+
+        // Process chunks in pairs using the enhanced translation service
         for (let i = 0; i < chunks.length; i += 2) {
           const currentPair = [];
           
@@ -121,13 +137,45 @@ app.post('/api/translate',
           currentPair.push(
             (async () => {
               try {
-                console.log(`Translating page ${chunks[i].pageNumber}`);
-                const result = await translationService.translateText({pageNumber: chunks[i].pageNumber, content: chunks[i].text});
-                return {
-                  pageNumber: chunks[i].pageNumber,
-                  translation: result.translation,
-                  confidence: result.confidence
-                };
+                console.log(`Starting translation for page ${chunks[i].pageNumber}`);
+                
+                if (useEnhancedMode) {
+                  const result = await translationService.translateText(
+                    {
+                      pageNumber: chunks[i].pageNumber,
+                      content: chunks[i].text
+                    },
+                    translationConfig
+                  );
+                  
+                  console.log(`Page ${chunks[i].pageNumber} completed:`, {
+                    confidence: result.confidence.toFixed(3),
+                    modelAgreement: result.modelAgreement?.toFixed(3),
+                    iterations: result.iterationsUsed,
+                    models: result.helperModels?.length || 1,
+                    quality: result.quality?.grade,
+                    processingTime: result.processingTime
+                  });
+                  
+                  return {
+                    pageNumber: chunks[i].pageNumber,
+                    translation: result.translation,
+                    confidence: result.confidence,
+                    quality: result.quality,
+                    modelAgreement: result.modelAgreement,
+                    iterationsUsed: result.iterationsUsed,
+                    helperModels: result.helperModels,
+                    processingTime: result.processingTime
+                  };
+                } else {
+                  // Legacy mode for backwards compatibility
+                  const result = await translationService.translateTextLegacy({pageNumber: chunks[i].pageNumber, content: chunks[i].text});
+                  return {
+                    pageNumber: chunks[i].pageNumber,
+                    translation: result.translation,
+                    confidence: result.confidence
+                  };
+                }
               } catch (error) {
                 console.error(`Error translating page ${chunks[i].pageNumber}:`, error);
                 return {
@@ -143,13 +191,45 @@ app.post('/api/translate',
             currentPair.push(
               (async () => {
                 try {
-                  console.log(`Translating page ${chunks[i + 1].pageNumber}`);
-                  const result = await translationService.translateText({pageNumber: chunks[i + 1].pageNumber, content: chunks[i + 1].text});
-                  return {
-                    pageNumber: chunks[i + 1].pageNumber,
-                    translation: result.translation,
-                    confidence: result.confidence
-                  };
+                  console.log(`Starting translation for page ${chunks[i + 1].pageNumber}`);
+                  
+                  if (useEnhancedMode) {
+                    const result = await translationService.translateText(
+                      {
+                        pageNumber: chunks[i + 1].pageNumber,
+                        content: chunks[i + 1].text
+                      },
+                      translationConfig
+                    );
+                    
+                    console.log(`Page ${chunks[i + 1].pageNumber} completed:`, {
+                      confidence: result.confidence.toFixed(3),
+                      modelAgreement: result.modelAgreement?.toFixed(3),
+                      iterations: result.iterationsUsed,
+                      models: result.helperModels?.length || 1,
+                      quality: result.quality?.grade,
+                      processingTime: result.processingTime
+                    });
+                    
+                    return {
+                      pageNumber: chunks[i + 1].pageNumber,
+                      translation: result.translation,
+                      confidence: result.confidence,
+                      quality: result.quality,
+                      modelAgreement: result.modelAgreement,
+                      iterationsUsed: result.iterationsUsed,
+                      helperModels: result.helperModels,
+                      processingTime: result.processingTime
+                    };
+                  } else {
+                    // Legacy mode for backwards compatibility
+                    const result = await translationService.translateTextLegacy({pageNumber: chunks[i + 1].pageNumber, content: chunks[i + 1].text});
+                    return {
+                      pageNumber: chunks[i + 1].pageNumber,
+                      translation: result.translation,
+                      confidence: result.confidence
+                    };
+                  }
                 } catch (error) {
                   console.error(`Error translating page ${chunks[i + 1].pageNumber}:`, error);
                   return {
@@ -201,6 +281,19 @@ app.post('/api/translate',
           ? confidenceScores.reduce((a, b) => a + b, 0) / confidenceScores.length
           : 0;
 
+        // Calculate enhanced metadata
+        const totalProcessingTime = translations.reduce((sum: number, t: any) => sum + (t.processingTime || 0), 0);
+        const averageModelAgreement = translations.length > 0 
+          ? translations.reduce((sum: number, t: any) => sum + (t.modelAgreement || 1), 0) / translations.length 
+          : 1;
+        const totalIterations = translations.reduce((sum: number, t: any) => sum + (t.iterationsUsed || 1), 0);
+        const uniqueHelperModels = [...new Set(translations.flatMap((t: any) => t.helperModels || []))];
+        const qualityGrades = translations.map((t: any) => t.quality?.grade).filter(Boolean);
+        const qualityDistribution = qualityGrades.reduce((acc: any, grade: string) => {
+          acc[grade] = (acc[grade] || 0) + 1;
+          return acc;
+        }, {});
+
         // Save translation to database
         const translationData: InsertTranslation = {
           sourceText: text,
@@ -214,16 +307,24 @@ app.post('/api/translate',
 
         const [savedTranslation] = await db.insert(tables.translations).values(translationData).returning();
 
-        // Return translation results with metadata
+        // Return enhanced translation results with comprehensive metadata
         res.json({ 
           id: savedTranslation.id,
           translatedText: combinedText,
           metadata: {
             processingTime: Date.now() - startTime,
+            totalModelProcessingTime: totalProcessingTime,
             chunkCount: chunks.length,
             successfulChunks: translations.length,
             failedChunks: errors.length,
             confidence: averageConfidence,
+            modelAgreement: averageModelAgreement,
+            totalIterations,
+            averageIterationsPerChunk: translations.length > 0 ? totalIterations / translations.length : 0,
+            helperModelsUsed: uniqueHelperModels,
+            qualityDistribution,
+            enhancedMode: useEnhancedMode,
+            translationConfig: useEnhancedMode ? translationConfig : undefined,
             errors: errors.length > 0 ? errors : undefined
           }
         });
@@ -253,6 +354,20 @@ app.post('/api/translate',
           500,
           error instanceof Error ? error.message : undefined
         ));
+      }
+    }
+  );
+
+  // Add endpoint to get translation service capabilities
+  app.get('/api/translation/capabilities',
+    limiter,
+    requestLogger,
+    (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const capabilities = translationService.getCapabilities();
+        res.json(capabilities);
+      } catch (error) {
+        next(error);
       }
     }
   );
@@ -307,6 +422,34 @@ app.post('/api/translate',
         }
 
         res.json(translation[0]);
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  // Add endpoint to get/set translation configuration
+  app.get('/api/translation/config',
+    limiter,
+    requestLogger,
+    (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const config = translationService.getConfig();
+        res.json(config);
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  app.post('/api/translation/config',
+    limiter,
+    requestLogger,
+    (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const config = req.body;
+        translationService.setConfig(config);
+        res.json({ message: 'Configuration updated successfully', config: translationService.getConfig() });
       } catch (error) {
         next(error);
       }
