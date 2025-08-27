@@ -1,0 +1,331 @@
+{
+  "name": "Monastery Content Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "daily-6am-trigger",
+      "name": "6AM Daily Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 240]
+    },
+    {
+      "parameters": {
+        "path": "monastery-upload",
+        "options": {}
+      },
+      "id": "pdf-upload-webhook",
+      "name": "PDF Upload Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 400],
+      "webhookId": "monastery-upload"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5001/api/translations/recent",
+        "options": {
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "limit",
+                "value": "5"
+              }
+            ]
+          }
+        }
+      },
+      "id": "get-wisdom-text",
+      "name": "Get Daily Wisdom Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 240]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5001/api/batch/translate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "multipart/form-data"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "files",
+              "value": "={{ $binary.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "batch-translate-upload",
+      "name": "Batch Translate Upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract a random wisdom text for daily content\\nconst translations = $input.all();\\n\\nif (translations.length === 0) {\\n  return [{\\n    json: {\\n      selectedText: \\\"No translations available\\\",\\n      tibetan: \\\"\\\",\\n      english: \\\"Please upload texts to generate content\\\",\\n      confidence: 0\\n    }\\n  }];\\n}\\n\\n// Select a random translation\\nconst randomIndex = Math.floor(Math.random() * translations.length);\\nconst selectedTranslation = translations[randomIndex].json;\\n\\n// Extract first paragraph for daily wisdom\\nconst textLines = selectedTranslation.translatedText.split('\\\\n').filter(line => line.trim());\\nconst wisdomText = textLines.slice(0, 3).join(' '); // First 3 lines\\n\\nreturn [{\\n  json: {\\n    selectedText: wisdomText,\\n    tibetan: selectedTranslation.sourceText.split('\\\\n')[0] || \\\"\\\", // First line of Tibetan\\n    english: wisdomText,\\n    confidence: selectedTranslation.confidence,\\n    translationId: selectedTranslation.id,\\n    date: new Date().toISOString().split('T')[0]\\n  }\\n}];"
+      },
+      "id": "generate-daily-content",
+      "name": "Generate Daily Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 240]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "url": "=http://localhost:5001/api/batch/status/{{ $json.jobId }}",
+        "options": {}
+      },
+      "id": "monitor-batch-progress",
+      "name": "Monitor Batch Progress",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $env.GEMINI_API_KEY_ODD }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "contents",
+              "value": "=[{\"parts\":[{\"text\":\"Based on this Tibetan wisdom text:\\n\\nTibetan: {{ $json.tibetan }}\\nEnglish: {{ $json.english }}\\n\\nCreate:\\n1. A modern interpretation for daily life (2-3 sentences)\\n2. A practical meditation instruction (1-2 sentences)\\n3. A reflection question for the reader\\n\\nFormat as a blog post suitable for the Sakya Monastery's daily wisdom series.\"}]}]"
+            },
+            {
+              "name": "generationConfig",
+              "value": "={\"temperature\":0.7,\"topK\":64,\"topP\":0.95,\"maxOutputTokens\":8192}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-blog-post",
+      "name": "Create Blog Post with Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 240]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "value2": "completed"
+            }
+          ]
+        }
+      },
+      "id": "check-batch-complete",
+      "name": "Check Batch Complete",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5001/api/translations/recent",
+        "options": {}
+      },
+      "id": "get-new-translations",
+      "name": "Get New Translations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "resource": "file",
+        "path": "=/monastery-content/daily-wisdom/{{ $('Generate Daily Content').item.json.date }}-wisdom.md",
+        "fileContent": "=# Daily Wisdom from Sakya Monastery\\n\\n**Date:** {{ $('Generate Daily Content').item.json.date }}\\n\\n## Original Text\\n{{ $('Generate Daily Content').item.json.tibetan }}\\n\\n## Translation\\n{{ $('Generate Daily Content').item.json.english }}\\n\\n## Modern Interpretation\\n{{ $json.candidates[0].content.parts[0].text }}\\n\\n---\\n*Translation ID: {{ $('Generate Daily Content').item.json.translationId }}*\\n*Confidence: {{ $('Generate Daily Content').item.json.confidence }}*"
+      },
+      "id": "save-daily-content",
+      "name": "Save Daily Content",
+      "type": "n8n-nodes-base.filesReadWrite",
+      "typeVersion": 1,
+      "position": [1120, 240]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "combine-results",
+      "name": "Combine Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [1340, 320]
+    }
+  ],
+  "connections": {
+    "6AM Daily Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Daily Wisdom Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF Upload Webhook": {
+      "main": [
+        [
+          {
+            "node": "Batch Translate Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Daily Wisdom Text": {
+      "main": [
+        [
+          {
+            "node": "Generate Daily Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Translate Upload": {
+      "main": [
+        [
+          {
+            "node": "Monitor Batch Progress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Daily Content": {
+      "main": [
+        [
+          {
+            "node": "Create Blog Post with Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monitor Batch Progress": {
+      "main": [
+        [
+          {
+            "node": "Check Batch Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Blog Post with Gemini": {
+      "main": [
+        [
+          {
+            "node": "Save Daily Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Batch Complete": {
+      "main": [
+        [
+          {
+            "node": "Get New Translations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Daily Content": {
+      "main": [
+        [
+          {
+            "node": "Combine Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get New Translations": {
+      "main": [
+        [
+          {
+            "node": "Combine Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "2",
+  "id": "monastery-content-pipeline",
+  "meta": {
+    "instanceId": "monastery-instance"
+  },
+  "tags": [
+    "monastery",
+    "content",
+    "automation"
+  ]
+}

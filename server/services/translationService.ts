@@ -2,13 +2,15 @@ import { GenerateContentResult } from "@google/generative-ai";
 import { TibetanDictionary } from '../dictionary';
 import { TibetanTextProcessor } from './textProcessing/TextProcessor';
 import { PromptGenerator } from './translation/PromptGenerator';
-import { oddPagesGeminiService, evenPagesGeminiService } from './translation/GeminiService';
+import { GeminiService } from './translation/GeminiService';
 import { createTranslationError } from '../middleware/errorHandler';
 
 export class TranslationService {
   private promptGenerator: PromptGenerator;
   private dictionary: TibetanDictionary;
   private textProcessor: TibetanTextProcessor;
+  private oddPagesGeminiService: GeminiService;
+  private evenPagesGeminiService: GeminiService;
 
   /**
    * Initializes the translation service with required dependencies
@@ -22,6 +24,8 @@ export class TranslationService {
       enhancedSpacing: true,
       handleHonorifics: true
     });
+    this.oddPagesGeminiService = new GeminiService(process.env.GEMINI_API_KEY_ODD || '', 'odd');
+    this.evenPagesGeminiService = new GeminiService(process.env.GEMINI_API_KEY_EVEN || '', 'even');
   }
 
   /**
@@ -38,7 +42,7 @@ export class TranslationService {
    * Get the appropriate Gemini service based on page number
    */
   private getGeminiService(pageNumber: number) {
-    return pageNumber % 2 === 0 ? evenPagesGeminiService : oddPagesGeminiService;
+    return pageNumber % 2 === 0 ? this.evenPagesGeminiService : this.oddPagesGeminiService;
   }
 
   /**

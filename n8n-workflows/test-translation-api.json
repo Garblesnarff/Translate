@@ -1,0 +1,189 @@
+{
+  "name": "Test Tibetan Translation API",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "f6d0e5c4-8f3e-4b0a-9c1d-2e3f4a5b6c7d",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "translation-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+      "name": "Translation Test Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 480],
+      "webhookId": "translation-test"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5001/api/translations/recent",
+        "options": {}
+      },
+      "id": "b2c3d4e5-f6a7-8901-2345-678901bcdefg",
+      "name": "Get Recent Translations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5001/api/translate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "Page 1:\\nThis is a test translation for the Sakya Monastery.\\n\\nPage 2:\\nTesting the translation API integration with n8n."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c3d4e5f6-a7b8-9012-3456-789012cdefgh",
+      "name": "Test Translation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5001/api/dictionary/entries",
+        "options": {}
+      },
+      "id": "d4e5f6a7-b8c9-0123-4567-890123defghi",
+      "name": "Get Dictionary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 480]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.id }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "e5f6a7b8-c9d0-1234-5678-901234efghij",
+      "name": "Check Translation Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"success\", \"message\": \"Translation completed successfully\", \"translation_id\": $('Test Translation').item.json.id } }}"
+      },
+      "id": "f6a7b8c9-d0e1-2345-6789-012345fghijk",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"error\", \"message\": \"Translation failed\", \"error\": $('Test Translation').item.json } }}"
+      },
+      "id": "a7b8c9d0-e1f2-3456-7890-123456ghijkl",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 360]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Get Recent Translations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Translation Test Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Dictionary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Recent Translations": {
+      "main": [
+        [
+          {
+            "node": "Test Translation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Translation": {
+      "main": [
+        [
+          {
+            "node": "Check Translation Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Translation Success": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1",
+  "id": "test-translation-api",
+  "meta": {
+    "instanceId": "test-instance"
+  },
+  "tags": []
+}

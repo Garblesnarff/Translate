@@ -26,14 +26,9 @@ export class PDFGenerator {
 
   private async loadFonts(): Promise<void> {
     try {
-      const fontPath = path.join(process.cwd(), 'server/services/pdf/NotoSansTibetan-Regular.ttf');
-      const fontBuffer = await fs.readFile(fontPath);
-      const fontBase64 = fontBuffer.toString('base64');
-      
-      this.doc.addFileToVFS('NotoSansTibetan-Regular.ttf', fontBase64);
-      this.doc.addFont('NotoSansTibetan-Regular.ttf', 'NotoSansTibetan', 'normal');
-      
-      this.fontLoaded = true;
+      // Skip font loading for now - use default fonts
+      this.fontLoaded = false;
+      console.log('Using default fonts for PDF generation');
     } catch (error) {
       console.error('Error loading Tibetan font:', error);
       this.fontLoaded = false;
@@ -86,7 +81,10 @@ export class PDFGenerator {
         }
 
         this.writeTitle(`Page ${page.pageNumber}`);
-        const lines = page.text.split('\n');
+        
+        // Handle both text formats
+        const textContent = page.text || page.englishText || '';
+        const lines = textContent.split('\n');
         
         for (const line of lines) {
           const trimmedLine = line.trim();

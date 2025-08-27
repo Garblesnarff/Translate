@@ -1,0 +1,73 @@
+{
+  "name": "Simple PDF Translation (Fixed)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pdf-translate-fixed",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "PDF Upload Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "pdf-translate-fixed"
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:5001/api/batch/translate",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "multipart/form-data",
+        "body": "={{ $binary }}",
+        "options": {}
+      },
+      "id": "batch-translate",
+      "name": "Send to Translation API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"success\", \"jobId\": $json.jobId || 'unknown', \"message\": \"Translation request sent\" } }}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "PDF Upload Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send to Translation API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Translation API": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "2",
+  "id": "simple-pdf-translation-fixed"
+}

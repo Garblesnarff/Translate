@@ -1,9 +1,11 @@
-import { pgTable, text, integer, timestamp } from "drizzle-orm/pg-core";
+import { text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable } from "drizzle-orm/sqlite-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { sql } from "drizzle-orm";
 import { z } from "zod";
 
-export const translations = pgTable("translations", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+export const translations = sqliteTable("translations", {
+  id: integer().primaryKey({ autoIncrement: true }),
   sourceText: text("source_text").notNull(),
   translatedText: text("translated_text").notNull(),
   confidence: text("confidence").notNull(),
@@ -12,17 +14,17 @@ export const translations = pgTable("translations", {
   textLength: integer("text_length"),
   processingTime: integer("processing_time"),
   status: text("status").notNull().default("pending"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const dictionary = pgTable("dictionary", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+export const dictionary = sqliteTable("dictionary", {
+  id: integer().primaryKey({ autoIncrement: true }),
   tibetan: text("tibetan").notNull(),
   english: text("english").notNull(),
   context: text("context"),
 });
 
-export const batchJobs = pgTable("batch_jobs", {
+export const batchJobs = sqliteTable("batch_jobs", {
   jobId: text("id").primaryKey(),
   status: text("status", { enum: ["pending", "processing", "completed", "failed"] }).notNull().default("pending"),
   totalFiles: integer("total_files").notNull(),
@@ -31,9 +33,9 @@ export const batchJobs = pgTable("batch_jobs", {
   translationIds: text("translation_ids"),
   originalFileName: text("original_file_name"),
   errorMessage: text("error_message"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  completedAt: timestamp("completed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  completedAt: text("completed_at"),
 });
 
 export const insertTranslationSchema = createInsertSchema(translations);

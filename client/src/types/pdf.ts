@@ -2,7 +2,10 @@
 
 export interface PDFPageContent {
   pageNumber: number;
-  text: string;
+  text?: string;
+  tibetanText?: string;
+  englishText?: string;
+  confidence?: string;
 }
 
 export interface PDFGenerationResult {

@@ -1,0 +1,68 @@
+{
+  "name": "PDF Processing via Shell",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "process-pdf",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Process PDF Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "process-pdf"
+    },
+    {
+      "parameters": {
+        "command": "curl -X POST http://localhost:5001/api/batch/translate -F \"files=@/Users/rob/Documents/Tibet/RRAL001.pdf\""
+      },
+      "id": "execute-curl",
+      "name": "Execute PDF Translation",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.parse($json.stdout) }}"
+      },
+      "id": "success-response",
+      "name": "Return Translation Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Process PDF Webhook": {
+      "main": [
+        [
+          {
+            "node": "Execute PDF Translation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute PDF Translation": {
+      "main": [
+        [
+          {
+            "node": "Return Translation Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1",
+  "id": "pdf-via-shell"
+}

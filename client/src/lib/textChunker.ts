@@ -1,6 +1,6 @@
 interface TextChunk {
   pageNumber: number;
-  content: string;
+  text: string;
 }
 
 export function splitTextIntoChunks(text: string): TextChunk[] {
@@ -17,13 +17,13 @@ export function splitTextIntoChunks(text: string): TextChunk[] {
       if (!pageMatch) return null;
       
       const pageNumber = parseInt(pageMatch[1]);
-      const content = chunk.replace(/^\s*\d+\s+/, '').trim();
+      const text = chunk.replace(/^\s*\d+\s+/, '').trim();
       
-      if (!content) return null;
+      if (!text) return null;
       
       return {
         pageNumber,
-        content
+        text
       };
     })
     .filter((chunk): chunk is TextChunk => chunk !== null);
@@ -38,7 +38,7 @@ export function splitTextIntoChunks(text: string): TextChunk[] {
   if (trimmedText) {
     return [{
       pageNumber: 1,
-      content: trimmedText
+      text: trimmedText
     }];
   }
 
