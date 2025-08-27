@@ -299,11 +299,17 @@ Translation:`;
     }
 
     if (config.modelId.includes('qwen')) {
-      return {
+      const qwenBody: any = {
         ...baseBody,
-        top_p: 0.8,
-        frequency_penalty: 0.1
+        top_p: 0.8
       };
+      
+      // Only add frequency_penalty for non-Cerebras providers
+      if (!config.baseUrl.includes('cerebras')) {
+        qwenBody.frequency_penalty = 0.1;
+      }
+      
+      return qwenBody;
     }
 
     return baseBody;

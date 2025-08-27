@@ -140,7 +140,8 @@ export class TranslationService {
             chunk.content,
             currentTranslation.translation,
             iteration,
-            mergedConfig
+            mergedConfig,
+            chunk.pageNumber
           );
           
           if (refinedTranslation.confidence > finalConfidence) {
@@ -249,7 +250,8 @@ export class TranslationService {
     originalText: string,
     currentTranslation: string,
     iteration: number,
-    config: TranslationConfig
+    config: TranslationConfig,
+    pageNumber: number
   ): Promise<{ translation: string; confidence: number }> {
     const focusAreas = this.determineFocusAreas(currentTranslation, iteration);
     const refinementPrompt = this.promptGenerator.createRefinementPrompt(
@@ -258,8 +260,9 @@ export class TranslationService {
       focusAreas
     );
     
-    // Use primary Gemini service for refinement
-    const result = await oddPagesGeminiService.generateContent(refinementPrompt, config.timeout);
+    // Use correct Gemini service based on page number
+    const geminiService = this.getGeminiService(pageNumber);
+    const result = await geminiService.generateContent(refinementPrompt, config.timeout);
     const response = await result.response;
     const refinedTranslation = response.text();
     

@@ -27,31 +27,56 @@ export class GeminiService {
   }
 
   /**
-   * Generates content using the Gemini AI model with timeout handling
+   * Generates content using the Gemini AI model with timeout handling and retry logic
    * @param prompt - The prompt to generate content from
    * @param timeout - Maximum time to wait for generation in milliseconds
    * @returns The generated content result
-   * @throws Error if generation times out or fails
+   * @throws Error if generation times out or fails after retries
    */
   public async generateContent(prompt: string, timeout: number = 30000): Promise<GenerateContentResult> {
-    return Promise.race([
-      this.model.generateContent({
-        contents: [{ 
-          role: "user", 
-          parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          topK: 1,
-          topP: 0.8,
-          maxOutputTokens: 8192,
-          candidateCount: 1,
-        },
-      }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Translation timeout')), timeout)
-      )
-    ]) as Promise<GenerateContentResult>;
+    const maxRetries = 3;
+    const baseDelay = 1000; // 1 second
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await Promise.race([
+          this.model.generateContent({
+            contents: [{ 
+              role: "user", 
+              parts: [{ text: prompt }]
+            }],
+            generationConfig: {
+              temperature: 0.1,
+              topK: 1,
+              topP: 0.8,
+              maxOutputTokens: 8192,
+              candidateCount: 1,
+            },
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Translation timeout')), timeout)
+          )
+        ]) as Promise<GenerateContentResult>;
+      } catch (error) {
+        // Check if it's a rate limit error
+        if (error instanceof Error && error.message.includes('429')) {
+          console.log(`[GeminiService] Rate limit hit on attempt ${attempt}/${maxRetries} for ${this.pageType} pages, retrying...`);
+          
+          if (attempt === maxRetries) {
+            throw error; // Re-throw on final attempt
+          }
+          
+          // Exponential backoff: 1s, 2s, 4s
+          const delay = baseDelay * Math.pow(2, attempt - 1);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          // For non-rate-limit errors, throw immediately
+          throw error;
+        }
+      }
+    }
+    
+    throw new Error('Max retries exceeded');
   }
 
   public getPageType(): 'odd' | 'even' {

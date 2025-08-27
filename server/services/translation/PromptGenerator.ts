@@ -159,7 +159,7 @@ IMPROVEMENT GUIDELINES:
 4. Maintain consistency with standard terminology
 5. Fix any grammatical or structural issues${focusGuidance}
 
-Provide the improved translation (format: English sentence (Tibetan original)):`;
+IMPORTANT: Provide ONLY the improved translation without any explanation, commentary, or meta-text. Do not include phrases like "Here's an improved translation" or "Key improvements". Simply provide the translation in the requested format: English sentence (Tibetan original)`;
     }
 
     /**
