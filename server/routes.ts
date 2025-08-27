@@ -16,6 +16,43 @@ import { randomUUID } from 'crypto';
 // import pdfParse from 'pdf-parse'; // Temporarily disabled due to initialization bug
 
 /**
+ * Progress emitter for Server-Sent Events
+ */
+class TranslationProgressEmitter {
+  private res: Response;
+  private closed = false;
+
+  constructor(response: Response) {
+    this.res = response;
+  }
+
+  emit(event: string, data: any) {
+    if (this.closed) return;
+    
+    try {
+      this.res.write(`event: ${event}\n`);
+      this.res.write(`data: ${JSON.stringify(data)}\n\n`);
+    } catch (error) {
+      console.error('Error writing SSE data:', error);
+      this.closed = true;
+    }
+  }
+
+  close() {
+    if (!this.closed) {
+      this.closed = true;
+      try {
+        this.res.write('event: close\n');
+        this.res.write('data: {}\n\n');
+        this.res.end();
+      } catch (error) {
+        console.error('Error closing SSE connection:', error);
+      }
+    }
+  }
+}
+
+/**
  * Schema for validating translation requests
  */
 const TranslationRequestSchema = z.object({
@@ -368,6 +405,353 @@ app.post('/api/translate',
         res.json(capabilities);
       } catch (error) {
         next(error);
+      }
+    }
+  );
+
+  // Server-Sent Events endpoint for real-time translation progress
+  app.post('/api/translate/stream',
+    limiter,
+    requestLogger,
+    async (req: Request, res: Response, next: NextFunction) => {
+      const startTime = Date.now();
+      let progressEmitter: TranslationProgressEmitter;
+
+      try {
+        const validatedData = TranslationRequestSchema.parse(req.body);
+        const { text } = validatedData;
+
+        // Set up SSE headers
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Cache-Control'
+        });
+
+        // Create progress emitter
+        progressEmitter = new TranslationProgressEmitter(res);
+
+        progressEmitter.emit('start', { 
+          message: 'Starting translation process...', 
+          timestamp: Date.now() 
+        });
+
+        const chunks = splitTextIntoChunks(text);
+        if (chunks.length === 0) {
+          progressEmitter.emit('error', { 
+            message: 'No valid text chunks found',
+            code: 'INVALID_TEXT'
+          });
+          return;
+        }
+
+        progressEmitter.emit('progress', {
+          message: `Processing ${chunks.length} pages...`,
+          progress: 5,
+          totalPages: chunks.length,
+          currentPage: 0
+        });
+
+        // Determine translation configuration
+        const useEnhancedMode = req.query.enhanced !== 'false';
+        const translationConfig: TranslationConfig = {
+          useHelperAI: req.query.useHelperAI !== 'false',
+          useMultiPass: req.query.useMultiPass !== 'false',
+          maxIterations: parseInt(req.query.maxIterations as string) || 3,
+          qualityThreshold: parseFloat(req.query.qualityThreshold as string) || 0.8,
+          useChainOfThought: req.query.useChainOfThought === 'true',
+          enableQualityAnalysis: req.query.enableQualityAnalysis !== 'false',
+          timeout: 120000
+        };
+
+        progressEmitter.emit('config', {
+          message: `Translation mode: ${useEnhancedMode ? 'Enhanced' : 'Legacy'}`,
+          config: {
+            enhancedMode: useEnhancedMode,
+            helperAI: translationConfig.useHelperAI,
+            multiPass: translationConfig.useMultiPass,
+            maxIterations: translationConfig.maxIterations
+          }
+        });
+
+        const translations = [];
+        const errors = [];
+        let confidenceScores = [];
+
+        // Process chunks with progress reporting
+        for (let i = 0; i < chunks.length; i += 2) {
+          const currentPair = [];
+          const startPage = i + 1;
+          const endPage = Math.min(i + 2, chunks.length);
+
+          progressEmitter.emit('pair_start', {
+            message: `Processing pages ${startPage}-${endPage}...`,
+            progress: Math.floor((i / chunks.length) * 80) + 10,
+            currentPage: startPage,
+            totalPages: chunks.length
+          });
+
+          // First chunk of the pair
+          currentPair.push(
+            (async () => {
+              try {
+                progressEmitter.emit('page_start', {
+                  message: `Translating page ${chunks[i].pageNumber}...`,
+                  pageNumber: chunks[i].pageNumber,
+                  pageType: chunks[i].pageNumber % 2 === 1 ? 'odd' : 'even'
+                });
+
+                if (useEnhancedMode) {
+                  const result = await translationService.translateText(
+                    {
+                      pageNumber: chunks[i].pageNumber,
+                      content: chunks[i].text
+                    },
+                    translationConfig
+                  );
+
+                  progressEmitter.emit('page_complete', {
+                    message: `Page ${chunks[i].pageNumber} completed`,
+                    pageNumber: chunks[i].pageNumber,
+                    confidence: result.confidence,
+                    modelAgreement: result.modelAgreement,
+                    iterations: result.iterationsUsed,
+                    models: result.helperModels?.length || 1,
+                    quality: result.quality?.grade,
+                    processingTime: result.processingTime
+                  });
+
+                  return {
+                    pageNumber: chunks[i].pageNumber,
+                    translation: result.translation,
+                    confidence: result.confidence,
+                    quality: result.quality,
+                    modelAgreement: result.modelAgreement,
+                    iterationsUsed: result.iterationsUsed,
+                    helperModels: result.helperModels,
+                    processingTime: result.processingTime
+                  };
+                } else {
+                  const result = await translationService.translateTextLegacy({
+                    pageNumber: chunks[i].pageNumber, 
+                    content: chunks[i].text
+                  });
+                  
+                  progressEmitter.emit('page_complete', {
+                    message: `Page ${chunks[i].pageNumber} completed (legacy)`,
+                    pageNumber: chunks[i].pageNumber,
+                    confidence: result.confidence
+                  });
+
+                  return {
+                    pageNumber: chunks[i].pageNumber,
+                    translation: result.translation,
+                    confidence: result.confidence
+                  };
+                }
+              } catch (error) {
+                progressEmitter.emit('page_error', {
+                  message: `Error translating page ${chunks[i].pageNumber}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                  pageNumber: chunks[i].pageNumber,
+                  error: error instanceof Error ? error.message : 'Unknown error'
+                });
+                return {
+                  pageNumber: chunks[i].pageNumber,
+                  error: error instanceof Error ? error.message : 'Unknown error'
+                };
+              }
+            })()
+          );
+
+          // Second chunk of the pair if it exists
+          if (i + 1 < chunks.length) {
+            currentPair.push(
+              (async () => {
+                try {
+                  progressEmitter.emit('page_start', {
+                    message: `Translating page ${chunks[i + 1].pageNumber}...`,
+                    pageNumber: chunks[i + 1].pageNumber,
+                    pageType: chunks[i + 1].pageNumber % 2 === 1 ? 'odd' : 'even'
+                  });
+
+                  if (useEnhancedMode) {
+                    const result = await translationService.translateText(
+                      {
+                        pageNumber: chunks[i + 1].pageNumber,
+                        content: chunks[i + 1].text
+                      },
+                      translationConfig
+                    );
+
+                    progressEmitter.emit('page_complete', {
+                      message: `Page ${chunks[i + 1].pageNumber} completed`,
+                      pageNumber: chunks[i + 1].pageNumber,
+                      confidence: result.confidence,
+                      modelAgreement: result.modelAgreement,
+                      iterations: result.iterationsUsed,
+                      models: result.helperModels?.length || 1,
+                      quality: result.quality?.grade,
+                      processingTime: result.processingTime
+                    });
+
+                    return {
+                      pageNumber: chunks[i + 1].pageNumber,
+                      translation: result.translation,
+                      confidence: result.confidence,
+                      quality: result.quality,
+                      modelAgreement: result.modelAgreement,
+                      iterationsUsed: result.iterationsUsed,
+                      helperModels: result.helperModels,
+                      processingTime: result.processingTime
+                    };
+                  } else {
+                    const result = await translationService.translateTextLegacy({
+                      pageNumber: chunks[i + 1].pageNumber, 
+                      content: chunks[i + 1].text
+                    });
+                    
+                    progressEmitter.emit('page_complete', {
+                      message: `Page ${chunks[i + 1].pageNumber} completed (legacy)`,
+                      pageNumber: chunks[i + 1].pageNumber,
+                      confidence: result.confidence
+                    });
+
+                    return {
+                      pageNumber: chunks[i + 1].pageNumber,
+                      translation: result.translation,
+                      confidence: result.confidence
+                    };
+                  }
+                } catch (error) {
+                  progressEmitter.emit('page_error', {
+                    message: `Error translating page ${chunks[i + 1].pageNumber}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    pageNumber: chunks[i + 1].pageNumber,
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                  });
+                  return {
+                    pageNumber: chunks[i + 1].pageNumber,
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                  };
+                }
+              })()
+            );
+          }
+
+          // Wait for both pages in the pair to complete
+          const pairResults = await Promise.all(currentPair);
+          
+          // Process results
+          for (const result of pairResults) {
+            if ('error' in result) {
+              errors.push({
+                pageNumber: result.pageNumber,
+                error: result.error
+              });
+            } else {
+              translations.push(result);
+              confidenceScores.push(result.confidence);
+            }
+          }
+
+          progressEmitter.emit('pair_complete', {
+            message: `Pages ${startPage}-${endPage} completed`,
+            progress: Math.floor(((i + 2) / chunks.length) * 80) + 10,
+            completedPages: i + 2,
+            totalPages: chunks.length,
+            successfulTranslations: translations.length,
+            errors: errors.length
+          });
+        }
+
+        // Finalization phase
+        progressEmitter.emit('finalizing', {
+          message: 'Finalizing translation...',
+          progress: 90
+        });
+
+        if (translations.length === 0) {
+          progressEmitter.emit('error', {
+            message: 'Translation failed for all pages',
+            code: 'TRANSLATION_FAILED',
+            errors
+          });
+          return;
+        }
+
+        // Combine translated chunks in order
+        const combinedText = translations
+          .sort((a, b) => a.pageNumber - b.pageNumber)
+          .map(t => t.translation.replace(/^## Translation of Tibetan Text \(Page \d+\)\n*/, ''))
+          .join('\n\n');
+
+        // Calculate metadata
+        const averageConfidence = confidenceScores.length > 0
+          ? confidenceScores.reduce((a, b) => a + b, 0) / confidenceScores.length
+          : 0;
+        
+        const totalProcessingTime = translations.reduce((sum: number, t: any) => sum + (t.processingTime || 0), 0);
+        const averageModelAgreement = translations.length > 0 
+          ? translations.reduce((sum: number, t: any) => sum + (t.modelAgreement || 1), 0) / translations.length 
+          : 1;
+
+        progressEmitter.emit('saving', {
+          message: 'Saving translation to database...',
+          progress: 95
+        });
+
+        // Save translation to database
+        const translationData: InsertTranslation = {
+          sourceText: text,
+          translatedText: combinedText,
+          confidence: averageConfidence.toFixed(3),
+          pageCount: chunks.length,
+          textLength: text.length,
+          processingTimeMs: Date.now() - startTime,
+          status: 'completed',
+          metadata: JSON.stringify({
+            useEnhancedMode,
+            totalProcessingTime,
+            averageModelAgreement,
+            qualityMetrics: translations.map(t => t.quality).filter(Boolean),
+            helperModelsUsed: [...new Set(translations.flatMap((t: any) => t.helperModels || []))],
+            errorCount: errors.length
+          })
+        };
+
+        const [savedTranslation] = await db.insert(tables.translations).values(translationData).returning();
+
+        // Send completion event
+        progressEmitter.emit('complete', {
+          message: 'Translation completed successfully!',
+          progress: 100,
+          result: {
+            id: savedTranslation.id,
+            translatedText: combinedText,
+            confidence: averageConfidence,
+            pageCount: chunks.length,
+            processingTime: Date.now() - startTime,
+            metadata: {
+              successfulPages: translations.length,
+              errorPages: errors.length,
+              averageModelAgreement,
+              useEnhancedMode
+            }
+          }
+        });
+
+        progressEmitter.close();
+
+      } catch (error) {
+        console.error('Translation stream error:', error);
+        if (progressEmitter!) {
+          progressEmitter.emit('error', {
+            message: error instanceof Error ? error.message : 'Unknown error occurred',
+            code: 'STREAM_ERROR'
+          });
+          progressEmitter.close();
+        }
       }
     }
   );

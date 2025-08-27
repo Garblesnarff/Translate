@@ -35,7 +35,7 @@ export default function Translate() {
     currentPage: 0,
     error: null
   });
-  const { translate, isTranslating, progress, setProgress } = useTranslation();
+  const { translate, isTranslating, progress, progressInfo, canCancel, cancelTranslation, setProgress } = useTranslation();
 
   const handleFileUpload = async (file: File, fileName: string) => {
     try {
@@ -192,7 +192,14 @@ export default function Translate() {
         </div>
       </div>
 
-      {isTranslating && <ProgressIndicator progress={progress} />}
+      {isTranslating && (
+        <ProgressIndicator 
+          progress={progress} 
+          progressInfo={progressInfo}
+          canCancel={canCancel}
+          onCancel={cancelTranslation}
+        />
+      )}
 
       <div className="flex-1 p-4">
         <ResizablePanelGroup
