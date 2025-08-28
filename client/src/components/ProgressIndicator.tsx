@@ -38,15 +38,17 @@ function getProgressColor(progress: number): string {
 }
 
 export default function ProgressIndicator({ 
-  progress, 
+  progress = 0, 
   progressInfo, 
   canCancel, 
   onCancel 
 }: ProgressIndicatorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   
-  const progressColor = getProgressColor(progress);
-  const isActive = progress > 0 && progress < 100;
+  // Ensure progress is always a valid number
+  const safeProgress = typeof progress === 'number' && !isNaN(progress) ? progress : 0;
+  const progressColor = getProgressColor(safeProgress);
+  const isActive = safeProgress > 0 && safeProgress < 100;
 
   return (
     <Card className="mx-4 mb-4 bg-background/95 backdrop-blur-sm border shadow-lg">
@@ -64,7 +66,7 @@ export default function ProgressIndicator({
               </Badge>
             )}
             <span className="text-sm font-mono text-muted-foreground">
-              {progress.toFixed(0)}%
+              {safeProgress.toFixed(0)}%
             </span>
             {canCancel && (
               <Button
@@ -81,7 +83,7 @@ export default function ProgressIndicator({
         
         <div className="space-y-2">
           <Progress 
-            value={progress} 
+            value={safeProgress} 
             className={`h-2 transition-all duration-300 ${isActive ? 'animate-pulse' : ''}`}
           />
           
@@ -213,11 +215,11 @@ export default function ProgressIndicator({
                   <span className="font-medium text-muted-foreground">Processing Pipeline</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <Badge variant={progress > 0 ? 'default' : 'outline'} className="text-xs">Start</Badge>
-                  <Badge variant={progress > 25 ? 'default' : 'outline'} className="text-xs">Translation</Badge>
-                  <Badge variant={progress > 75 ? 'default' : 'outline'} className="text-xs">Quality Check</Badge>
-                  <Badge variant={progress > 90 ? 'default' : 'outline'} className="text-xs">Finalize</Badge>
-                  <Badge variant={progress >= 100 ? 'default' : 'outline'} className="text-xs">Complete</Badge>
+                  <Badge variant={safeProgress > 0 ? 'default' : 'outline'} className="text-xs">Start</Badge>
+                  <Badge variant={safeProgress > 25 ? 'default' : 'outline'} className="text-xs">Translation</Badge>
+                  <Badge variant={safeProgress > 75 ? 'default' : 'outline'} className="text-xs">Quality Check</Badge>
+                  <Badge variant={safeProgress > 90 ? 'default' : 'outline'} className="text-xs">Finalize</Badge>
+                  <Badge variant={safeProgress >= 100 ? 'default' : 'outline'} className="text-xs">Complete</Badge>
                 </div>
               </div>
             </div>

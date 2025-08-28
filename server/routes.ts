@@ -16,14 +16,76 @@ import { randomUUID } from 'crypto';
 // import pdfParse from 'pdf-parse'; // Temporarily disabled due to initialization bug
 
 /**
- * Progress emitter for Server-Sent Events
+ * Progress emitter for Server-Sent Events with log capture
  */
 class TranslationProgressEmitter {
   private res: Response;
   private closed = false;
+  private originalConsole: {
+    log: (...args: any[]) => void;
+    warn: (...args: any[]) => void;
+    error: (...args: any[]) => void;
+    info: (...args: any[]) => void;
+  };
 
   constructor(response: Response) {
     this.res = response;
+    
+    // Store original console methods
+    this.originalConsole = {
+      log: console.log,
+      warn: console.warn,
+      error: console.error,
+      info: console.info
+    };
+    
+    // Start capturing console output
+    this.captureConsole();
+  }
+
+  private captureConsole() {
+    const createLogCapture = (level: 'info' | 'warn' | 'error' | 'debug', originalMethod: (...args: any[]) => void) => {
+      return (...args: any[]) => {
+        // Call original console method
+        originalMethod.apply(console, args);
+        
+        // Stream log to client if SSE is active
+        if (!this.closed) {
+          const message = args.map(arg => 
+            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+          ).join(' ');
+          
+          // Extract source from log message if available
+          let source = '';
+          const sourceMatch = message.match(/^\[([^\]]+)\]/);
+          if (sourceMatch) {
+            source = sourceMatch[1];
+          }
+          
+          this.emit('log', {
+            id: Date.now() + Math.random(),
+            timestamp: Date.now(),
+            level,
+            message: message.replace(/^\[[^\]]+\]\s*/, ''), // Remove [Source] prefix
+            source
+          });
+        }
+      };
+    };
+
+    // Override console methods
+    console.log = createLogCapture('info', this.originalConsole.log);
+    console.info = createLogCapture('info', this.originalConsole.info);
+    console.warn = createLogCapture('warn', this.originalConsole.warn);
+    console.error = createLogCapture('error', this.originalConsole.error);
+  }
+
+  private restoreConsole() {
+    // Restore original console methods
+    console.log = this.originalConsole.log;
+    console.warn = this.originalConsole.warn;
+    console.error = this.originalConsole.error;
+    console.info = this.originalConsole.info;
   }
 
   emit(event: string, data: any) {
@@ -33,7 +95,7 @@ class TranslationProgressEmitter {
       this.res.write(`event: ${event}\n`);
       this.res.write(`data: ${JSON.stringify(data)}\n\n`);
     } catch (error) {
-      console.error('Error writing SSE data:', error);
+      this.originalConsole.error('Error writing SSE data:', error);
       this.closed = true;
     }
   }
@@ -41,12 +103,14 @@ class TranslationProgressEmitter {
   close() {
     if (!this.closed) {
       this.closed = true;
+      this.restoreConsole(); // Restore console when closing
+      
       try {
         this.res.write('event: close\n');
         this.res.write('data: {}\n\n');
         this.res.end();
       } catch (error) {
-        console.error('Error closing SSE connection:', error);
+        this.originalConsole.error('Error closing SSE connection:', error);
       }
     }
   }
@@ -708,16 +772,8 @@ app.post('/api/translate',
           confidence: averageConfidence.toFixed(3),
           pageCount: chunks.length,
           textLength: text.length,
-          processingTimeMs: Date.now() - startTime,
-          status: 'completed',
-          metadata: JSON.stringify({
-            useEnhancedMode,
-            totalProcessingTime,
-            averageModelAgreement,
-            qualityMetrics: translations.map(t => t.quality).filter(Boolean),
-            helperModelsUsed: [...new Set(translations.flatMap((t: any) => t.helperModels || []))],
-            errorCount: errors.length
-          })
+          processingTime: Date.now() - startTime,
+          status: 'completed'
         };
 
         const [savedTranslation] = await db.insert(tables.translations).values(translationData).returning();
@@ -1138,7 +1194,7 @@ async function processBatchFiles(jobId: string, files: any[], tables: any) {
           totalFiles: files.length,
           translationIds,
           completedAt: new Date().toISOString(),
-          pdfUrl: `http://127.0.0.1:5001/api/batch/${jobId}/pdf`
+          pdfUrl: `http://127.0.0.1:5439/api/batch/${jobId}/pdf`
         })
       });
       console.log(`🔔 Webhook sent for completed job: ${jobId}`);

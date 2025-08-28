@@ -1,5 +1,6 @@
 
 import { useState, useCallback, useRef } from 'react';
+import type { LogEntry } from '../types/log';
 
 const GEMINI_API_ENDPOINT = '/api/translate';
 const STREAM_API_ENDPOINT = '/api/translate/stream';
@@ -58,6 +59,7 @@ interface TranslationState {
   error: TranslationError | null;
   progressInfo: ProgressInfo | null;
   canCancel: boolean;
+  logs: LogEntry[];
 }
 
 export const useTranslation = () => {
@@ -67,6 +69,7 @@ export const useTranslation = () => {
     error: null,
     progressInfo: null,
     canCancel: false,
+    logs: [],
   });
   
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -101,9 +104,18 @@ export const useTranslation = () => {
     }));
   }, []);
 
+  const clearLogs = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      logs: []
+    }));
+  }, []);
+
   const translateWithStream = async (text: string): Promise<TranslationResult> => {
     return new Promise(async (resolve, reject) => {
       startTimeRef.current = Date.now();
+      let abortController = new AbortController();
+      let resolved = false;
       
       setState(prev => ({ 
         ...prev, 
@@ -114,12 +126,32 @@ export const useTranslation = () => {
         progress: 0
       }));
 
+      // Store abort controller for cancellation
+      const enhancedCancel = () => {
+        if (!resolved) {
+          resolved = true;
+          abortController.abort();
+          setState(prev => ({
+            ...prev,
+            isTranslating: false,
+            canCancel: false,
+            progressInfo: null,
+            error: new TranslationError('Translation cancelled by user', TranslationErrorCode.UNKNOWN_ERROR)
+          }));
+          reject(new TranslationError(
+            'Translation cancelled by user',
+            TranslationErrorCode.UNKNOWN_ERROR
+          ));
+        }
+      };
+
       try {
         // First, start the translation process
         const response = await fetch(STREAM_API_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text })
+          body: JSON.stringify({ text }),
+          signal: abortController.signal
         });
 
         if (!response.ok) {
@@ -137,6 +169,8 @@ export const useTranslation = () => {
 
         const readStream = async () => {
           try {
+            let currentEventType = '';
+            
             while (true) {
               const { done, value } = await reader.read();
               
@@ -147,19 +181,23 @@ export const useTranslation = () => {
               buffer = lines.pop() || '';
 
               for (const line of lines) {
-                if (line.startsWith('data: ')) {
+                if (line.startsWith('event: ')) {
+                  currentEventType = line.slice(7).trim();
+                } else if (line.startsWith('data: ')) {
                   const data = line.slice(6);
-                  if (data === '') continue; // Keep-alive
+                  if (data.trim() === '') continue; // Keep-alive
 
                   try {
                     const eventData = JSON.parse(data);
+                    // Add event type to the data for proper handling
+                    eventData._eventType = currentEventType;
                     handleStreamEvent(eventData);
                   } catch (parseError) {
-                    console.warn('Failed to parse SSE data:', data);
+                    console.warn('Failed to parse SSE data:', data, parseError);
                   }
-                } else if (line.startsWith('event: ')) {
-                  // Store event type for next data line
-                  continue;
+                } else if (line === '') {
+                  // Empty line marks end of event, reset event type
+                  currentEventType = '';
                 }
               }
             }
@@ -175,128 +213,207 @@ export const useTranslation = () => {
 
         const handleStreamEvent = (data: any) => {
           const timeElapsed = Date.now() - startTimeRef.current;
+          const eventType = data._eventType || 'unknown';
 
-          // Handle different event types based on the data structure
-          if (data.message === 'Starting translation process...') {
-            setProgressInfo({
-              message: data.message,
-              progress: 0,
-              timeElapsed
-            });
-          } else if (data.message?.includes('Processing') && data.totalPages) {
-            setProgressInfo({
-              message: data.message,
-              progress: data.progress || 5,
-              currentPage: data.currentPage,
-              totalPages: data.totalPages,
-              timeElapsed
-            });
-          } else if (data.message?.includes('Translation mode:')) {
-            setProgressInfo(prev => ({
-              ...prev,
-              message: data.message,
-              timeElapsed
-            }));
-          } else if (data.message?.includes('Processing pages')) {
-            setProgressInfo({
-              message: data.message,
-              progress: data.progress || 10,
-              currentPage: data.currentPage,
-              totalPages: data.totalPages,
-              timeElapsed
-            });
-          } else if (data.message?.includes('Translating page')) {
-            setProgressInfo(prev => ({
-              ...prev,
-              message: data.message,
-              pageNumber: data.pageNumber,
-              pageType: data.pageType,
-              timeElapsed
-            }));
-          } else if (data.message?.includes('completed') && data.confidence !== undefined) {
-            setProgressInfo(prev => ({
-              ...prev,
-              message: data.message,
-              pageNumber: data.pageNumber,
-              confidence: data.confidence,
-              quality: data.quality,
-              models: data.models,
-              iterations: data.iterations,
-              processingTime: data.processingTime,
-              timeElapsed
-            }));
-          } else if (data.message?.includes('Pages') && data.message?.includes('completed')) {
-            setProgressInfo({
-              message: data.message,
-              progress: data.progress || 50,
-              currentPage: data.completedPages,
-              totalPages: data.totalPages,
-              timeElapsed
-            });
-          } else if (data.message?.includes('Finalizing')) {
-            setProgressInfo(prev => ({
-              ...prev,
-              message: data.message,
-              progress: data.progress || 90,
-              timeElapsed
-            }));
-          } else if (data.message?.includes('Saving')) {
-            setProgressInfo(prev => ({
-              ...prev,
-              message: data.message,
-              progress: data.progress || 95,
-              timeElapsed
-            }));
-          } else if (data.message?.includes('Translation completed successfully!') && data.result) {
-            const result = data.result;
-            
-            setState(prev => ({ 
-              ...prev, 
-              isTranslating: false, 
-              canCancel: false,
-              progress: 100,
-              progressInfo: {
-                message: data.message,
-                progress: 100,
+          console.log('SSE Event:', eventType, data);
+
+          switch (eventType) {
+            case 'start':
+              setProgressInfo({
+                message: data.message || 'Starting translation...',
+                progress: 0,
                 timeElapsed
+              });
+              break;
+
+            case 'progress':
+              setProgressInfo({
+                message: data.message || 'Processing...',
+                progress: data.progress || 5,
+                currentPage: data.currentPage,
+                totalPages: data.totalPages,
+                timeElapsed
+              });
+              break;
+
+            case 'config':
+              setProgressInfo({
+                message: data.message || 'Configuration loaded',
+                progress: 0,
+                timeElapsed
+              });
+              break;
+
+            case 'pair_start':
+              setProgressInfo({
+                message: data.message || 'Processing page pair...',
+                progress: data.progress || 10,
+                currentPage: data.currentPage,
+                totalPages: data.totalPages,
+                timeElapsed
+              });
+              break;
+
+            case 'page_start':
+              setState(prev => ({
+                ...prev,
+                progressInfo: {
+                  ...prev.progressInfo!,
+                  message: data.message || 'Translating page...',
+                  pageNumber: data.pageNumber,
+                  pageType: data.pageType,
+                  timeElapsed
+                }
+              }));
+              break;
+
+            case 'page_complete':
+              setState(prev => ({
+                ...prev,
+                progressInfo: {
+                  ...prev.progressInfo!,
+                  message: data.message || 'Page completed',
+                  pageNumber: data.pageNumber,
+                  confidence: data.confidence,
+                  quality: data.quality,
+                  models: data.models,
+                  iterations: data.iterations,
+                  processingTime: data.processingTime,
+                  timeElapsed
+                }
+              }));
+              break;
+
+            case 'page_error':
+              setState(prev => ({
+                ...prev,
+                progressInfo: {
+                  ...prev.progressInfo!,
+                  message: data.message || 'Page error',
+                  timeElapsed
+                }
+              }));
+              break;
+
+            case 'pair_complete':
+              setProgressInfo({
+                message: data.message || 'Pair completed',
+                progress: data.progress || 50,
+                currentPage: data.completedPages,
+                totalPages: data.totalPages,
+                timeElapsed
+              });
+              break;
+
+            case 'finalizing':
+              setState(prev => ({
+                ...prev,
+                progressInfo: {
+                  ...prev.progressInfo!,
+                  message: data.message || 'Finalizing...',
+                  progress: data.progress || 90,
+                  timeElapsed
+                }
+              }));
+              break;
+
+            case 'saving':
+              setState(prev => ({
+                ...prev,
+                progressInfo: {
+                  ...prev.progressInfo!,
+                  message: data.message || 'Saving...',
+                  progress: data.progress || 95,
+                  timeElapsed
+                }
+              }));
+              break;
+
+            case 'complete':
+              const result = data.result;
+              resolved = true;
+              
+              setState(prev => ({ 
+                ...prev, 
+                isTranslating: false, 
+                canCancel: false,
+                progress: 100,
+                progressInfo: {
+                  message: data.message || 'Complete!',
+                  progress: 100,
+                  timeElapsed
+                }
+              }));
+
+              resolve({
+                translatedText: result.translatedText,
+                confidence: result.confidence,
+                metadata: {
+                  processingTime: result.processingTime,
+                  chunkCount: result.pageCount,
+                  totalChars: text.length
+                }
+              });
+              return;
+
+            case 'error':
+              resolved = true;
+              const error = new TranslationError(
+                data.message || 'Translation error',
+                data.code === 'STREAM_ERROR' ? TranslationErrorCode.API_ERROR : TranslationErrorCode.UNKNOWN_ERROR,
+                data
+              );
+
+              setState(prev => ({ 
+                ...prev, 
+                isTranslating: false, 
+                canCancel: false,
+                error
+              }));
+
+              reject(error);
+              return;
+
+            case 'log':
+              // Handle log entries from server
+              setState(prev => ({
+                ...prev,
+                logs: [...(prev.logs || []).slice(-99), data] // Keep last 100 logs
+              }));
+              break;
+
+            case 'close':
+              // Connection closed by server
+              if (!resolved) {
+                reject(new TranslationError(
+                  'Connection closed unexpectedly',
+                  TranslationErrorCode.NETWORK_ERROR
+                ));
               }
-            }));
+              return;
 
-            resolve({
-              translatedText: result.translatedText,
-              confidence: result.confidence,
-              metadata: {
-                processingTime: result.processingTime,
-                chunkCount: result.pageCount,
-                totalChars: text.length
-              }
-            });
-            return;
-          } else if (data.code && data.message) {
-            // Error event
-            const error = new TranslationError(
-              data.message,
-              data.code === 'STREAM_ERROR' ? TranslationErrorCode.API_ERROR : TranslationErrorCode.UNKNOWN_ERROR,
-              data
-            );
-
-            setState(prev => ({ 
-              ...prev, 
-              isTranslating: false, 
-              canCancel: false,
-              error
-            }));
-
-            reject(error);
-            return;
+            default:
+              console.warn('Unknown SSE event type:', eventType, data);
+              break;
           }
         };
 
-        readStream();
+        readStream().catch(error => {
+          if (!resolved) {
+            resolved = true;
+            reject(new TranslationError(
+              'Stream processing failed',
+              TranslationErrorCode.NETWORK_ERROR,
+              error
+            ));
+          }
+        });
+        
       } catch (error) {
         console.error('Failed to start translation stream:', error);
+        resolved = true;
         reject(new TranslationError(
-          'Failed to start translation',
+          'Failed to start translation stream',
           TranslationErrorCode.NETWORK_ERROR,
           error
         ));
@@ -306,11 +423,30 @@ export const useTranslation = () => {
 
   const translate = async (text: string): Promise<TranslationResult> => {
     try {
+      // First try streaming translation
       return await translateWithStream(text);
     } catch (error) {
       // Fallback to regular API if SSE fails
       console.warn('Stream translation failed, falling back to regular API:', error);
-      return translateFallback(text);
+      
+      // Reset state for fallback
+      setState(prev => ({
+        ...prev,
+        progressInfo: {
+          message: 'Retrying with fallback method...',
+          progress: 0,
+          timeElapsed: 0
+        },
+        canCancel: false,
+        error: null
+      }));
+      
+      try {
+        return await translateFallback(text);
+      } catch (fallbackError) {
+        console.error('Both streaming and fallback translation failed:', fallbackError);
+        throw fallbackError;
+      }
     }
   };
 
@@ -395,7 +531,9 @@ export const useTranslation = () => {
     error: state.error,
     progressInfo: state.progressInfo,
     canCancel: state.canCancel,
+    logs: state.logs,
     cancelTranslation,
+    clearLogs,
     setProgress,
   };
 };

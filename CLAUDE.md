@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-- `npm run dev` - Start development server with hot reload (serves both client and API on port 5001)
+- `npm run dev` - Start development server with hot reload (serves both client and API on port 5439)
 - `npm run build` - Build production client and server bundles
 - `npm run start` - Start production server
 - `npm run check` - Run TypeScript type checking
@@ -20,7 +20,7 @@ GEMINI_API_KEY_ODD=your_key_here GEMINI_API_KEY_EVEN=your_key_here npm run dev
 ### Database Configuration
 - **Local Development**: Uses SQLite (`tibetan_translation.db`) when no DATABASE_URL is set
 - **Production**: Set `DATABASE_URL=postgresql://...` for PostgreSQL
-- **Port**: Server runs on 5001 (5000 conflicts with macOS ControlCenter)
+- **Port**: Server runs on 5439 (avoiding common port conflicts)
 
 ## Project Architecture
 
@@ -108,7 +108,7 @@ This tool is part of a larger automated content generation pipeline for translat
 ### Current Status & Next Steps
 
 #### ✅ READY FOR AUTOMATION
-**Server Status**: Running on port 5001 (5000 conflicts with macOS ControlCenter)
+**Server Status**: Running on port 5439 (avoiding common port conflicts)
 **Database**: SQLite working locally, PostgreSQL configured for production
 **API Endpoints**: All core endpoints functional and tested
 

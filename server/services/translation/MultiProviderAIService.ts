@@ -21,6 +21,14 @@ export interface AIResponse {
   processingTime?: number;
 }
 
+export interface ProviderState {
+  status: 'available' | 'rate_limited' | 'disabled';
+  disabledUntil?: number; // timestamp when provider can be used again
+  disabledReason?: string;
+  tokensUsed?: number;
+  lastError?: string;
+}
+
 /**
  * Multi-provider AI service supporting Groq, OpenRouter, and Cerebras
  * with optimized configurations for each provider's API format
@@ -28,9 +36,11 @@ export interface AIResponse {
 export class MultiProviderAIService {
   private providers: Map<string, ProviderConfig> = new Map();
   private requestCounts: Map<string, { count: number; resetTime: number }> = new Map();
+  private providerStates: Map<string, ProviderState> = new Map();
 
   constructor() {
     this.initializeProviders();
+    this.initializeProviderStates();
   }
 
   /**
@@ -138,6 +148,140 @@ export class MultiProviderAIService {
   }
 
   /**
+   * Initialize provider states for rate limit management
+   */
+  private initializeProviderStates(): void {
+    for (const providerId of this.providers.keys()) {
+      this.providerStates.set(providerId, {
+        status: 'available',
+        tokensUsed: 0
+      });
+    }
+    console.log(`[MultiProviderAI] Initialized provider states for ${this.providerStates.size} providers`);
+  }
+
+  /**
+   * Check if provider is currently available for use
+   */
+  private isProviderAvailable(providerId: string): boolean {
+    const state = this.providerStates.get(providerId);
+    if (!state) return false;
+    
+    // Check if disabled period has passed
+    if (state.status === 'disabled' && state.disabledUntil) {
+      if (Date.now() >= state.disabledUntil) {
+        // Re-enable provider
+        state.status = 'available';
+        state.disabledUntil = undefined;
+        state.disabledReason = undefined;
+        state.tokensUsed = 0;
+        console.log(`[MultiProviderAI] Re-enabled ${providerId} after rate limit reset`);
+      }
+    }
+    
+    return state.status === 'available';
+  }
+
+  /**
+   * Handle rate limit errors and disable provider if necessary
+   */
+  private handleRateLimitError(providerId: string, error: any): void {
+    const state = this.providerStates.get(providerId);
+    if (!state) return;
+    
+    const errorMsg = error.message || '';
+    
+    // Handle authentication errors (401, User not found, etc.)
+    if (errorMsg.includes('401') || errorMsg.includes('User not found') || 
+        errorMsg.includes('authentication') || errorMsg.includes('unauthorized')) {
+      state.status = 'disabled';
+      state.disabledUntil = Date.now() + 365 * 24 * 60 * 60 * 1000; // Disable for a year
+      state.disabledReason = 'Authentication failed - Invalid API key';
+      state.lastError = errorMsg;
+      console.warn(`[MultiProviderAI] ${providerId} permanently disabled - Authentication failed`);
+      return;
+    }
+    
+    // Check for daily token limit
+    if (errorMsg.includes('tokens per day') || errorMsg.includes('TPD') || errorMsg.includes('daily limit')) {
+      // Extract reset time if available
+      const resetMatch = errorMsg.match(/Please try again in ([\d.]+)([hms])/);
+      let disabledUntil = Date.now() + 24 * 60 * 60 * 1000; // Default: 24 hours
+      
+      if (resetMatch) {
+        const value = parseFloat(resetMatch[1]);
+        const unit = resetMatch[2];
+        const multiplier = unit === 'h' ? 3600000 : unit === 'm' ? 60000 : 1000;
+        disabledUntil = Date.now() + (value * multiplier);
+      }
+      
+      // Disable provider
+      state.status = 'disabled';
+      state.disabledUntil = disabledUntil;
+      state.disabledReason = 'Daily token limit exceeded';
+      state.lastError = errorMsg;
+      
+      const resetTime = new Date(disabledUntil).toLocaleTimeString();
+      console.warn(`[MultiProviderAI] ${providerId} disabled until ${resetTime} - Daily token limit exceeded`);
+      
+    } else if (errorMsg.includes('requests per minute') || errorMsg.includes('RPM') ||
+               errorMsg.includes('tokens per minute') || errorMsg.includes('TPM')) {
+      // Extract reset time with decimal support
+      const resetMatch = errorMsg.match(/Please try again in ([\d.]+)([hms])/);
+      let cooldownMs = 60000; // Default 1 minute
+      
+      if (resetMatch) {
+        const value = parseFloat(resetMatch[1]);
+        const unit = resetMatch[2];
+        cooldownMs = unit === 'h' ? value * 3600000 : 
+                     unit === 'm' ? value * 60000 : 
+                     Math.ceil(value * 1000); // Round up seconds to avoid immediate retry
+      }
+      
+      state.status = 'rate_limited';
+      state.disabledUntil = Date.now() + cooldownMs;
+      state.disabledReason = 'Per-minute rate limit';
+      state.lastError = errorMsg;
+      
+      const cooldownSeconds = Math.ceil(cooldownMs / 1000);
+      console.warn(`[MultiProviderAI] ${providerId} temporarily disabled for ${cooldownSeconds}s - Per-minute rate limit`);
+      
+      setTimeout(() => {
+        if (state.status === 'rate_limited') {
+          state.status = 'available';
+          console.log(`[MultiProviderAI] ${providerId} available again after ${cooldownSeconds}s cooldown`);
+        }
+      }, cooldownMs);
+    }
+  }
+
+  /**
+   * Select available providers based on priority and availability
+   */
+  private selectAvailableProviders(maxProviders: number = 3): string[] {
+    const priorityOrder = [
+      'cerebras-qwen3',     // Best free option
+      'cerebras-gpt-oss',   // Good alternative
+      'groq-qwen3',         // 500k daily tokens
+      'openrouter-gpt-oss', // When it works
+      'openrouter-deepseek-r1', // Backup OpenRouter
+      'groq-deepseek-r1'    // 100k daily tokens
+    ];
+    
+    const available = priorityOrder.filter(providerId => {
+      return this.providers.has(providerId) && this.isProviderAvailable(providerId);
+    }).slice(0, maxProviders);
+    
+    if (available.length === 0) {
+      console.warn('[MultiProviderAI] No providers currently available due to rate limits');
+    } else {
+      console.log(`[MultiProviderAI] Selected available providers: ${available.join(', ')}`);
+    }
+    
+    return available;
+  }
+
+  /**
    * Get translations from all available providers
    */
   public async getMultiProviderTranslations(
@@ -145,21 +289,40 @@ export class MultiProviderAIService {
     dictionaryContext: string,
     maxProviders: number = 3
   ): Promise<AIResponse[]> {
-    const availableProviders = Array.from(this.providers.keys());
-    const selectedProviders = this.selectBestProviders(availableProviders, maxProviders);
+    // Get only available providers (not rate-limited or disabled)
+    const selectedProviders = this.selectAvailableProviders(maxProviders);
     
-    console.log(`[MultiProviderAI] Using providers: ${selectedProviders.join(', ')}`);
+    if (selectedProviders.length === 0) {
+      console.error('[MultiProviderAI] No providers available - returning empty results');
+      return [];
+    }
 
     const promises = selectedProviders.map(providerId => 
       this.translateWithProvider(providerId, tibetanText, dictionaryContext)
-        .catch(error => ({
-          translation: '',
-          confidence: 0,
-          model: this.providers.get(providerId)?.modelId || 'unknown',
-          provider: providerId,
-          reasoning: `Error: ${error.message}`,
-          processingTime: 0
-        }))
+        .catch(error => {
+          const errorMsg = error.message || error.toString() || 'Unknown error';
+          
+          // Handle different types of errors
+          if (errorMsg.includes('429') || errorMsg.includes('rate_limit_exceeded')) {
+            // Rate limit errors - handle and temporarily/permanently disable provider
+            this.handleRateLimitError(providerId, error);
+          } else if (errorMsg.includes('401') || errorMsg.includes('User not found')) {
+            // Authentication errors - permanently disable provider
+            this.handleRateLimitError(providerId, error);
+          } else {
+            // Other errors - just log them
+            console.error(`[MultiProviderAI] ${providerId} translation error: ${errorMsg}`);
+          }
+          
+          return {
+            translation: '',
+            confidence: 0,
+            model: this.providers.get(providerId)?.modelId || 'unknown',
+            provider: providerId,
+            reasoning: `Error: ${errorMsg}`,
+            processingTime: 0
+          };
+        })
     );
 
     const results = await Promise.all(promises);
@@ -223,7 +386,7 @@ export class MultiProviderAIService {
       };
 
     } catch (error) {
-      console.error(`[MultiProviderAI] ${providerId} translation error:`, error);
+      // Error logging is handled in getMultiProviderTranslations
       throw error;
     }
   }
@@ -396,70 +559,13 @@ Translation:`;
     return Math.min(0.95, Math.max(0.1, confidence));
   }
 
-  /**
-   * Select best providers based on availability and performance
-   */
-  private selectBestProviders(available: string[], maxCount: number): string[] {
-    // Priority order based on model capability for Tibetan translation
-    const priorityOrder = [
-      'cerebras-qwen3',       // High performance Qwen
-      'groq-deepseek-r1',    // Reasoning capability
-      'openrouter-deepseek-r1', // Alternative DeepSeek
-      'groq-qwen3',          // Fast Qwen
-      'openrouter-kimi-k2',  // Long context
-      'cerebras-gpt-oss',    // GPT reasoning
-      'openrouter-gpt-oss',  // Alternative GPT
-      'openrouter-hunyuan'   // Chinese model expertise
-    ];
-
-    const selected: string[] = [];
-    for (const provider of priorityOrder) {
-      if (available.includes(provider) && this.isProviderAvailable(provider)) {
-        selected.push(provider);
-        if (selected.length >= maxCount) break;
-      }
-    }
-
-    // If we don't have enough, add any remaining available providers
-    if (selected.length < maxCount) {
-      for (const provider of available) {
-        if (!selected.includes(provider) && this.isProviderAvailable(provider)) {
-          selected.push(provider);
-          if (selected.length >= maxCount) break;
-        }
-      }
-    }
-
-    return selected;
-  }
 
   /**
-   * Check if provider is available (not rate limited)
-   */
-  private isProviderAvailable(providerId: string): boolean {
-    const config = this.providers.get(providerId);
-    return config ? this.checkRateLimit(providerId, config) : false;
-  }
-
-  /**
-   * Check rate limits for a provider
+   * Check rate limits for a provider (backwards compatibility)
    */
   private checkRateLimit(providerId: string, config: ProviderConfig): boolean {
-    const now = Date.now();
-    const rateData = this.requestCounts.get(providerId);
-
-    if (!rateData) {
-      return true; // First request
-    }
-
-    // Reset counter if a minute has passed
-    if (now - rateData.resetTime > 60000) {
-      this.requestCounts.set(providerId, { count: 0, resetTime: now });
-      return true;
-    }
-
-    // Check if under limit
-    return rateData.count < config.requestsPerMinute;
+    // Use the new provider state management system
+    return this.isProviderAvailable(providerId);
   }
 
   /**
@@ -478,6 +584,33 @@ Translation:`;
         rateData.count++;
       }
     }
+  }
+
+  /**
+   * Get current status of all providers including rate limit information
+   */
+  public getProviderStatus(): Record<string, any> {
+    const status: Record<string, any> = {};
+    
+    for (const [providerId, config] of this.providers.entries()) {
+      const state = this.providerStates.get(providerId);
+      const rateData = this.requestCounts.get(providerId);
+      
+      status[providerId] = {
+        model: config.modelId,
+        status: state?.status || 'unknown',
+        available: state?.status === 'available',
+        disabledUntil: state?.disabledUntil ? new Date(state.disabledUntil).toISOString() : null,
+        disabledReason: state?.disabledReason || null,
+        dailyLimit: config.dailyLimit,
+        tokensUsed: state?.tokensUsed || 0,
+        requestsUsed: rateData?.count || 0,
+        requestsPerMinute: config.requestsPerMinute,
+        lastError: state?.lastError ? state.lastError.substring(0, 100) + '...' : null
+      };
+    }
+    
+    return status;
   }
 
   /**

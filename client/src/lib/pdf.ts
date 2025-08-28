@@ -56,7 +56,7 @@ export const generatePDF = async (pages: PDFPageContent[]): Promise<Blob> => {
       yPosition += PDF_CONFIG.LINE_HEIGHT;
 
       // Split text into paragraphs and process each one
-      const paragraphs = page.text.split('\n').filter(p => p.trim());
+      const paragraphs = (page.text || '').split('\n').filter(p => p.trim());
 
       paragraphs.forEach(paragraph => {
         // Determine if paragraph contains Tibetan text

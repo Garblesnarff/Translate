@@ -6,6 +6,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import TranslationPane from "../components/TranslationPane";
 import UploadDialog from "../components/UploadDialog";
 import ProgressIndicator from "../components/ProgressIndicator";
+import LogViewer from "../components/LogViewer";
 import { useTranslation } from "../lib/gemini";
 import { extractTextContent } from "../lib/textExtractor";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +36,7 @@ export default function Translate() {
     currentPage: 0,
     error: null
   });
-  const { translate, isTranslating, progress, progressInfo, canCancel, cancelTranslation, setProgress } = useTranslation();
+  const { translate, isTranslating, progress, progressInfo, canCancel, cancelTranslation, setProgress, logs, clearLogs } = useTranslation();
 
   const handleFileUpload = async (file: File, fileName: string) => {
     try {
@@ -269,6 +270,8 @@ export default function Translate() {
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
+
+      <LogViewer entries={logs} onClear={clearLogs} />
     </div>
   );
 }
