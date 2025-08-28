@@ -1,40 +1,22 @@
-import { GenerateContentResult } from "@google/generative-ai";
 import { TibetanDictionary } from '../dictionary';
 import { TibetanTextProcessor } from './textProcessing/TextProcessor';
-import { PromptGenerator, PromptOptions, TranslationContext } from './translation/PromptGenerator';
+import { PromptGenerator } from './translation/PromptGenerator';
 import { oddPagesGeminiService, evenPagesGeminiService } from './translation/GeminiService';
+import { GeminiTranslationService } from './translation/GeminiTranslationService';
 import { multiProviderAIService, AIResponse } from './translation/MultiProviderAIService';
 import { ConsensusEngine } from './translation/ConsensusEngine';
-import { QualityScorer, TranslationQuality } from './translation/QualityScorer';
+import { QualityScorer } from './translation/QualityScorer';
 import { createTranslationError } from '../middleware/errorHandler';
 import { CancellationManager } from './CancellationManager';
-
-export interface TranslationConfig {
-  useHelperAI?: boolean;
-  useMultiPass?: boolean;
-  maxIterations?: number;
-  qualityThreshold?: number;
-  useChainOfThought?: boolean;
-  contextWindow?: number;
-  enableQualityAnalysis?: boolean;
-  timeout?: number;
-}
-
-export interface EnhancedTranslationResult {
-  translation: string;
-  confidence: number;
-  quality?: TranslationQuality;
-  modelAgreement?: number;
-  iterationsUsed?: number;
-  helperModels?: string[];
-  processingTime?: number;
-}
-
-export interface TranslationChunk {
-  pageNumber: number;
-  content: string;
-  context?: TranslationContext;
-}
+import { performRefinementIteration } from './translation/refinement';
+import { calculateConsensusConfidence, calculateModelAgreement } from './translation/confidence';
+import {
+  TranslationConfig,
+  EnhancedTranslationResult,
+  TranslationChunk,
+  TranslationContext,
+  TranslationQuality
+} from './translation/types';
 
 /**
  * Enhanced translation service with multi-model support and quality analysis
@@ -46,6 +28,7 @@ export class TranslationService {
   private textProcessor: TibetanTextProcessor;
   private consensusEngine: ConsensusEngine;
   private qualityScorer: QualityScorer;
+  private geminiTranslationService: GeminiTranslationService;
   
   private readonly defaultConfig: TranslationConfig = {
     useHelperAI: true,
@@ -72,6 +55,11 @@ export class TranslationService {
     });
     this.consensusEngine = new ConsensusEngine();
     this.qualityScorer = new QualityScorer();
+    this.geminiTranslationService = new GeminiTranslationService(
+      this.promptGenerator,
+      oddPagesGeminiService,
+      evenPagesGeminiService
+    );
   }
 
   /**
@@ -92,8 +80,8 @@ export class TranslationService {
       CancellationManager.throwIfCancelled(abortSignal, 'translation start');
       
       // Phase 1: Initial Translation with Gemini
-      let currentTranslation = await this.performGeminiTranslation(
-        chunk, 
+      let currentTranslation = await this.geminiTranslationService.performInitialTranslation(
+        chunk,
         mergedConfig,
         1, // First iteration
         abortSignal
@@ -145,7 +133,7 @@ export class TranslationService {
           // Check for cancellation before each refinement
           CancellationManager.throwIfCancelled(abortSignal, `refinement iteration ${iteration}`);
           
-          const refinedTranslation = await this.performRefinementIteration(
+          const refinedTranslation = await performRefinementIteration(
             chunk.content,
             currentTranslation.translation,
             iteration,
@@ -217,139 +205,7 @@ export class TranslationService {
     }
   }
 
-  /**
-   * Performs initial Gemini translation
-   */
-  private async performGeminiTranslation(
-    chunk: TranslationChunk,
-    config: TranslationConfig,
-    iteration: number,
-    abortSignal?: AbortSignal
-  ): Promise<{ translation: string; confidence: number }> {
-    const geminiService = this.getGeminiService(chunk.pageNumber);
-    
-    const promptOptions: PromptOptions = {
-      iterationPass: iteration,
-      useChainOfThought: config.useChainOfThought,
-      contextWindow: config.contextWindow
-    };
-    
-    const prompt = await this.promptGenerator.createTranslationPrompt(
-      chunk.pageNumber,
-      chunk.content,
-      promptOptions,
-      chunk.context
-    );
-    
-    // Check for cancellation before making the API call
-    CancellationManager.throwIfCancelled(abortSignal, 'Gemini API call');
-    
-    const result = await geminiService.generateContent(prompt, config.timeout, abortSignal);
-    const response = await result.response;
-    const rawTranslation = response.text();
-    
-    // Enhanced confidence calculation
-    const confidence = this.calculateEnhancedConfidence(rawTranslation, chunk.content);
-    
-    return {
-      translation: rawTranslation,
-      confidence
-    };
-  }
 
-  /**
-   * Performs a refinement iteration using specialized prompts
-   */
-  private async performRefinementIteration(
-    originalText: string,
-    currentTranslation: string,
-    iteration: number,
-    config: TranslationConfig,
-    pageNumber: number,
-    abortSignal?: AbortSignal
-  ): Promise<{ translation: string; confidence: number }> {
-    const focusAreas = this.determineFocusAreas(currentTranslation, iteration);
-    const refinementPrompt = this.promptGenerator.createRefinementPrompt(
-      originalText,
-      currentTranslation,
-      focusAreas
-    );
-    
-    // Check for cancellation before refinement
-    CancellationManager.throwIfCancelled(abortSignal, 'refinement API call');
-    
-    // Use correct Gemini service based on page number
-    const geminiService = this.getGeminiService(pageNumber);
-    const result = await geminiService.generateContent(refinementPrompt, config.timeout, abortSignal);
-    const response = await result.response;
-    const refinedTranslation = response.text();
-    
-    const confidence = this.calculateEnhancedConfidence(refinedTranslation, originalText);
-    
-    return {
-      translation: refinedTranslation,
-      confidence
-    };
-  }
-
-  /**
-   * Determines focus areas for refinement based on iteration and current quality
-   */
-  private determineFocusAreas(translation: string, iteration: number): string[] {
-    const focusAreas: string[] = [];
-    
-    switch (iteration) {
-      case 2:
-        focusAreas.push('Improve accuracy of Buddhist terminology');
-        focusAreas.push('Enhance naturalness of English expression');
-        break;
-      case 3:
-        focusAreas.push('Ensure consistency in technical terms');
-        focusAreas.push('Perfect sentence structure and flow');
-        break;
-      default:
-        focusAreas.push('Refine cultural and contextual nuances');
-        focusAreas.push('Optimize overall readability');
-    }
-    
-    // Add specific focus based on translation characteristics
-    if (translation.match(/\([^)]*[\u0F00-\u0FFF][^)]*\)/g)?.length === 0) {
-      focusAreas.push('Include Tibetan original text in parentheses');
-    }
-    
-    return focusAreas;
-  }
-
-  /**
-   * Enhanced confidence calculation with multiple factors
-   */
-  private calculateEnhancedConfidence(translation: string, originalText: string): number {
-    let confidence = 0.6; // Base confidence
-    
-    // Factor 1: Dictionary term usage
-    const tibetanParens = (translation.match(/\([^)]*[\u0F00-\u0FFF][^)]*\)/g) || []).length;
-    confidence += Math.min(0.2, tibetanParens * 0.03);
-    
-    // Factor 2: Proper sentence structure
-    const sentences = translation.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    const properStructure = sentences.filter(s => /\([^)]*[\u0F00-\u0FFF][^)]*\)/.test(s)).length;
-    if (sentences.length > 0) {
-      confidence += (properStructure / sentences.length) * 0.15;
-    }
-    
-    // Factor 3: Length appropriateness
-    const lengthRatio = translation.replace(/\([^)]*\)/g, '').length / originalText.length;
-    if (lengthRatio >= 0.5 && lengthRatio <= 3) {
-      confidence += 0.1;
-    }
-    
-    // Factor 4: No obvious errors
-    if (!translation.includes('Error:') && !translation.includes('Failed:')) {
-      confidence += 0.05;
-    }
-    
-    return Math.min(0.98, Math.max(0.1, confidence));
-  }
 
   /**
    * Legacy method for backwards compatibility
@@ -374,12 +230,7 @@ export class TranslationService {
     };
   }
 
-  /**
-   * Get the appropriate Gemini service based on page number
-   */
-  private getGeminiService(pageNumber: number) {
-    return pageNumber % 2 === 0 ? evenPagesGeminiService : oddPagesGeminiService;
-  }
+
 
   /**
    * Gets translation statistics and capabilities
