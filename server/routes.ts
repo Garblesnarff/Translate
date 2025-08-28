@@ -13,6 +13,7 @@ import { getTables } from '@db/config';
 import type { InsertTranslation, InsertBatchJob } from '@db/types';
 import { desc, eq, sql, asc } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
+import { cancellationManager, CancellationManager } from './services/CancellationManager';
 // import pdfParse from 'pdf-parse'; // Temporarily disabled due to initialization bug
 
 /**
@@ -121,6 +122,7 @@ class TranslationProgressEmitter {
  */
 const TranslationRequestSchema = z.object({
   text: z.string().min(1).max(100000),
+  sessionId: z.string().optional(), // Optional session ID for cancellation tracking
 });
 
 // Configure rate limiter
@@ -193,10 +195,15 @@ app.post('/api/translate',
     requestLogger,
     async (req: Request, res: Response, next: NextFunction) => {
       const startTime = Date.now();
+      let sessionId: string | undefined;
 
       try {
         const validatedData = TranslationRequestSchema.parse(req.body);
-        const { text } = validatedData;
+        const { text, sessionId: providedSessionId } = validatedData;
+        
+        // Generate session ID if not provided
+        sessionId = providedSessionId || randomUUID();
+        const abortSignal = cancellationManager.createSession(sessionId, 'direct');
 
         const chunks = splitTextIntoChunks(text);
         if (chunks.length === 0) {
@@ -232,6 +239,9 @@ app.post('/api/translate',
 
         // Process chunks in pairs using the enhanced translation service
         for (let i = 0; i < chunks.length; i += 2) {
+          // Check if translation was cancelled
+          CancellationManager.throwIfCancelled(abortSignal, 'chunk processing');
+          
           const currentPair = [];
           
           // First chunk of the pair
@@ -246,7 +256,8 @@ app.post('/api/translate',
                       pageNumber: chunks[i].pageNumber,
                       content: chunks[i].text
                     },
-                    translationConfig
+                    translationConfig,
+                    abortSignal
                   );
                   
                   console.log(`Page ${chunks[i].pageNumber} completed:`, {
@@ -300,7 +311,8 @@ app.post('/api/translate',
                         pageNumber: chunks[i + 1].pageNumber,
                         content: chunks[i + 1].text
                       },
-                      translationConfig
+                      translationConfig,
+                      abortSignal
                     );
                     
                     console.log(`Page ${chunks[i + 1].pageNumber} completed:`, {
@@ -408,10 +420,14 @@ app.post('/api/translate',
 
         const [savedTranslation] = await db.insert(tables.translations).values(translationData).returning();
 
+        // Complete the session successfully
+        cancellationManager.completeSession(sessionId);
+
         // Return enhanced translation results with comprehensive metadata
         res.json({ 
           id: savedTranslation.id,
           translatedText: combinedText,
+          sessionId,
           metadata: {
             processingTime: Date.now() - startTime,
             totalModelProcessingTime: totalProcessingTime,
@@ -431,6 +447,10 @@ app.post('/api/translate',
         });
 
       } catch (error) {
+        // Clean up session on error
+        if (sessionId) {
+          cancellationManager.cancelSession(sessionId);
+        }
         // Handle validation errors
         if (error instanceof z.ZodError) {
           next(createTranslationError(
@@ -480,10 +500,15 @@ app.post('/api/translate',
     async (req: Request, res: Response, next: NextFunction) => {
       const startTime = Date.now();
       let progressEmitter: TranslationProgressEmitter;
+      let sessionId: string | undefined;
 
       try {
         const validatedData = TranslationRequestSchema.parse(req.body);
-        const { text } = validatedData;
+        const { text, sessionId: providedSessionId } = validatedData;
+        
+        // Generate session ID if not provided
+        sessionId = providedSessionId || randomUUID();
+        const abortSignal = cancellationManager.createSession(sessionId, 'stream');
 
         // Set up SSE headers
         res.writeHead(200, {
@@ -546,6 +571,9 @@ app.post('/api/translate',
 
         // Process chunks with progress reporting
         for (let i = 0; i < chunks.length; i += 2) {
+          // Check if translation was cancelled
+          CancellationManager.throwIfCancelled(abortSignal, 'stream chunk processing');
+          
           const currentPair = [];
           const startPage = i + 1;
           const endPage = Math.min(i + 2, chunks.length);
@@ -573,7 +601,8 @@ app.post('/api/translate',
                       pageNumber: chunks[i].pageNumber,
                       content: chunks[i].text
                     },
-                    translationConfig
+                    translationConfig,
+                    abortSignal
                   );
 
                   progressEmitter.emit('page_complete', {
@@ -646,7 +675,8 @@ app.post('/api/translate',
                         pageNumber: chunks[i + 1].pageNumber,
                         content: chunks[i + 1].text
                       },
-                      translationConfig
+                      translationConfig,
+                      abortSignal
                     );
 
                     progressEmitter.emit('page_complete', {
@@ -797,10 +827,21 @@ app.post('/api/translate',
           }
         });
 
+        // Complete the session successfully
+        if (sessionId) {
+          cancellationManager.completeSession(sessionId);
+        }
+
         progressEmitter.close();
 
       } catch (error) {
         console.error('Translation stream error:', error);
+        
+        // Clean up session on error
+        if (sessionId) {
+          cancellationManager.cancelSession(sessionId);
+        }
+        
         if (progressEmitter!) {
           progressEmitter.emit('error', {
             message: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -1034,6 +1075,97 @@ app.post('/api/translate',
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
         res.send(pdfBuffer);
 
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  // API status endpoint for monitoring key pool and service health
+  app.get('/api/status',
+    limiter,
+    requestLogger,
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { oddPagesGeminiService, evenPagesGeminiService } = await import('./services/translation/GeminiService');
+        const { multiProviderAIService } = await import('./services/translation/MultiProviderAIService');
+        
+        const status = {
+          timestamp: new Date().toISOString(),
+          services: {
+            gemini: {
+              odd: {
+                pageType: oddPagesGeminiService.getPageType(),
+                keyPool: (oddPagesGeminiService as any).keyPool.getPoolStatus()
+              },
+              even: {
+                pageType: evenPagesGeminiService.getPageType(),
+                keyPool: (evenPagesGeminiService as any).keyPool.getPoolStatus()
+              }
+            },
+            aiProviders: multiProviderAIService.getProviderStatus()
+          },
+          database: {
+            connected: true, // We'll assume connected if we reach this point
+            type: process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'
+          },
+          environment: {
+            nodeEnv: process.env.NODE_ENV,
+            port: process.env.PORT,
+            hasGeminiOddKey: !!process.env.GEMINI_API_KEY_ODD,
+            hasGeminiEvenKey: !!process.env.GEMINI_API_KEY_EVEN,
+            hasBackupKeys: !!(process.env.GEMINI_API_KEY_BACKUP_1 || process.env.GEMINI_API_KEY_BACKUP_2),
+            backupKeyCount: [
+              process.env.GEMINI_API_KEY_BACKUP_1,
+              process.env.GEMINI_API_KEY_BACKUP_2
+            ].filter(Boolean).length
+          }
+        };
+
+        res.json(status);
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  // Cancel translation endpoint
+  app.post('/api/translate/cancel/:sessionId',
+    limiter,
+    requestLogger,
+    (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { sessionId } = req.params;
+        
+        if (!sessionId || typeof sessionId !== 'string') {
+          throw createTranslationError('Invalid session ID', 'INVALID_INPUT', 400);
+        }
+
+        const cancelled = cancellationManager.cancelSession(sessionId);
+        
+        res.json({
+          success: true,
+          cancelled,
+          sessionId,
+          message: cancelled ? 'Translation cancelled successfully' : 'Session not found or already completed'
+        });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  // Get active translation sessions endpoint
+  app.get('/api/translate/sessions',
+    limiter,
+    requestLogger,
+    (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const activeSessions = cancellationManager.getActiveSessions();
+        res.json({
+          activeSessions,
+          count: activeSessions.length
+        });
       } catch (error) {
         next(error);
       }

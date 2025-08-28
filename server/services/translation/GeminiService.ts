@@ -1,46 +1,85 @@
 import { GoogleGenerativeAI, GenerativeModel, GenerateContentResult } from "@google/generative-ai";
+import { GeminiKeyPool } from './GeminiKeyPool';
+import { CancellationManager } from '../CancellationManager';
 
 /**
- * Service responsible for managing Gemini AI model configuration and generation
+ * Service responsible for managing Gemini AI model configuration and generation with failover
  */
 export class GeminiService {
-  private genAI: GoogleGenerativeAI;
-  private model: GenerativeModel;
+  private keyPool: GeminiKeyPool;
   private pageType: 'odd' | 'even';
+  private currentModel: GenerativeModel | null = null;
+  private currentApiKey: string | null = null;
 
-  constructor(apiKey: string, pageType: 'odd' | 'even') {
-    if (!apiKey) {
+  constructor(primaryApiKey: string, pageType: 'odd' | 'even', backupKeys: string[] = []) {
+    if (!primaryApiKey) {
       throw new Error(`GEMINI_API_KEY_${pageType.toUpperCase()} environment variable is required`);
     }
 
     this.pageType = pageType;
-    this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash-exp",
-      generationConfig: {
-        temperature: 0.1,
-        topK: 1,
-        topP: 0.8,
-        maxOutputTokens: 8192,
-      }
-    });
+    this.keyPool = new GeminiKeyPool(pageType, primaryApiKey, backupKeys);
+    
+    // Initialize with first available key
+    this.initializeWithNextKey();
+  }
+
+  private initializeWithNextKey(): boolean {
+    const apiKey = this.keyPool.getNextAvailableKey();
+    if (!apiKey) {
+      console.error(`[GeminiService] No available keys for ${this.pageType} pages`);
+      return false;
+    }
+
+    if (this.currentApiKey === apiKey) {
+      return true; // Already using this key
+    }
+
+    try {
+      this.currentApiKey = apiKey;
+      const genAI = new GoogleGenerativeAI(apiKey);
+      this.currentModel = genAI.getGenerativeModel({ 
+        model: "gemini-2.0-flash-exp",
+        generationConfig: {
+          temperature: 0.1,
+          topK: 1,
+          topP: 0.8,
+          maxOutputTokens: 8192,
+        }
+      });
+      return true;
+    } catch (error) {
+      console.error(`[GeminiService] Failed to initialize with key for ${this.pageType}:`, error);
+      return false;
+    }
   }
 
   /**
-   * Generates content using the Gemini AI model with timeout handling and retry logic
+   * Generates content using the Gemini AI model with timeout handling and failover
    * @param prompt - The prompt to generate content from
    * @param timeout - Maximum time to wait for generation in milliseconds
+   * @param abortSignal - Signal to abort the operation
    * @returns The generated content result
    * @throws Error if generation times out or fails after retries
    */
-  public async generateContent(prompt: string, timeout: number = 30000): Promise<GenerateContentResult> {
+  public async generateContent(prompt: string, timeout: number = 30000, abortSignal?: AbortSignal): Promise<GenerateContentResult> {
     const maxRetries = 3;
     const baseDelay = 1000; // 1 second
+    const startTime = Date.now();
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      // Check for cancellation before each attempt
+      CancellationManager.throwIfCancelled(abortSignal, `Gemini attempt ${attempt}`);
+      
+      // Ensure we have a valid model with an available key
+      if (!this.currentModel || !this.currentApiKey) {
+        if (!this.initializeWithNextKey()) {
+          throw new Error(`No available Gemini keys for ${this.pageType} pages`);
+        }
+      }
+
       try {
-        return await Promise.race([
-          this.model.generateContent({
+        const result = await Promise.race([
+          this.currentModel!.generateContent({
             contents: [{ 
               role: "user", 
               parts: [{ text: prompt }]
@@ -57,20 +96,77 @@ export class GeminiService {
             setTimeout(() => reject(new Error('Translation timeout')), timeout)
           )
         ]) as Promise<GenerateContentResult>;
+
+        // Record successful call
+        const responseTime = Date.now() - startTime;
+        this.keyPool.recordSuccessfulCall(this.currentApiKey!, responseTime);
+        
+        return result;
+
       } catch (error) {
-        // Check if it's a rate limit error
-        if (error instanceof Error && error.message.includes('429')) {
-          console.log(`[GeminiService] Rate limit hit on attempt ${attempt}/${maxRetries} for ${this.pageType} pages, retrying...`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        
+        // Handle rate limit errors
+        if (errorMessage.includes('429') || errorMessage.includes('rate_limit_exceeded')) {
+          console.warn(`[GeminiService] Rate limit hit on ${this.pageType} key, attempt ${attempt}/${maxRetries}`);
           
-          if (attempt === maxRetries) {
-            throw error; // Re-throw on final attempt
+          // Mark current key as rate-limited
+          if (this.currentApiKey) {
+            this.keyPool.markKeyAsRateLimited(this.currentApiKey, error);
           }
           
-          // Exponential backoff: 1s, 2s, 4s
-          const delay = baseDelay * Math.pow(2, attempt - 1);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        } else {
-          // For non-rate-limit errors, throw immediately
+          // Try to get a different key for next attempt
+          if (attempt < maxRetries) {
+            const newKey = this.keyPool.getNextAvailableKey();
+            if (newKey && newKey !== this.currentApiKey) {
+              console.log(`[GeminiService] Switching to backup key for ${this.pageType} pages`);
+              this.currentApiKey = null; // Force re-initialization
+              this.currentModel = null;
+              continue; // Try with new key immediately
+            } else {
+              // Check for cancellation before waiting
+              CancellationManager.throwIfCancelled(abortSignal, 'exponential backoff delay');
+              
+              // No other keys available, wait with exponential backoff
+              const delay = baseDelay * Math.pow(2, attempt - 1);
+              console.log(`[GeminiService] No backup keys available, waiting ${delay}ms before retry`);
+              
+              // Create a cancellable delay
+              await new Promise<void>((resolve, reject) => {
+                const timeoutId = setTimeout(resolve, delay);
+                
+                // If aborted during delay, clear timeout and reject
+                if (abortSignal) {
+                  const abortHandler = () => {
+                    clearTimeout(timeoutId);
+                    reject(new Error('Translation cancelled during retry delay'));
+                  };
+                  
+                  if (abortSignal.aborted) {
+                    abortHandler();
+                  } else {
+                    abortSignal.addEventListener('abort', abortHandler, { once: true });
+                  }
+                }
+              });
+            }
+          }
+        } 
+        // Handle authentication or permanent errors
+        else if (errorMessage.includes('401') || errorMessage.includes('403') || errorMessage.includes('API key')) {
+          console.error(`[GeminiService] Authentication error for ${this.pageType}:`, errorMessage);
+          
+          if (this.currentApiKey) {
+            this.keyPool.markKeyAsDisabled(this.currentApiKey, 'Authentication failed');
+          }
+          
+          // Try to get another key
+          if (!this.initializeWithNextKey()) {
+            throw new Error(`All Gemini keys failed authentication for ${this.pageType} pages`);
+          }
+        }
+        // For other errors, throw immediately if it's the last attempt
+        else if (attempt === maxRetries) {
           throw error;
         }
       }
@@ -84,6 +180,14 @@ export class GeminiService {
   }
 }
 
-// Create two separate instances for odd and even pages
-export const oddPagesGeminiService = new GeminiService(process.env.GEMINI_API_KEY_ODD || '', 'odd');
-export const evenPagesGeminiService = new GeminiService(process.env.GEMINI_API_KEY_EVEN || '', 'even');
+// Create two separate instances for odd and even pages with backup keys
+export const oddPagesGeminiService = new GeminiService(
+  process.env.GEMINI_API_KEY_ODD || '', 
+  'odd',
+  [process.env.GEMINI_API_KEY_BACKUP_1 || '', process.env.GEMINI_API_KEY_BACKUP_2 || '']
+);
+export const evenPagesGeminiService = new GeminiService(
+  process.env.GEMINI_API_KEY_EVEN || '', 
+  'even', 
+  [process.env.GEMINI_API_KEY_BACKUP_1 || '', process.env.GEMINI_API_KEY_BACKUP_2 || '']
+);

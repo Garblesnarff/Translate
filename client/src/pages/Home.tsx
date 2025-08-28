@@ -45,9 +45,14 @@ export default function Home() {
                   Begin by uploading your Tibetan document and let our AI assist
                   with accurate translations.
                 </p>
-                <Link href="/translate">
-                  <Button className="w-full">Start Translating</Button>
-                </Link>
+                <div className="space-y-2">
+                  <Link href="/translate">
+                    <Button className="w-full">Start Translating</Button>
+                  </Link>
+                  <Link href="/dashboard">
+                    <Button variant="outline" className="w-full">View API Dashboard</Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           </div>

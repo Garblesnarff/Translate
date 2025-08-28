@@ -7,6 +7,7 @@ import { multiProviderAIService, AIResponse } from './translation/MultiProviderA
 import { ConsensusEngine } from './translation/ConsensusEngine';
 import { QualityScorer, TranslationQuality } from './translation/QualityScorer';
 import { createTranslationError } from '../middleware/errorHandler';
+import { CancellationManager } from './CancellationManager';
 
 export interface TranslationConfig {
   useHelperAI?: boolean;
@@ -78,7 +79,8 @@ export class TranslationService {
    */
   public async translateText(
     chunk: TranslationChunk, 
-    config: TranslationConfig = {}
+    config: TranslationConfig = {},
+    abortSignal?: AbortSignal
   ): Promise<EnhancedTranslationResult> {
     const startTime = Date.now();
     const mergedConfig = { ...this.defaultConfig, ...config };
@@ -86,11 +88,15 @@ export class TranslationService {
     console.log(`[TranslationService] Starting enhanced translation for page ${chunk.pageNumber}`);
     
     try {
+      // Check for cancellation before starting
+      CancellationManager.throwIfCancelled(abortSignal, 'translation start');
+      
       // Phase 1: Initial Translation with Gemini
       let currentTranslation = await this.performGeminiTranslation(
         chunk, 
         mergedConfig,
-        1 // First iteration
+        1, // First iteration
+        abortSignal
       );
       
       let helperResponses: AIResponse[] = [];
@@ -136,12 +142,16 @@ export class TranslationService {
         console.log(`[TranslationService] Quality below threshold (${finalConfidence.toFixed(3)} < ${mergedConfig.qualityThreshold}), starting refinement`);
         
         for (let iteration = 2; iteration <= mergedConfig.maxIterations!; iteration++) {
+          // Check for cancellation before each refinement
+          CancellationManager.throwIfCancelled(abortSignal, `refinement iteration ${iteration}`);
+          
           const refinedTranslation = await this.performRefinementIteration(
             chunk.content,
             currentTranslation.translation,
             iteration,
             mergedConfig,
-            chunk.pageNumber
+            chunk.pageNumber,
+            abortSignal
           );
           
           if (refinedTranslation.confidence > finalConfidence) {
@@ -213,7 +223,8 @@ export class TranslationService {
   private async performGeminiTranslation(
     chunk: TranslationChunk,
     config: TranslationConfig,
-    iteration: number
+    iteration: number,
+    abortSignal?: AbortSignal
   ): Promise<{ translation: string; confidence: number }> {
     const geminiService = this.getGeminiService(chunk.pageNumber);
     
@@ -230,7 +241,10 @@ export class TranslationService {
       chunk.context
     );
     
-    const result = await geminiService.generateContent(prompt, config.timeout);
+    // Check for cancellation before making the API call
+    CancellationManager.throwIfCancelled(abortSignal, 'Gemini API call');
+    
+    const result = await geminiService.generateContent(prompt, config.timeout, abortSignal);
     const response = await result.response;
     const rawTranslation = response.text();
     
@@ -251,7 +265,8 @@ export class TranslationService {
     currentTranslation: string,
     iteration: number,
     config: TranslationConfig,
-    pageNumber: number
+    pageNumber: number,
+    abortSignal?: AbortSignal
   ): Promise<{ translation: string; confidence: number }> {
     const focusAreas = this.determineFocusAreas(currentTranslation, iteration);
     const refinementPrompt = this.promptGenerator.createRefinementPrompt(
@@ -260,9 +275,12 @@ export class TranslationService {
       focusAreas
     );
     
+    // Check for cancellation before refinement
+    CancellationManager.throwIfCancelled(abortSignal, 'refinement API call');
+    
     // Use correct Gemini service based on page number
     const geminiService = this.getGeminiService(pageNumber);
-    const result = await geminiService.generateContent(refinementPrompt, config.timeout);
+    const result = await geminiService.generateContent(refinementPrompt, config.timeout, abortSignal);
     const response = await result.response;
     const refinedTranslation = response.text();
     

@@ -4,8 +4,14 @@ import type { LogEntry } from '../types/log';
 
 const GEMINI_API_ENDPOINT = '/api/translate';
 const STREAM_API_ENDPOINT = '/api/translate/stream';
+const CANCEL_API_ENDPOINT = '/api/translate/cancel';
 const MAX_RETRIES = 3;
 const BASE_RETRY_DELAY = 1000;
+
+// Generate a unique session ID for tracking translations
+function generateSessionId(): string {
+  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
 
 export enum TranslationErrorCode {
   NETWORK_ERROR = 'NETWORK_ERROR',
@@ -60,6 +66,7 @@ interface TranslationState {
   progressInfo: ProgressInfo | null;
   canCancel: boolean;
   logs: LogEntry[];
+  currentSessionId?: string;
 }
 
 export const useTranslation = () => {
@@ -90,19 +97,39 @@ export const useTranslation = () => {
     }));
   }, []);
 
-  const cancelTranslation = useCallback(() => {
+  const cancelTranslation = useCallback(async () => {
+    // Cancel server-side processing if we have a session ID
+    if (state.currentSessionId) {
+      try {
+        const response = await fetch(`${CANCEL_API_ENDPOINT}/${state.currentSessionId}`, {
+          method: 'POST',
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Translation cancelled on server:', result);
+        }
+      } catch (error) {
+        console.warn('Failed to cancel server-side translation:', error);
+        // Continue with client-side cancellation even if server call fails
+      }
+    }
+
+    // Cancel client-side stream
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
+    
     setState(prev => ({
       ...prev,
       isTranslating: false,
       canCancel: false,
       progressInfo: null,
+      currentSessionId: undefined,
       error: new TranslationError('Translation cancelled by user', TranslationErrorCode.UNKNOWN_ERROR)
     }));
-  }, []);
+  }, [state.currentSessionId]);
 
   const clearLogs = useCallback(() => {
     setState(prev => ({
@@ -116,6 +143,7 @@ export const useTranslation = () => {
       startTimeRef.current = Date.now();
       let abortController = new AbortController();
       let resolved = false;
+      const sessionId = generateSessionId();
       
       setState(prev => ({ 
         ...prev, 
@@ -123,7 +151,8 @@ export const useTranslation = () => {
         error: null, 
         progressInfo: null,
         canCancel: true,
-        progress: 0
+        progress: 0,
+        currentSessionId: sessionId
       }));
 
       // Store abort controller for cancellation
@@ -136,6 +165,7 @@ export const useTranslation = () => {
             isTranslating: false,
             canCancel: false,
             progressInfo: null,
+            currentSessionId: undefined,
             error: new TranslationError('Translation cancelled by user', TranslationErrorCode.UNKNOWN_ERROR)
           }));
           reject(new TranslationError(
@@ -150,7 +180,7 @@ export const useTranslation = () => {
         const response = await fetch(STREAM_API_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text }),
+          body: JSON.stringify({ text, sessionId }),
           signal: abortController.signal
         });
 
@@ -338,6 +368,7 @@ export const useTranslation = () => {
                 isTranslating: false, 
                 canCancel: false,
                 progress: 100,
+                currentSessionId: undefined,
                 progressInfo: {
                   message: data.message || 'Complete!',
                   progress: 100,
@@ -368,6 +399,7 @@ export const useTranslation = () => {
                 ...prev, 
                 isTranslating: false, 
                 canCancel: false,
+                currentSessionId: undefined,
                 error
               }));
 
@@ -453,8 +485,15 @@ export const useTranslation = () => {
   const translateFallback = async (text: string): Promise<TranslationResult> => {
     let retries = 0;
     const startTime = Date.now();
+    const sessionId = generateSessionId();
     
-    setState(prev => ({ ...prev, isTranslating: true, error: null }));
+    setState(prev => ({ 
+      ...prev, 
+      isTranslating: true, 
+      error: null, 
+      currentSessionId: sessionId,
+      canCancel: true 
+    }));
     setProgress(0);
 
     while (retries <= MAX_RETRIES) {
@@ -462,7 +501,7 @@ export const useTranslation = () => {
         const response = await fetch(GEMINI_API_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text })
+          body: JSON.stringify({ text, sessionId })
         });
 
         if (!response.ok) {
@@ -472,7 +511,13 @@ export const useTranslation = () => {
         const data = await response.json();
         
         setProgress(100);
-        setState(prev => ({ ...prev, isTranslating: false, error: null }));
+        setState(prev => ({ 
+          ...prev, 
+          isTranslating: false, 
+          error: null,
+          currentSessionId: undefined,
+          canCancel: false 
+        }));
 
         return {
           translatedText: data.translatedText,
@@ -506,7 +551,9 @@ export const useTranslation = () => {
         setState(prev => ({ 
           ...prev, 
           isTranslating: false, 
-          error: translationError 
+          error: translationError,
+          currentSessionId: undefined,
+          canCancel: false
         }));
 
         throw translationError;
