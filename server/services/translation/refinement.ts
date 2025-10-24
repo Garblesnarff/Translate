@@ -21,7 +21,7 @@ import { TranslationConfig, RefinementResult } from './types';
  * @param iteration - Current iteration number
  * @param config - Translation configuration
  * @param pageNumber - Page number for service selection
- * @param abortSignal - Optional abort signal for cancellation
+ * @param abortSignal - The signal to abort the operation
  * @returns Promise with refined translation and confidence
  */
 export async function performRefinementIteration(
@@ -32,6 +32,8 @@ export async function performRefinementIteration(
   pageNumber: number,
   abortSignal?: AbortSignal
 ): Promise<RefinementResult> {
+  CancellationManager.throwIfCancelled(abortSignal, `refinement iteration ${iteration}`);
+
   const focusAreas = determineFocusAreas(currentTranslation, iteration);
 
   // Initialize prompt generator with dictionary
@@ -43,9 +45,6 @@ export async function performRefinementIteration(
     currentTranslation,
     focusAreas
   );
-
-  // Check for cancellation before refinement
-  CancellationManager.throwIfCancelled(abortSignal, 'refinement API call');
 
   // Use correct Gemini service based on page number
   const geminiService = getGeminiService(pageNumber);

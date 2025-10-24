@@ -10,12 +10,15 @@ import { createTranslationError } from '../middleware/errorHandler';
 import { CancellationManager } from './CancellationManager';
 import { performRefinementIteration } from './translation/refinement';
 import { calculateConsensusConfidence, calculateModelAgreement } from './translation/confidence';
+import { referenceTranslationService, ReferenceTranslationService } from './translation/ReferenceTranslationService';
+import { QualityGateService } from './translation/QualityGateService';
 import {
   TranslationConfig,
   EnhancedTranslationResult,
   TranslationChunk,
   TranslationContext,
-  TranslationQuality
+  TranslationQuality,
+  RefinementResult
 } from './translation/types';
 
 /**
@@ -29,6 +32,8 @@ export class TranslationService {
   private consensusEngine: ConsensusEngine;
   private qualityScorer: QualityScorer;
   private geminiTranslationService: GeminiTranslationService;
+  private referenceTranslationService: ReferenceTranslationService;
+  private qualityGateService: QualityGateService;
   
   private readonly defaultConfig: TranslationConfig = {
     useHelperAI: true,
@@ -60,11 +65,47 @@ export class TranslationService {
       oddPagesGeminiService,
       evenPagesGeminiService
     );
+    this.referenceTranslationService = referenceTranslationService;
+    this.qualityGateService = new QualityGateService(this.promptGenerator, oddPagesGeminiService);
   }
 
   /**
    * Enhanced translation method with multi-model consensus and quality analysis
    */
+  private async performTwoPassTranslation(
+    chunk: TranslationChunk,
+    config: TranslationConfig,
+    abortSignal?: AbortSignal
+  ): Promise<any> { // TODO: Define a proper return type
+    // First pass: initial translation and glossary extraction
+    const referenceTranslations = this.referenceTranslationService.getRelevantReferences(chunk.content);
+    const initialResult = await this.geminiTranslationService.performInitialTranslation(
+      chunk,
+      config,
+      referenceTranslations,
+      1,
+      abortSignal
+    );
+
+    // Second pass: refinement with glossary
+    const refinementPrompt = this.promptGenerator.createRefinementPrompt(
+      chunk.content,
+      initialResult.translation,
+      [`Incorporate the following glossary: ${JSON.stringify(initialResult.glossary)}`]
+    );
+
+    const geminiService = chunk.pageNumber % 2 === 0 ? evenPagesGeminiService : oddPagesGeminiService;
+    const refinedResult = await geminiService.generateContent(refinementPrompt, config.timeout, abortSignal);
+    const refinedResponse = await refinedResult.response;
+    const refinedTranslation = refinedResponse.text();
+
+    return {
+      translation: refinedTranslation,
+      confidence: calculateConsensusConfidence(initialResult.translation, [{ translation: refinedTranslation, confidence: 0.9 }]),
+      glossary: initialResult.glossary
+    };
+  }
+
   public async translateText(
     chunk: TranslationChunk, 
     config: TranslationConfig = {},
@@ -79,13 +120,8 @@ export class TranslationService {
       // Check for cancellation before starting
       CancellationManager.throwIfCancelled(abortSignal, 'translation start');
       
-      // Phase 1: Initial Translation with Gemini
-      let currentTranslation = await this.geminiTranslationService.performInitialTranslation(
-        chunk,
-        mergedConfig,
-        1, // First iteration
-        abortSignal
-      );
+      // Perform two-pass translation
+      let currentTranslation: RefinementResult = await this.performTwoPassTranslation(chunk, mergedConfig, abortSignal);
       
       let helperResponses: AIResponse[] = [];
       let modelAgreement = 1.0;
@@ -160,9 +196,14 @@ export class TranslationService {
       }
       
       // Phase 5: Final Processing
-      const processedTranslation = this.textProcessor.processText(currentTranslation.translation);
+      let processedTranslation = this.textProcessor.processText(currentTranslation.translation);
       
-      // Phase 6: Quality Analysis (if enabled)
+      // Phase 6: Quality Gate (if enabled)
+      if (mergedConfig.enableQualityAnalysis) {
+        processedTranslation = await this.qualityGateService.reviewAndRefine(chunk, processedTranslation, abortSignal);
+      }
+
+      // Phase 7: Quality Analysis (if enabled)
       let quality: TranslationQuality | undefined;
       if (mergedConfig.enableQualityAnalysis) {
         console.log(`[TranslationService] Analyzing translation quality`);
@@ -215,7 +256,7 @@ export class TranslationService {
     timeout: number = 60000
   ): Promise<{ translation: string; confidence: number }> {
     const result = await this.translateText(
-      { ...chunk }, 
+      { pageNumber: chunk.pageNumber, content: chunk.content },
       { 
         useHelperAI: false, 
         useMultiPass: false, 
