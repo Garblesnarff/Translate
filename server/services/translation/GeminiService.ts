@@ -57,7 +57,7 @@ export class GeminiService {
    * Generates content using the Gemini AI model with timeout handling and failover
    * @param prompt - The prompt to generate content from
    * @param timeout - Maximum time to wait for generation in milliseconds
-   * @param abortSignal - Signal to abort the operation
+   * @param abortSignal - The signal to abort the operation
    * @returns The generated content result
    * @throws Error if generation times out or fails after retries
    */
@@ -67,9 +67,8 @@ export class GeminiService {
     const startTime = Date.now();
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      // Check for cancellation before each attempt
-      CancellationManager.throwIfCancelled(abortSignal, `Gemini attempt ${attempt}`);
-      
+      CancellationManager.throwIfCancelled(abortSignal, `Gemini content generation attempt ${attempt}`);
+
       // Ensure we have a valid model with an available key
       if (!this.currentModel || !this.currentApiKey) {
         if (!this.initializeWithNextKey()) {
@@ -91,10 +90,18 @@ export class GeminiService {
               maxOutputTokens: 8192,
               candidateCount: 1,
             },
+          }, {
+            signal: abortSignal
           }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Translation timeout')), timeout)
-          )
+          new Promise((_, reject) => {
+            const timeoutId = setTimeout(() => reject(new Error('Translation timeout')), timeout);
+            if (abortSignal) {
+              abortSignal.addEventListener('abort', () => {
+                clearTimeout(timeoutId);
+                reject(new Error('Translation cancelled'));
+              });
+            }
+          })
         ]) as Promise<GenerateContentResult>;
 
         // Record successful call
@@ -124,9 +131,6 @@ export class GeminiService {
               this.currentModel = null;
               continue; // Try with new key immediately
             } else {
-              // Check for cancellation before waiting
-              CancellationManager.throwIfCancelled(abortSignal, 'exponential backoff delay');
-              
               // No other keys available, wait with exponential backoff
               const delay = baseDelay * Math.pow(2, attempt - 1);
               console.log(`[GeminiService] No backup keys available, waiting ${delay}ms before retry`);
@@ -134,19 +138,12 @@ export class GeminiService {
               // Create a cancellable delay
               await new Promise<void>((resolve, reject) => {
                 const timeoutId = setTimeout(resolve, delay);
-                
-                // If aborted during delay, clear timeout and reject
+                CancellationManager.throwIfCancelled(abortSignal, 'rate limit backoff');
                 if (abortSignal) {
-                  const abortHandler = () => {
+                  abortSignal.addEventListener('abort', () => {
                     clearTimeout(timeoutId);
-                    reject(new Error('Translation cancelled during retry delay'));
-                  };
-                  
-                  if (abortSignal.aborted) {
-                    abortHandler();
-                  } else {
-                    abortSignal.addEventListener('abort', abortHandler, { once: true });
-                  }
+                    reject(new Error('Translation cancelled during backoff'));
+                  });
                 }
               });
             }

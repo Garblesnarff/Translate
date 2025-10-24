@@ -6,6 +6,7 @@ export interface PromptOptions {
   iterationPass?: number;
   previousTranslations?: string[];
   useChainOfThought?: boolean;
+  referenceTranslations?: any[]; // TODO: Define a proper type for this
 }
 
 export interface TranslationContext {
@@ -65,11 +66,15 @@ export class PromptGenerator {
     ): string {
         const contextSection = this.buildContextSection(context);
         const examplesSection = this.buildExamplesSection(examples);
+        const referenceSection = this.buildReferenceSection(options.referenceTranslations);
         const iterationGuidance = this.getIterationGuidance(options.iterationPass || 1);
         
         return `You are an expert Tibetan-English translator specializing in Buddhist texts and Tibetan literature. Your translations are known for accuracy, natural flow, and proper preservation of original meaning.
 
 ${contextSection}
+
+REFERENCE TRANSLATIONS (Use as a style and terminology guide):
+${referenceSection}
 
 DICTIONARY REFERENCE (Use when applicable):
 ${dictionaryContext}
@@ -160,6 +165,57 @@ IMPROVEMENT GUIDELINES:
 5. Fix any grammatical or structural issues${focusGuidance}
 
 IMPORTANT: Provide ONLY the improved translation without any explanation, commentary, or meta-text. Do not include phrases like "Here's an improved translation" or "Key improvements". Simply provide the translation in the requested format: English sentence (Tibetan original)`;
+    }
+
+    /**
+     * Creates a prompt to extract a glossary of key terms.
+     * @param text The text to extract terms from.
+     * @returns A formatted prompt string.
+     */
+    public createGlossaryExtractionPrompt(text: string): string {
+        return `You are a linguistic analyst specializing in Tibetan texts. Your task is to identify key terms, names, and important concepts in the following text and provide their English translations.
+
+TEXT:
+${text}
+
+INSTRUCTIONS:
+1. Identify up to 10 key terms, proper names, or significant concepts.
+2. For each term, provide a concise and accurate English translation.
+3. Return the results as a single JSON object where keys are the Tibetan terms and values are their English translations.
+4. Ensure the output is a valid JSON object.
+
+EXAMPLE OUTPUT:
+{
+  "ཆོས་ཀྱི་རྒྱལ་པོ།": "Dharma King",
+  "བྱང་ཆུབ་སེམས་དཔའ།": "Bodhisattva"
+}
+
+JSON_GLOSSARY:`;
+    }
+
+    /**
+     * Creates a prompt for an expert to critique a translation.
+     * @param originalText The original Tibetan text.
+     * @param translation The English translation.
+     * @param expert The expert persona (e.g., 'Historian', 'Linguist').
+     * @returns A formatted prompt string.
+     */
+    public createCritiquePrompt(originalText: string, translation: string, expert: string): string {
+        return `You are a world-renowned ${expert} with deep expertise in Tibetan literature. Your task is to review the following translation and provide a concise critique from your expert perspective.
+
+ORIGINAL TIBETAN:
+${originalText}
+
+ENGLISH TRANSLATION:
+${translation}
+
+INSTRUCTIONS:
+1. As a ${expert}, identify any potential inaccuracies, inconsistencies, or areas for improvement.
+2. Focus on aspects relevant to your field (e.g., a Historian might focus on historical context, a Linguist on grammar).
+3. If you find no significant issues, respond with "No significant issues found."
+4. Keep your critique to 2-3 sentences.
+
+CRITIQUE:`;
     }
 
     /**
@@ -307,6 +363,24 @@ IMPORTANT: Provide ONLY the improved translation without any explanation, commen
         });
         
         return examplesSection;
+    }
+
+    /**
+     * Builds reference translations section for the prompt
+     */
+    private buildReferenceSection(
+        references?: Array<{ tibetan: string; english: string }>
+    ): string {
+        if (!references || references.length === 0) {
+            return "No reference translations provided for this text.";
+        }
+
+        let referenceSection = '';
+        references.forEach((ref, index) => {
+            referenceSection += `\nExample ${index + 1}:\nTibetan: ${ref.tibetan}\nEnglish: ${ref.english}\n`;
+        });
+
+        return referenceSection;
     }
 
     /**

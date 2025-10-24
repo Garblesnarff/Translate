@@ -74,12 +74,22 @@ export interface AIResponse {
   processingTime: number;
 }
 
+export interface Glossary {
+  [key: string]: string;
+}
+
 export interface GeminiTranslationResult {
   translation: string;
   confidence: number;
+  glossary?: Glossary;
 }
 
 export interface RefinementResult {
   translation: string;
   confidence: number;
+}
+
+export interface ReferenceTranslation {
+  source: string;
+  translation: string;
 }
