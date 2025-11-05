@@ -213,16 +213,22 @@ export async function generateBatchPDF(
 }
 
 /**
- * Process batch files asynchronously
+ * Process batch files asynchronously with checkpointing and partial success handling
  */
 async function processBatchFiles(jobId: string, files: any[], tables: any) {
   const translationIds: number[] = [];
   let processedCount = 0;
   let failedCount = 0;
+  const fileErrors: { fileName: string; error: string }[] = [];
 
   try {
     for (const file of files) {
+      let fileTranslationIds: number[] = [];
+      let fileHadErrors = false;
+
       try {
+        console.log(`[Batch] Processing file: ${file.name}`);
+
         // Extract text from file (implement based on file type)
         const text = await extractTextFromFile(file);
 
@@ -238,19 +244,45 @@ async function processBatchFiles(jobId: string, files: any[], tables: any) {
         for (let i = 0; i < chunks.length; i += 2) {
           const currentPair = [];
 
+          // CHECKPOINT: Process each chunk and save immediately on success
           currentPair.push(
             (async () => {
               try {
                 const result = await translationService.translateText({pageNumber: chunks[i].pageNumber, content: chunks[i].text});
+
+                // PARTIAL SUCCESS: Save this page immediately to database
+                try {
+                  const pageTranslation = {
+                    sourceText: chunks[i].text,
+                    translatedText: result.translation,
+                    confidence: result.confidence.toString(),
+                    sourceFileName: `${file.name} - Page ${chunks[i].pageNumber}`,
+                    pageCount: 1,
+                    textLength: chunks[i].text.length,
+                    status: 'completed'
+                  };
+
+                  const [saved] = await db.insert(tables.translations).values(pageTranslation).returning();
+                  fileTranslationIds.push(saved.id);
+
+                  console.log(`[Batch] Checkpoint: Saved page ${chunks[i].pageNumber} (ID: ${saved.id})`);
+                } catch (dbError) {
+                  console.error(`[Batch] Failed to save page ${chunks[i].pageNumber} to database:`, dbError);
+                  // Translation succeeded but save failed - still return translation
+                }
+
                 return {
                   pageNumber: chunks[i].pageNumber,
                   translation: result.translation,
-                  confidence: result.confidence
+                  confidence: result.confidence,
+                  saved: true
                 };
               } catch (error) {
+                console.error(`[Batch] Page ${chunks[i].pageNumber} translation failed:`, error);
                 return {
                   pageNumber: chunks[i].pageNumber,
-                  error: error instanceof Error ? error.message : 'Unknown error'
+                  error: error instanceof Error ? error.message : 'Unknown error',
+                  saved: false
                 };
               }
             })()
@@ -261,15 +293,39 @@ async function processBatchFiles(jobId: string, files: any[], tables: any) {
               (async () => {
                 try {
                   const result = await translationService.translateText({pageNumber: chunks[i + 1].pageNumber, content: chunks[i + 1].text});
+
+                  // PARTIAL SUCCESS: Save this page immediately to database
+                  try {
+                    const pageTranslation = {
+                      sourceText: chunks[i + 1].text,
+                      translatedText: result.translation,
+                      confidence: result.confidence.toString(),
+                      sourceFileName: `${file.name} - Page ${chunks[i + 1].pageNumber}`,
+                      pageCount: 1,
+                      textLength: chunks[i + 1].text.length,
+                      status: 'completed'
+                    };
+
+                    const [saved] = await db.insert(tables.translations).values(pageTranslation).returning();
+                    fileTranslationIds.push(saved.id);
+
+                    console.log(`[Batch] Checkpoint: Saved page ${chunks[i + 1].pageNumber} (ID: ${saved.id})`);
+                  } catch (dbError) {
+                    console.error(`[Batch] Failed to save page ${chunks[i + 1].pageNumber} to database:`, dbError);
+                  }
+
                   return {
                     pageNumber: chunks[i + 1].pageNumber,
                     translation: result.translation,
-                    confidence: result.confidence
+                    confidence: result.confidence,
+                    saved: true
                   };
                 } catch (error) {
+                  console.error(`[Batch] Page ${chunks[i + 1].pageNumber} translation failed:`, error);
                   return {
                     pageNumber: chunks[i + 1].pageNumber,
-                    error: error instanceof Error ? error.message : 'Unknown error'
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                    saved: false
                   };
                 }
               })()
@@ -278,75 +334,94 @@ async function processBatchFiles(jobId: string, files: any[], tables: any) {
 
           const pairResults = await Promise.all(currentPair);
           results.push(...pairResults);
+
+          // CHECKPOINT: Update progress after each pair
+          await db
+            .update(tables.batchJobs)
+            .set({
+              translationIds: JSON.stringify([...translationIds, ...fileTranslationIds]),
+              updatedAt: new Date().toISOString()
+            })
+            .where(eq(tables.batchJobs.jobId, jobId));
         }
 
-        // Process results
+        // Process results and collect statistics
         for (const result of results) {
           if ('error' in result) {
             errors.push({
               pageNumber: result.pageNumber,
               error: result.error
             });
+            fileHadErrors = true;
           } else {
             translations.push(result);
             confidenceScores.push(result.confidence);
           }
         }
 
-        if (translations.length > 0) {
-          // Combine translated text
-          const combinedText = translations
-            .sort((a, b) => a.pageNumber - b.pageNumber)
-            .map(t => t.translation.replace(/^## Translation of Tibetan Text \(Page \d+\)\n*/, ''))
-            .join('\n\n');
+        // PARTIAL SUCCESS: Even if some pages failed, count as processed if we got any translations
+        if (fileTranslationIds.length > 0) {
+          translationIds.push(...fileTranslationIds);
+          processedCount++;
 
-          // Calculate average confidence
-          const averageConfidence = confidenceScores.length > 0
-            ? confidenceScores.reduce((a, b) => a + b, 0) / confidenceScores.length
-            : 0;
+          console.log(`[Batch] File ${file.name}: ${translations.length}/${chunks.length} pages translated successfully`);
 
-          // Save translation to database
-          const translationData = {
-            sourceText: text,
-            translatedText: combinedText,
-            confidence: averageConfidence.toString(),
-            sourceFileName: file.name,
-            pageCount: chunks.length,
-            textLength: text.length,
-            status: 'completed'
-          };
-
-          const [savedTranslation] = await db.insert(tables.translations).values(translationData).returning();
-          translationIds.push(savedTranslation.id);
+          if (errors.length > 0) {
+            fileErrors.push({
+              fileName: file.name,
+              error: `${errors.length} pages failed: ${errors.map(e => `Page ${e.pageNumber}`).join(', ')}`
+            });
+          }
+        } else {
+          // No pages translated successfully
+          throw new Error(`All ${chunks.length} pages failed to translate`);
         }
-
-        processedCount++;
 
       } catch (error) {
         console.error(`Failed to process file ${file.name}:`, error);
         failedCount++;
+        fileHadErrors = true;
+
+        fileErrors.push({
+          fileName: file.name,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+
+        // PARTIAL SUCCESS: Even if file processing failed overall, keep any translations we saved
+        if (fileTranslationIds.length > 0) {
+          console.log(`[Batch] Partial success: Kept ${fileTranslationIds.length} successfully translated pages from ${file.name}`);
+        }
       }
 
-      // Update batch job progress
+      // CHECKPOINT: Update batch job progress after each file
       await db
         .update(tables.batchJobs)
         .set({
           processedFiles: processedCount,
           failedFiles: failedCount,
-          translationIds: JSON.stringify(translationIds)
+          translationIds: JSON.stringify(translationIds),
+          updatedAt: new Date().toISOString(),
+          errorMessage: fileErrors.length > 0 ? JSON.stringify(fileErrors) : null
         })
         .where(eq(tables.batchJobs.jobId, jobId));
     }
 
-    // Mark batch job as completed
+    // Mark batch job as completed (or partial if some files failed)
+    const finalStatus = failedCount > 0 && processedCount > 0 ? 'completed' :
+                       failedCount > 0 && processedCount === 0 ? 'failed' :
+                       'completed';
+
     await db
       .update(tables.batchJobs)
       .set({
-        status: 'completed',
+        status: finalStatus,
         completedAt: new Date().toISOString(),
-        translationIds: JSON.stringify(translationIds)
+        translationIds: JSON.stringify(translationIds),
+        errorMessage: fileErrors.length > 0 ? JSON.stringify(fileErrors) : null
       })
       .where(eq(tables.batchJobs.jobId, jobId));
+
+    console.log(`[Batch] Job ${jobId} completed: ${processedCount} processed, ${failedCount} failed, ${translationIds.length} total translations saved`);
 
     // Send webhook notification for completed job
     try {

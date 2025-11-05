@@ -52,3 +52,49 @@ export const insertBatchJobSchema = createInsertSchema(batchJobs);
 export const selectBatchJobSchema = createSelectSchema(batchJobs);
 export type InsertBatchJob = z.infer<typeof insertBatchJobSchema>;
 export type BatchJob = z.infer<typeof selectBatchJobSchema>;
+
+// Translation metrics table for monitoring
+export const translationMetrics = sqliteTable("translation_metrics", {
+  id: integer().primaryKey({ autoIncrement: true }),
+  translationId: text("translation_id"),
+  sessionId: text("session_id"),
+  timestamp: text("timestamp").notNull().default(sql`CURRENT_TIMESTAMP`),
+
+  // Quality metrics
+  confidenceScore: text("confidence_score").notNull(), // stored as text for precision
+  qualityScore: text("quality_score"),
+  modelAgreement: text("model_agreement"),
+  formatScore: text("format_score"),
+
+  // Performance metrics
+  processingTimeMs: integer("processing_time_ms").notNull(),
+  tokensProcessed: integer("tokens_processed"),
+  apiLatencyMs: integer("api_latency_ms"),
+
+  // Usage metrics
+  modelUsed: text("model_used").notNull(),
+  iterationsUsed: integer("iterations_used").notNull(),
+  retriesNeeded: integer("retries_needed").notNull(),
+  helperModelsUsed: text("helper_models_used"), // JSON array
+
+  // Gate metrics (Phase 2.4.3)
+  gatesPassed: integer("gates_passed").notNull().default(1), // Boolean as 0/1
+  gateResults: text("gate_results"), // JSON object
+  failedGates: text("failed_gates"), // JSON array
+
+  // Document metadata
+  pageNumber: integer("page_number"),
+  documentId: text("document_id"),
+  textLength: integer("text_length").notNull(),
+  chunkCount: integer("chunk_count"),
+
+  // Error metrics
+  errorOccurred: integer("error_occurred").notNull().default(0), // Boolean as 0/1
+  errorType: text("error_type"),
+  errorMessage: text("error_message"),
+});
+
+export const insertTranslationMetricsSchema = createInsertSchema(translationMetrics);
+export const selectTranslationMetricsSchema = createSelectSchema(translationMetrics);
+export type InsertTranslationMetrics = z.infer<typeof insertTranslationMetricsSchema>;
+export type TranslationMetricsRecord = z.infer<typeof selectTranslationMetricsSchema>;

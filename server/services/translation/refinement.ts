@@ -36,7 +36,8 @@ export async function performRefinementIteration(
 
   // Initialize prompt generator with dictionary
   const dictionary = new TibetanDictionary();
-  const promptGenerator = new PromptGenerator(dictionary);
+  const geminiApiKey = process.env.GEMINI_API_KEY_ODD || process.env.GEMINI_API_KEY_EVEN;
+  const promptGenerator = new PromptGenerator(dictionary, geminiApiKey);
 
   const refinementPrompt = promptGenerator.createRefinementPrompt(
     originalText,

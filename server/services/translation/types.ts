@@ -18,6 +18,27 @@ export interface TranslationConfig {
   timeout?: number;
 }
 
+export interface ValidationMetadata {
+  inputValidation?: {
+    tibetanPercentage?: number;
+    textLength?: number;
+  };
+  outputValidation?: {
+    isValid: boolean;
+    formatCompliance?: number;
+    tibetanPreservation?: number;
+    completeness?: number;
+    errors?: string[];
+    warnings?: string[];
+  };
+  glossary?: {
+    termsExtracted: number;
+    glossarySize: number;
+    consistencyScore?: number;
+    inconsistencyWarnings?: number;
+  };
+}
+
 export interface EnhancedTranslationResult {
   translation: string;
   confidence: number;
@@ -26,6 +47,11 @@ export interface EnhancedTranslationResult {
   iterationsUsed?: number;
   helperModels?: string[];
   processingTime?: number;
+  validationMetadata?: ValidationMetadata;
+  errorRecovery?: {
+    usedFallback: boolean;
+    fallbackStrategy?: string;
+  };
 }
 
 export interface TranslationChunk {

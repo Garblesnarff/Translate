@@ -9,12 +9,85 @@
 
 import { z } from 'zod';
 
+// ========== Input Validation Schemas ==========
+
+/**
+ * Schema for validating Tibetan text input
+ * Ensures text meets basic requirements before translation
+ */
+export const tibetanTextSchema = z.string()
+  .min(10, 'Text must be at least 10 characters long')
+  .max(100000, 'Text must not exceed 100,000 characters')
+  .refine((text) => {
+    // Check if text contains Tibetan characters (U+0F00-U+0FFF)
+    const tibetanChars = text.match(/[\u0F00-\u0FFF]/g);
+    return tibetanChars && tibetanChars.length > 0;
+  }, {
+    message: 'Text must contain Tibetan characters (Unicode U+0F00-U+0FFF)'
+  });
+
+/**
+ * Schema for validating translation chunks
+ */
+export const chunkSchema = z.object({
+  pageNumber: z.number().int().positive(),
+  content: tibetanTextSchema,
+  text: z.string().optional(), // For backwards compatibility
+});
+
+/**
+ * Schema for translation configuration
+ */
+export const configSchema = z.object({
+  useHelperAI: z.boolean().optional().default(true),
+  useMultiPass: z.boolean().optional().default(true),
+  maxIterations: z.number().int().min(1).max(5).optional().default(3),
+  qualityThreshold: z.number().min(0).max(1).optional().default(0.8),
+  useChainOfThought: z.boolean().optional().default(false),
+  contextWindow: z.number().int().min(0).max(10).optional().default(2),
+  enableQualityAnalysis: z.boolean().optional().default(true),
+  timeout: z.number().int().positive().optional().default(90000)
+});
+
+// ========== Output Validation Schemas ==========
+
+/**
+ * Schema for translation quality analysis
+ */
+export const qualityReportSchema = z.object({
+  grade: z.enum(['A', 'B', 'C', 'D', 'F']),
+  score: z.number().min(0).max(100),
+  issues: z.array(z.string()),
+  strengths: z.array(z.string()),
+  formatCompliance: z.number().min(0).max(100).optional(),
+  termConsistency: z.number().min(0).max(100).optional(),
+  contextAccuracy: z.number().min(0).max(100).optional(),
+  structuralIntegrity: z.number().min(0).max(100).optional()
+});
+
+/**
+ * Schema for translation result
+ */
+export const translationResultSchema = z.object({
+  translation: z.string().min(1, 'Translation cannot be empty'),
+  confidence: z.number().min(0).max(1),
+  quality: qualityReportSchema.optional(),
+  modelAgreement: z.number().min(0).max(1).optional(),
+  iterationsUsed: z.number().int().positive().optional(),
+  helperModels: z.array(z.string()).optional(),
+  processingTime: z.number().positive().optional(),
+  metadata: z.record(z.any()).optional()
+});
+
+// ========== API Request Schemas ==========
+
 /**
  * Schema for validating translation requests
  */
 export const TranslationRequestSchema = z.object({
-  text: z.string().min(1).max(100000),
+  text: tibetanTextSchema,
   sessionId: z.string().optional(), // Optional session ID for cancellation tracking
+  config: configSchema.optional()
 });
 
 /**
@@ -81,6 +154,11 @@ export const SessionCancellationRequestSchema = z.object({
 /**
  * Type exports for use in controllers
  */
+export type TibetanText = z.infer<typeof tibetanTextSchema>;
+export type TranslationChunk = z.infer<typeof chunkSchema>;
+export type TranslationConfig = z.infer<typeof configSchema>;
+export type QualityReport = z.infer<typeof qualityReportSchema>;
+export type TranslationResult = z.infer<typeof translationResultSchema>;
 export type TranslationRequest = z.infer<typeof TranslationRequestSchema>;
 export type BatchTranslationRequest = z.infer<typeof BatchTranslationRequestSchema>;
 export type PDFGenerationRequest = z.infer<typeof PDFGenerationRequestSchema>;

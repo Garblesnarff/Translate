@@ -1,0 +1,202 @@
+[
+  {
+    "id": "simple-greeting",
+    "tibetan": "བཀྲ་ཤིས་བདེ་ལེགས།",
+    "english": "Tashi Delek (བཀྲ་ཤིས་བདེ་ལེགས།).",
+    "category": "greeting",
+    "difficulty": "simple",
+    "notes": "Traditional Tibetan greeting"
+  },
+  {
+    "id": "language-importance",
+    "tibetan": "བོད་ཀྱི་སྐད་ཡིག་ནི་གལ་ཆེན་པོ་ཡིན།",
+    "english": "The Tibetan language (བོད་ཀྱི་སྐད་ཡིག) is important (གལ་ཆེན་པོ་ཡིན།).",
+    "category": "general",
+    "difficulty": "simple",
+    "notes": "Basic statement about language importance"
+  },
+  {
+    "id": "monastery",
+    "tibetan": "དགོན་པ་དེ་རི་ལ་ཡོད།",
+    "english": "The monastery (དགོན་པ་དེ) is on the mountain (རི་ལ་ཡོད།).",
+    "category": "location",
+    "difficulty": "simple",
+    "notes": "Basic location description"
+  },
+  {
+    "id": "study",
+    "tibetan": "ང་ཚོ་བོད་སྐད་སློབ་སྦྱོང་བྱེད།",
+    "english": "We (ང་ཚོ) study (སློབ་སྦྱོང་བྱེད།) Tibetan language (བོད་སྐད).",
+    "category": "education",
+    "difficulty": "simple",
+    "notes": "Learning Tibetan"
+  },
+  {
+    "id": "teacher",
+    "tibetan": "དགེ་རྒན་དེ་མཁས་པ་ཡིན།",
+    "english": "The teacher (དགེ་རྒན་དེ) is knowledgeable (མཁས་པ་ཡིན།).",
+    "category": "education",
+    "difficulty": "simple",
+    "notes": "Describing a teacher"
+  },
+  {
+    "id": "book",
+    "tibetan": "དེབ་འདི་ཡག་པོ་ཡིན།",
+    "english": "This book (དེབ་འདི) is good (ཡག་པོ་ཡིན།).",
+    "category": "object",
+    "difficulty": "simple",
+    "notes": "Simple description"
+  },
+  {
+    "id": "weather",
+    "tibetan": "དེ་རིང་གནམ་གཤིས་ལེགས་པོ་ཡོད།",
+    "english": "Today (དེ་རིང) the weather (གནམ་གཤིས) is nice (ལེགས་པོ་ཡོད།).",
+    "category": "weather",
+    "difficulty": "simple",
+    "notes": "Weather description"
+  },
+  {
+    "id": "food",
+    "tibetan": "ཁ་ལག་ཞིམ་པོ་ཡོད།",
+    "english": "The food (ཁ་ལག) is delicious (ཞིམ་པོ་ཡོད།).",
+    "category": "food",
+    "difficulty": "simple",
+    "notes": "Food description"
+  },
+  {
+    "id": "family",
+    "tibetan": "ང་ལ་མི་རབས་བཞི་ཡོད།",
+    "english": "I (ང་ལ) have four family members (མི་རབས་བཞི་ཡོད།).",
+    "category": "family",
+    "difficulty": "simple",
+    "notes": "Family size"
+  },
+  {
+    "id": "thank-you",
+    "tibetan": "ཐུགས་རྗེ་ཆེ།",
+    "english": "Thank you (ཐུགས་རྗེ་ཆེ།).",
+    "category": "courtesy",
+    "difficulty": "simple",
+    "notes": "Expression of gratitude"
+  },
+  {
+    "id": "practice",
+    "tibetan": "ང་རྒྱུན་དུ་སྒོམ་སྒྲུབ་བྱེད།",
+    "english": "I (ང) regularly (རྒྱུན་དུ) practice meditation (སྒོམ་སྒྲུབ་བྱེད།).",
+    "category": "practice",
+    "difficulty": "medium",
+    "notes": "Buddhist practice"
+  },
+  {
+    "id": "compassion",
+    "tibetan": "སྙིང་རྗེ་ནི་གལ་ཆེན་ཡིན།",
+    "english": "Compassion (སྙིང་རྗེ) is important (གལ་ཆེན་ཡིན།).",
+    "category": "philosophy",
+    "difficulty": "medium",
+    "notes": "Buddhist concept"
+  },
+  {
+    "id": "wisdom",
+    "tibetan": "ཤེས་རབ་དང་སྙིང་རྗེ་གཉིས་དགོས།",
+    "english": "Both wisdom (ཤེས་རབ) and compassion (སྙིང་རྗེ) are needed (གཉིས་དགོས།).",
+    "category": "philosophy",
+    "difficulty": "medium",
+    "notes": "Core Buddhist teaching"
+  },
+  {
+    "id": "path",
+    "tibetan": "ལམ་དེ་རིང་པོ་ཡིན་མོད། འགྲོ་དགོས།",
+    "english": "The path (ལམ་དེ) is long (རིང་པོ་ཡིན་མོད།), but must be traveled (འགྲོ་དགོས།).",
+    "category": "metaphor",
+    "difficulty": "medium",
+    "notes": "Philosophical metaphor"
+  },
+  {
+    "id": "learning-continuous",
+    "tibetan": "སློབ་སྦྱོང་རྒྱུན་དུ་བྱེད་དགོས།",
+    "english": "Learning (སློབ་སྦྱོང) must be done continuously (རྒྱུན་དུ་བྱེད་དགོས།).",
+    "category": "education",
+    "difficulty": "medium",
+    "notes": "Importance of continuous learning"
+  },
+  {
+    "id": "mountain-high",
+    "tibetan": "རི་དེ་མཐོ་པོ་དང་མཛེས་པོ་ཡོད།",
+    "english": "That mountain (རི་དེ) is tall (མཐོ་པོ) and beautiful (མཛེས་པོ་ཡོད།).",
+    "category": "nature",
+    "difficulty": "medium",
+    "notes": "Nature description with multiple adjectives"
+  },
+  {
+    "id": "time-precious",
+    "tibetan": "དུས་ཚོད་རིན་ཐང་ཅན་ཡིན།",
+    "english": "Time (དུས་ཚོད) is precious (རིན་ཐང་ཅན་ཡིན།).",
+    "category": "wisdom",
+    "difficulty": "medium",
+    "notes": "Value of time"
+  },
+  {
+    "id": "help-others",
+    "tibetan": "གཞན་ལ་རོགས་རམ་བྱེད་པ་གལ་ཆེན་རེད།",
+    "english": "Helping others (གཞན་ལ་རོགས་རམ་བྱེད་པ) is important (གལ་ཆེན་རེད།).",
+    "category": "ethics",
+    "difficulty": "medium",
+    "notes": "Buddhist ethics"
+  },
+  {
+    "id": "peace",
+    "tibetan": "ཞི་བདེ་ནི་ང་ཚོ་ཚང་མས་འདོད་པ་ཞིག་རེད།",
+    "english": "Peace (ཞི་བདེ) is something we all (ང་ཚོ་ཚང་མས) desire (འདོད་པ་ཞིག་རེད།).",
+    "category": "philosophy",
+    "difficulty": "medium",
+    "notes": "Universal desire for peace"
+  },
+  {
+    "id": "respect",
+    "tibetan": "རྒན་རབས་ལ་བཀུར་སྟི་བྱེད་དགོས།",
+    "english": "We must show respect (བཀུར་སྟི་བྱེད་དགོས།) to elders (རྒན་རབས་ལ).",
+    "category": "ethics",
+    "difficulty": "medium",
+    "notes": "Cultural value"
+  },
+  {
+    "id": "mind-nature",
+    "tibetan": "སེམས་ཀྱི་རང་བཞིན་ནི་དག་པ་ཡིན།",
+    "english": "The nature of mind (སེམས་ཀྱི་རང་བཞིན) is pure (དག་པ་ཡིན།).",
+    "category": "philosophy",
+    "difficulty": "complex",
+    "notes": "Advanced Buddhist philosophy"
+  },
+  {
+    "id": "emptiness",
+    "tibetan": "སྟོང་པ་ཉིད་ནི་ཆོས་ཐམས་ཅད་ཀྱི་ངོ་བོ་ཡིན།",
+    "english": "Emptiness (སྟོང་པ་ཉིད) is the nature (ངོ་བོ་ཡིན།) of all phenomena (ཆོས་ཐམས་ཅད་ཀྱི).",
+    "category": "philosophy",
+    "difficulty": "complex",
+    "notes": "Core Madhyamaka concept"
+  },
+  {
+    "id": "bodhicitta",
+    "tibetan": "བྱང་ཆུབ་ཀྱི་སེམས་ནི་ཐར་པའི་རྩ་བ་ཡིན།",
+    "english": "Bodhicitta (བྱང་ཆུབ་ཀྱི་སེམས), the enlightened mind, is the root (རྩ་བ་ཡིན།) of liberation (ཐར་པའི).",
+    "category": "philosophy",
+    "difficulty": "complex",
+    "notes": "Mahayana Buddhist concept"
+  },
+  {
+    "id": "three-jewels",
+    "tibetan": "དཀོན་མཆོག་གསུམ་ལ་སྐྱབས་སུ་མཆིའོ།",
+    "english": "I take refuge (སྐྱབས་སུ་མཆིའོ།) in the Three Jewels (དཀོན་མཆོག་གསུམ་ལ).",
+    "category": "practice",
+    "difficulty": "complex",
+    "notes": "Fundamental Buddhist refuge"
+  },
+  {
+    "id": "interdependence",
+    "tibetan": "ཆོས་ཐམས་ཅད་རྟེན་ཅིང་འབྲེལ་བར་འབྱུང་བ་ཡིན།",
+    "english": "All phenomena (ཆོས་ཐམས་ཅད) arise through interdependence (རྟེན་ཅིང་འབྲེལ་བར་འབྱུང་བ་ཡིན།).",
+    "category": "philosophy",
+    "difficulty": "complex",
+    "notes": "Core Buddhist teaching on dependent origination"
+  }
+]

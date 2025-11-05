@@ -50,3 +50,106 @@ export const insertBatchJobSchema = createInsertSchema(batchJobs);
 export const selectBatchJobSchema = createSelectSchema(batchJobs);
 export type InsertBatchJob = z.infer<typeof insertBatchJobSchema>;
 export type BatchJob = z.infer<typeof selectBatchJobSchema>;
+
+// Translation metrics table for monitoring
+export const translationMetrics = pgTable("translation_metrics", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  translationId: text("translation_id"),
+  sessionId: text("session_id"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+
+  // Quality metrics
+  confidenceScore: text("confidence_score").notNull(), // stored as text for precision
+  qualityScore: text("quality_score"),
+  modelAgreement: text("model_agreement"),
+  formatScore: text("format_score"),
+
+  // Performance metrics
+  processingTimeMs: integer("processing_time_ms").notNull(),
+  tokensProcessed: integer("tokens_processed"),
+  apiLatencyMs: integer("api_latency_ms"),
+
+  // Usage metrics
+  modelUsed: text("model_used").notNull(),
+  iterationsUsed: integer("iterations_used").notNull(),
+  retriesNeeded: integer("retries_needed").notNull(),
+  helperModelsUsed: text("helper_models_used"), // JSON array
+
+  // Gate metrics (Phase 2.4.3)
+  gatesPassed: integer("gates_passed").notNull().default(1), // Boolean as 0/1
+  gateResults: text("gate_results"), // JSON object
+  failedGates: text("failed_gates"), // JSON array
+
+  // Document metadata
+  pageNumber: integer("page_number"),
+  documentId: text("document_id"),
+  textLength: integer("text_length").notNull(),
+  chunkCount: integer("chunk_count"),
+
+  // Error metrics
+  errorOccurred: integer("error_occurred").notNull().default(0), // Boolean as 0/1
+  errorType: text("error_type"),
+  errorMessage: text("error_message"),
+});
+
+// Review queue table for human review workflow
+export const reviewQueue = pgTable("review_queue", {
+  id: text("id").primaryKey(),
+  translationId: integer("translation_id").notNull().references(() => translations.id),
+  reason: text("reason").notNull(),
+  severity: text("severity", { enum: ["high", "medium", "low"] }).notNull(),
+  status: text("status", { enum: ["pending", "in_review", "approved", "rejected"] }).notNull().default("pending"),
+  assignedTo: text("assigned_to"),
+  reviewNotes: text("review_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewed_at"),
+});
+
+// Translation corrections table for feedback loop
+export const translationCorrections = pgTable("translation_corrections", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  translationId: integer("translation_id").notNull().references(() => translations.id),
+  reviewItemId: text("review_item_id").references(() => reviewQueue.id),
+  originalText: text("original_text").notNull(),
+  correctedText: text("corrected_text").notNull(),
+  correctionType: text("correction_type").notNull(), // 'terminology', 'grammar', 'accuracy', 'formatting'
+  correctedBy: text("corrected_by"),
+  correctionReason: text("correction_reason"),
+  extractedTerms: text("extracted_terms"), // JSON array of term pairs
+  appliedToDictionary: integer("applied_to_dictionary").notNull().default(0), // boolean as integer
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Glossaries table for terminology consistency tracking
+export const glossaries = pgTable("glossaries", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  translationId: integer("translation_id").references(() => translations.id),
+  batchJobId: text("batch_job_id").references(() => batchJobs.jobId),
+  glossaryData: text("glossary_data").notNull(), // JSON string of glossary entries
+  totalTerms: integer("total_terms").notNull(),
+  inconsistentTerms: integer("inconsistent_terms").notNull(),
+  consistencyScore: text("consistency_score"), // Average consistency score
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertTranslationMetricsSchema = createInsertSchema(translationMetrics);
+export const selectTranslationMetricsSchema = createSelectSchema(translationMetrics);
+export type InsertTranslationMetrics = z.infer<typeof insertTranslationMetricsSchema>;
+export type TranslationMetricsRecord = z.infer<typeof selectTranslationMetricsSchema>;
+
+export const insertReviewQueueSchema = createInsertSchema(reviewQueue);
+export const selectReviewQueueSchema = createSelectSchema(reviewQueue);
+export type InsertReviewQueue = z.infer<typeof insertReviewQueueSchema>;
+export type ReviewQueueRecord = z.infer<typeof selectReviewQueueSchema>;
+
+export const insertTranslationCorrectionsSchema = createInsertSchema(translationCorrections);
+export const selectTranslationCorrectionsSchema = createSelectSchema(translationCorrections);
+export type InsertTranslationCorrections = z.infer<typeof insertTranslationCorrectionsSchema>;
+export type TranslationCorrectionsRecord = z.infer<typeof selectTranslationCorrectionsSchema>;
+
+export const insertGlossariesSchema = createInsertSchema(glossaries);
+export const selectGlossariesSchema = createSelectSchema(glossaries);
+export type InsertGlossary = z.infer<typeof insertGlossariesSchema>;
+export type Glossary = z.infer<typeof selectGlossariesSchema>;

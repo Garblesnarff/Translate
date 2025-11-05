@@ -1,0 +1,902 @@
+[
+  {
+    "id": "prayer_001",
+    "tibetan": "སངས་རྒྱས་བཅོམ་ལྡན་འདས་ལ་ཕྱག་འཚལ་ལོ།",
+    "english": "I bow down to the Buddha, the Blessed One (སངས་རྒྱས་བཅོམ་ལྡན་འདས་ལ་ཕྱག་འཚལ་ལོ།)",
+    "category": "prayer",
+    "subcategory": "prostration",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["buddha", "prostration", "homage"]
+  },
+  {
+    "id": "prayer_002",
+    "tibetan": "བླ་མ་དང་དཀོན་མཆོག་གསུམ་ལ་སྐྱབས་སུ་མཆིའོ།",
+    "english": "I take refuge in the Lama and the Three Jewels (བླ་མ་དང་དཀོན་མཆོག་གསུམ་ལ་སྐྱབས་སུ་མཆིའོ།)",
+    "category": "prayer",
+    "subcategory": "refuge",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["refuge", "lama", "three jewels"]
+  },
+  {
+    "id": "prayer_003",
+    "tibetan": "སེམས་ཅན་ཐམས་ཅད་བདེ་བ་དང་བདེ་བའི་རྒྱུ་དང་ལྡན་པར་གྱུར་ཅིག",
+    "english": "May all sentient beings have happiness and the causes of happiness (སེམས་ཅན་ཐམས་ཅད་བདེ་བ་དང་བདེ་བའི་རྒྱུ་དང་ལྡན་པར་གྱུར་ཅིག)",
+    "category": "prayer",
+    "subcategory": "aspiration",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["compassion", "aspiration", "sentient beings"]
+  },
+  {
+    "id": "prayer_004",
+    "tibetan": "སྡུག་བསྔལ་དང་སྡུག་བསྔལ་གྱི་རྒྱུ་དང་བྲལ་བར་གྱུར་ཅིག",
+    "english": "May they be free from suffering and the causes of suffering (སྡུག་བསྔལ་དང་སྡུག་བསྔལ་གྱི་རྒྱུ་དང་བྲལ་བར་གྱུར་ཅིག)",
+    "category": "prayer",
+    "subcategory": "aspiration",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["compassion", "suffering", "liberation"]
+  },
+  {
+    "id": "prayer_005",
+    "tibetan": "སྙིང་རྗེ་ཆེན་པོ་ཐུགས་རྗེ་ཅན་ནོ་བོ་ཉིད་དང་ལྡན་པ།",
+    "english": "Endowed with the essence of great compassion (སྙིང་རྗེ་ཆེན་པོ་ཐུགས་རྗེ་ཅན་ནོ་བོ་ཉིད་དང་ལྡན་པ།)",
+    "category": "prayer",
+    "subcategory": "invocation",
+    "complexity": "medium",
+    "length": "short",
+    "keywords": ["compassion", "essence", "qualities"]
+  },
+  {
+    "id": "prayer_006",
+    "tibetan": "ཕྱག་རྒྱ་ཆེན་པོའི་ངང་ལས་མ་གཡོས་པར་བཞུགས།",
+    "english": "Abiding without wavering in the state of Mahamudra (ཕྱག་རྒྱ་ཆེན་པོའི་ངང་ལས་མ་གཡོས་པར་བཞུགས།)",
+    "category": "prayer",
+    "subcategory": "meditation",
+    "complexity": "complex",
+    "length": "medium",
+    "keywords": ["mahamudra", "meditation", "realization"]
+  },
+  {
+    "id": "prayer_007",
+    "tibetan": "འཁོར་བ་ན་སྡུག་བསྔལ་གྱི་རྒྱ་མཚོ་ལས་སྒྲོལ་མཛོད།",
+    "english": "Please liberate us from the ocean of suffering in cyclic existence (འཁོར་བ་ན་སྡུག་བསྔལ་གྱི་རྒྱ་མཚོ་ལས་སྒྲོལ་མཛོད།)",
+    "category": "prayer",
+    "subcategory": "supplication",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["samsara", "liberation", "suffering"]
+  },
+  {
+    "id": "prayer_008",
+    "tibetan": "བྱང་ཆུབ་སེམས་དཔའི་སྤྱོད་པ་ལ་འཇུག་པ།",
+    "english": "Entering into the conduct of a bodhisattva (བྱང་ཆུབ་སེམས་དཔའི་སྤྱོད་པ་ལ་འཇུག་པ།)",
+    "category": "prayer",
+    "subcategory": "dedication",
+    "complexity": "medium",
+    "length": "short",
+    "keywords": ["bodhisattva", "conduct", "practice"]
+  },
+  {
+    "id": "prayer_009",
+    "tibetan": "རྒྱལ་བ་རིགས་ལྔའི་རྣམ་པར་སྣང་མཛད་ལ་ཕྱག་འཚལ།",
+    "english": "I prostrate to Vairochana, manifest as the five buddha families (རྒྱལ་བ་རིགས་ལྔའི་རྣམ་པར་སྣང་མཛད་ལ་ཕྱག་འཚལ།)",
+    "category": "prayer",
+    "subcategory": "tantric",
+    "complexity": "complex",
+    "length": "medium",
+    "keywords": ["vairochana", "buddha families", "tantra"]
+  },
+  {
+    "id": "prayer_010",
+    "tibetan": "ཆོས་ཀྱི་འཁོར་ལོ་བསྐོར་བ་ལ་གསོལ་བ་འདེབས།",
+    "english": "I supplicate you to turn the wheel of Dharma (ཆོས་ཀྱི་འཁོར་ལོ་བསྐོར་བ་ལ་གསོལ་བ་འདེབས།)",
+    "category": "prayer",
+    "subcategory": "supplication",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["dharma wheel", "teaching", "supplication"]
+  },
+  {
+    "id": "prayer_011",
+    "tibetan": "མྱ་ངན་ལས་འདས་པའི་གོ་འཕང་མྱུར་དུ་ཐོབ་པར་ཤོག",
+    "english": "May we swiftly attain the state of nirvana (མྱ་ངན་ལས་འདས་པའི་གོ་འཕང་མྱུར་དུ་ཐོབ་པར་ཤོག)",
+    "category": "prayer",
+    "subcategory": "aspiration",
+    "complexity": "medium",
+    "length": "short",
+    "keywords": ["nirvana", "liberation", "attainment"]
+  },
+  {
+    "id": "prayer_012",
+    "tibetan": "རྩ་བའི་བླ་མའི་བྱིན་རླབས་ཐུགས་ལ་འཇུག་པར་མཛོད།",
+    "english": "May the blessings of the root guru enter our hearts (རྩ་བའི་བླ་མའི་བྱིན་རླབས་ཐུགས་ལ་འཇུག་པར་མཛོད།)",
+    "category": "prayer",
+    "subcategory": "guru yoga",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["root guru", "blessing", "devotion"]
+  },
+  {
+    "id": "prayer_013",
+    "tibetan": "ཐབས་དང་ཤེས་རབ་ཟུང་འཇུག་གི་ལམ་ལ་བཀོད།",
+    "english": "Guide us on the path of the union of method and wisdom (ཐབས་དང་ཤེས་རབ་ཟུང་འཇུག་གི་ལམ་ལ་བཀོད།)",
+    "category": "prayer",
+    "subcategory": "guidance",
+    "complexity": "complex",
+    "length": "medium",
+    "keywords": ["method", "wisdom", "union", "path"]
+  },
+  {
+    "id": "prayer_014",
+    "tibetan": "བསོད་ནམས་དང་ཡེ་ཤེས་ཀྱི་ཚོགས་རྫོགས་པར་ཤོག",
+    "english": "May we complete the accumulations of merit and wisdom (བསོད་ནམས་དང་ཡེ་ཤེས་ཀྱི་ཚོགས་རྫོགས་པར་ཤོག)",
+    "category": "prayer",
+    "subcategory": "accumulation",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["merit", "wisdom", "accumulation"]
+  },
+  {
+    "id": "prayer_015",
+    "tibetan": "སྒྲིབ་པ་གཉིས་སྦྱངས་ནས་སངས་རྒྱས་ཀྱི་ས་ལ་སླེབ།",
+    "english": "Having purified the two obscurations, may we reach the state of buddhahood (སྒྲིབ་པ་གཉིས་སྦྱངས་ནས་སངས་རྒྱས་ཀྱི་ས་ལ་སླེབ།)",
+    "category": "prayer",
+    "subcategory": "aspiration",
+    "complexity": "complex",
+    "length": "long",
+    "keywords": ["obscurations", "purification", "buddhahood"]
+  },
+  {
+    "id": "philosophy_001",
+    "tibetan": "བྱང་ཆུབ་སེམས་དཔའ་ནི་སེམས་ཅན་ཐམས་ཅད་ཀྱི་དོན་དུ་བྱང་ཆུབ་ཀྱི་སེམས་བསྐྱེད་པ་ཡིན།",
+    "english": "A bodhisattva is one who generates the mind of enlightenment for the sake of all sentient beings (བྱང་ཆུབ་སེམས་དཔའ་ནི་སེམས་ཅན་ཐམས་ཅད་ཀྱི་དོན་དུ་བྱང་ཆུབ་ཀྱི་སེམས་བསྐྱེད་པ་ཡིན།)",
+    "category": "philosophy",
+    "subcategory": "bodhicitta",
+    "complexity": "medium",
+    "length": "long",
+    "keywords": ["bodhisattva", "enlightenment", "altruism"]
+  },
+  {
+    "id": "philosophy_002",
+    "tibetan": "སྟོང་པ་ཉིད་ནི་ཆོས་ཐམས་ཅད་ཀྱི་རང་བཞིན་ནོ།",
+    "english": "Emptiness is the nature of all phenomena (སྟོང་པ་ཉིད་ནི་ཆོས་ཐམས་ཅད་ཀྱི་རང་བཞིན་ནོ།)",
+    "category": "philosophy",
+    "subcategory": "madhyamaka",
+    "complexity": "complex",
+    "length": "short",
+    "keywords": ["emptiness", "nature", "phenomena"]
+  },
+  {
+    "id": "philosophy_003",
+    "tibetan": "རང་བཞིན་གྱིས་གྲུབ་པ་མེད་པ་ནི་དབུ་མ་པའི་ལྟ་བ་ཡིན།",
+    "english": "The absence of inherent existence is the Madhyamaka view (རང་བཞིན་གྱིས་གྲུབ་པ་མེད་པ་ནི་དབུ་མ་པའི་ལྟ་བ་ཡིན།)",
+    "category": "philosophy",
+    "subcategory": "madhyamaka",
+    "complexity": "complex",
+    "length": "medium",
+    "keywords": ["inherent existence", "madhyamaka", "view"]
+  },
+  {
+    "id": "philosophy_004",
+    "tibetan": "རྟེན་ཅིང་འབྲེལ་བར་འབྱུང་བ་ནི་ཆོས་ཉིད་ཀྱི་སྙིང་པོ་ཡིན།",
+    "english": "Dependent origination is the essence of reality (རྟེན་ཅིང་འབྲེལ་བར་འབྱུང་བ་ནི་ཆོས་ཉིད་ཀྱི་སྙིང་པོ་ཡིན།)",
+    "category": "philosophy",
+    "subcategory": "dependent arising",
+    "complexity": "complex",
+    "length": "medium",
+    "keywords": ["dependent origination", "causality", "reality"]
+  },
+  {
+    "id": "philosophy_005",
+    "tibetan": "ཤེས་རབ་ཕ་རོལ་ཏུ་ཕྱིན་པ་ནི་ཐེག་པ་ཆེན་པོའི་ལམ་གྱི་ལྟེ་བ་ཡིན།",
+    "english": "The perfection of wisdom is the heart of the Mahayana path (ཤེས་རབ་ཕ་རོལ་ཏུ་ཕྱིན་པ་ནི་ཐེག་པ་ཆེན་པོའི་ལམ་གྱི་ལྟེ་བ་ཡིན།)",
+    "category": "philosophy",
+    "subcategory": "prajnaparamita",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["prajna", "perfection", "mahayana"]
+  },
+  {
+    "id": "philosophy_006",
+    "tibetan": "གཟུགས་སྟོང་པའོ། སྟོང་པ་ཉིད་གཟུགས་སོ།",
+    "english": "Form is emptiness, emptiness is form (གཟུགས་སྟོང་པའོ། སྟོང་པ་ཉིད་གཟུགས་སོ།)",
+    "category": "philosophy",
+    "subcategory": "heart sutra",
+    "complexity": "complex",
+    "length": "short",
+    "keywords": ["form", "emptiness", "heart sutra"]
+  },
+  {
+    "id": "philosophy_007",
+    "tibetan": "སེམས་ཙམ་གྱི་གྲུབ་མཐའ་ནི་ཕྱི་རོལ་གྱི་དོན་མེད་པར་འདོད།",
+    "english": "The Cittamatra school asserts that external objects do not exist (སེམས་ཙམ་གྱི་གྲུབ་མཐའ་ནི་ཕྱི་རོལ་གྱི་དོན་མེད་པར་འདོད།)",
+    "category": "philosophy",
+    "subcategory": "mind only",
+    "complexity": "complex",
+    "length": "medium",
+    "keywords": ["cittamatra", "mind only", "idealism"]
+  },
+  {
+    "id": "philosophy_008",
+    "tibetan": "ཚད་མ་རིགས་པའི་སྒོ་ནས་དོན་རྟོགས་པར་བྱེད།",
+    "english": "Valid cognition realizes objects through the gateway of reasoning (ཚད་མ་རིགས་པའི་སྒོ་ནས་དོན་རྟོགས་པར་བྱེད།)",
+    "category": "philosophy",
+    "subcategory": "epistemology",
+    "complexity": "complex",
+    "length": "medium",
+    "keywords": ["pramana", "valid cognition", "reasoning"]
+  },
+  {
+    "id": "philosophy_009",
+    "tibetan": "བདག་མེད་པའི་རྟོགས་པས་འཁོར་བའི་རྩ་བ་གཅོད།",
+    "english": "The realization of selflessness cuts the root of cyclic existence (བདག་མེད་པའི་རྟོགས་པས་འཁོར་བའི་རྩ་བ་གཅོད།)",
+    "category": "philosophy",
+    "subcategory": "liberation",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["selflessness", "samsara", "realization"]
+  },
+  {
+    "id": "philosophy_010",
+    "tibetan": "སྤྱན་རས་གཟིགས་དབང་ཕྱུག་གི་སྙིང་རྗེ་ནི་མཐའ་ཡས་པ་ཡིན།",
+    "english": "The compassion of Avalokiteshvara is boundless (སྤྱན་རས་གཟིགས་དབང་ཕྱུག་གི་སྙིང་རྗེ་ནི་མཐའ་ཡས་པ་ཡིན།)",
+    "category": "philosophy",
+    "subcategory": "compassion",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["avalokiteshvara", "compassion", "limitless"]
+  },
+  {
+    "id": "philosophy_011",
+    "tibetan": "མི་རྟག་པ་དང་སྡུག་བསྔལ་དང་བདག་མེད་པའི་མཚན་ཉིད་གསུམ་ནི་ཕུང་པོ་ལྔའི་རང་བཞིན་ནོ།",
+    "english": "The three characteristics of impermanence, suffering, and selflessness are the nature of the five aggregates (མི་རྟག་པ་དང་སྡུག་བསྔལ་དང་བདག་མེད་པའི་མཚན་ཉིད་གསུམ་ནི་ཕུང་པོ་ལྔའི་རང་བཞིན་ནོ།)",
+    "category": "philosophy",
+    "subcategory": "four noble truths",
+    "complexity": "complex",
+    "length": "long",
+    "keywords": ["impermanence", "suffering", "selflessness", "aggregates"]
+  },
+  {
+    "id": "philosophy_012",
+    "tibetan": "ལམ་རིམ་གྱི་རིམ་པ་ནི་སྐྱེས་བུ་གསུམ་གྱི་ཉམས་ལེན་ཡིན།",
+    "english": "The stages of the path are the practices of the three types of practitioners (ལམ་རིམ་གྱི་རིམ་པ་ནི་སྐྱེས་བུ་གསུམ་གྱི་ཉམས་ལེན་ཡིན།)",
+    "category": "philosophy",
+    "subcategory": "lamrim",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["lamrim", "stages", "three scopes"]
+  },
+  {
+    "id": "philosophy_013",
+    "tibetan": "རྫོགས་པ་ཆེན་པོའི་ལྟ་བ་ནི་རིག་པའི་ངང་ལ་གནས་པ་ཡིན།",
+    "english": "The view of Dzogchen is abiding in the state of rigpa (རྫོགས་པ་ཆེན་པོའི་ལྟ་བ་ནི་རིག་པའི་ངང་ལ་གནས་པ་ཡིན།)",
+    "category": "philosophy",
+    "subcategory": "dzogchen",
+    "complexity": "complex",
+    "length": "medium",
+    "keywords": ["dzogchen", "rigpa", "awareness"]
+  },
+  {
+    "id": "philosophy_014",
+    "tibetan": "བཀའ་དང་བསྟན་བཅོས་ཀྱི་སྒོ་ནས་ཆོས་ཉིད་རྟོགས་པར་བྱ།",
+    "english": "One realizes the nature of reality through the scriptures and treatises (བཀའ་དང་བསྟན་བཅོས་ཀྱི་སྒོ་ནས་ཆོས་ཉིད་རྟོགས་པར་བྱ།)",
+    "category": "philosophy",
+    "subcategory": "study",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["scripture", "treatise", "realization"]
+  },
+  {
+    "id": "philosophy_015",
+    "tibetan": "ཐེག་པ་ཆེན་པོའི་ལམ་ནི་སྙིང་རྗེ་དང་ཤེས་རབ་ཟུང་དུ་འབྲེལ་བ་ཡིན།",
+    "english": "The Mahayana path is the union of compassion and wisdom (ཐེག་པ་ཆེན་པོའི་ལམ་ནི་སྙིང་རྗེ་དང་ཤེས་རབ་ཟུང་དུ་འབྲེལ་བ་ཡིན།)",
+    "category": "philosophy",
+    "subcategory": "mahayana",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["mahayana", "compassion", "wisdom", "union"]
+  },
+  {
+    "id": "biographical_001",
+    "tibetan": "དཔལ་ལྡན་ས་སྐྱ་པཎ་ཆེན་ནི་བོད་ཀྱི་མཁས་པ་དམ་པ་ཞིག་ཡིན།",
+    "english": "The glorious Sakya Pandita was a great scholar of Tibet (དཔལ་ལྡན་ས་སྐྱ་པཎ་ཆེན་ནི་བོད་ཀྱི་མཁས་པ་དམ་པ་ཞིག་ཡིན།)",
+    "category": "biographical",
+    "subcategory": "master",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["sakya pandita", "scholar", "tibet"]
+  },
+  {
+    "id": "biographical_002",
+    "tibetan": "རྗེ་བཙུན་མི་ལ་རས་པ་ནི་རྩ་བའི་བླ་མ་མར་པ་ལོ་ཙཱ་བའི་སློབ་མ་ཡིན།",
+    "english": "The venerable Milarepa was a disciple of the root guru Marpa the Translator (རྗེ་བཙུན་མི་ལ་རས་པ་ནི་རྩ་བའི་བླ་མ་མར་པ་ལོ་ཙཱ་བའི་སློབ་མ་ཡིན།)",
+    "category": "biographical",
+    "subcategory": "lineage",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["milarepa", "marpa", "disciple", "lineage"]
+  },
+  {
+    "id": "biographical_003",
+    "tibetan": "ཚོང་ཁ་པ་ཆེན་པོ་ལྔ་བརྒྱ་དང་དྲུག་བཅུ་རྩ་གསུམ་ལ་སྐུ་འཁྲུངས།",
+    "english": "The great Tsongkhapa was born in the year 1357 (ཚོང་ཁ་པ་ཆེན་པོ་ལྔ་བརྒྱ་དང་དྲུག་བཅུ་རྩ་གསུམ་ལ་སྐུ་འཁྲུངས།)",
+    "category": "biographical",
+    "subcategory": "life events",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["tsongkhapa", "birth", "date"]
+  },
+  {
+    "id": "biographical_004",
+    "tibetan": "དལ་འབྱོར་གྱི་འབྲས་བུ་ཐོབ་པའི་ཕྱིར་ན་བླ་མ་དམ་པ་ལ་བསྟེན་དགོས།",
+    "english": "In order to obtain the results of the precious human life, one must rely on a qualified spiritual teacher (དལ་འབྱོར་གྱི་འབྲས་བུ་ཐོབ་པའི་ཕྱིར་ན་བླ་མ་དམ་པ་ལ་བསྟེན་དགོས།)",
+    "category": "biographical",
+    "subcategory": "guru devotion",
+    "complexity": "medium",
+    "length": "long",
+    "keywords": ["precious human life", "spiritual teacher", "devotion"]
+  },
+  {
+    "id": "biographical_005",
+    "tibetan": "འཇམ་མགོན་ཀོང་སྤྲུལ་བློ་གྲོས་མཐའ་ཡས་ནི་རིས་མེད་རིག་འཛིན་ཆེན་པོ་ཞིག་ཡིན།",
+    "english": "Jamgon Kongtrul Lodro Thaye was a great Rimé treasure revealer (འཇམ་མགོན་ཀོང་སྤྲུལ་བློ་གྲོས་མཐའ་ཡས་ནི་རིས་མེད་རིག་འཛིན་ཆེན་པོ་ཞིག་ཡིན།)",
+    "category": "biographical",
+    "subcategory": "master",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["jamgon kongtrul", "rime", "terton"]
+  },
+  {
+    "id": "biographical_006",
+    "tibetan": "སྐུ་མདུན་ནས་དམ་ཆོས་མང་པོ་ཞུས་ནས་རྟོགས་པ་ཐོབ་པ་ཡིན།",
+    "english": "Having received many sacred teachings directly, he attained realization (སྐུ་མདུན་ནས་དམ་ཆོས་མང་པོ་ཞུས་ནས་རྟོགས་པ་ཐོབ་པ་ཡིན།)",
+    "category": "biographical",
+    "subcategory": "accomplishment",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["teachings", "realization", "accomplishment"]
+  },
+  {
+    "id": "biographical_007",
+    "tibetan": "བླ་མ་དམ་པ་དེ་ལོ་མང་པོར་གྲུབ་མཐའ་རི་བོའི་དབེན་གནས་སུ་བཞུགས།",
+    "english": "That holy lama resided for many years in mountain retreat at Riwo (བླ་མ་དམ་པ་དེ་ལོ་མང་པོར་གྲུབ་མཐའ་རི་བོའི་དབེན་གནས་སུ་བཞུགས།)",
+    "category": "biographical",
+    "subcategory": "retreat",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["retreat", "mountain", "solitude"]
+  },
+  {
+    "id": "biographical_008",
+    "tibetan": "སྐུ་དགུང་བརྒྱད་ཅུ་རྩ་གཉིས་ལ་མཐའ་ཡས་པའི་བསོད་ནམས་ཀྱི་གཏེར་ཆེན་པོ་བསགས།",
+    "english": "By the age of eighty-two, he had accumulated an immeasurable treasury of merit (སྐུ་དགུང་བརྒྱད་ཅུ་རྩ་གཉིས་ལ་མཐའ་ཡས་པའི་བསོད་ནམས་ཀྱི་གཏེར་ཆེན་པོ་བསགས།)",
+    "category": "biographical",
+    "subcategory": "achievements",
+    "complexity": "medium",
+    "length": "long",
+    "keywords": ["age", "merit", "accomplishments"]
+  },
+  {
+    "id": "biographical_009",
+    "tibetan": "རྒྱལ་བའི་བཀའ་རིན་པོ་ཆེ་ཐོས་བསམ་སྒོམ་གསུམ་གྱི་སྒོ་ནས་ཉམས་སུ་བླངས།",
+    "english": "He practiced the precious words of the Buddha through hearing, contemplating, and meditating (རྒྱལ་བའི་བཀའ་རིན་པོ་ཆེ་ཐོས་བསམ་སྒོམ་གསུམ་གྱི་སྒོ་ནས་ཉམས་སུ་བླངས།)",
+    "category": "biographical",
+    "subcategory": "practice",
+    "complexity": "complex",
+    "length": "long",
+    "keywords": ["three wisdoms", "practice", "buddha's teachings"]
+  },
+  {
+    "id": "biographical_010",
+    "tibetan": "དེ་ནས་ཆོས་འཁོར་རྒྱ་ཆེན་པོ་བསྐོར་ནས་སེམས་ཅན་དོན་དུ་མཛད།",
+    "english": "Thereafter, he turned the great wheel of Dharma for the benefit of sentient beings (དེ་ནས་ཆོས་འཁོར་རྒྱ་ཆེན་པོ་བསྐོར་ནས་སེམས་ཅན་དོན་དུ་མཛད།)",
+    "category": "biographical",
+    "subcategory": "teaching activity",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["dharma wheel", "teaching", "benefitting beings"]
+  },
+  {
+    "id": "instructional_001",
+    "tibetan": "དང་པོར་སེམས་སྐྱེད་བསྒོམ་དགོས། དེ་ནས་ལམ་གྱི་རིམ་པ་བསྟེན་དགོས།",
+    "english": "First, you must meditate on generating bodhicitta (དང་པོར་སེམས་སྐྱེད་བསྒོམ་དགོས།). Then, you must follow the stages of the path (དེ་ནས་ལམ་གྱི་རིམ་པ་བསྟེན་དགོས།)",
+    "category": "instructional",
+    "subcategory": "meditation practice",
+    "complexity": "simple",
+    "length": "medium",
+    "keywords": ["bodhicitta", "stages", "path", "meditation"]
+  },
+  {
+    "id": "instructional_002",
+    "tibetan": "ཉམས་ལེན་བྱེད་སྐབས་རྩེ་གཅིག་ཏུ་བསམ་གཏན་བགྱིད་དགོས།",
+    "english": "When practicing, you must meditate with one-pointed concentration (ཉམས་ལེན་བྱེད་སྐབས་རྩེ་གཅིག་ཏུ་བསམ་གཏན་བགྱིད་དགོས།)",
+    "category": "instructional",
+    "subcategory": "concentration",
+    "complexity": "simple",
+    "length": "medium",
+    "keywords": ["practice", "concentration", "meditation"]
+  },
+  {
+    "id": "instructional_003",
+    "tibetan": "གཞི་བདེ་བླག་པོ་ཞིག་ལ་འདུག་སྟེ་སྐུ་གསུམ་དྲང་པོར་བསྒྲིགས།",
+    "english": "Sit on a comfortable cushion and straighten your body in a three-fold posture (གཞི་བདེ་བླག་པོ་ཞིག་ལ་འདུག་སྟེ་སྐུ་གསུམ་དྲང་པོར་བསྒྲིགས།)",
+    "category": "instructional",
+    "subcategory": "posture",
+    "complexity": "simple",
+    "length": "medium",
+    "keywords": ["posture", "sitting", "meditation"]
+  },
+  {
+    "id": "instructional_004",
+    "tibetan": "དབུགས་དབྱུང་རྔུབ་ལ་དམིགས་པ་བྱས་ནས་སེམས་གནས་པར་བྱ།",
+    "english": "Focus your attention on the inhalation and exhalation to settle the mind (དབུགས་དབྱུང་རྔུབ་ལ་དམིགས་པ་བྱས་ནས་སེམས་གནས་པར་བྱ།)",
+    "category": "instructional",
+    "subcategory": "breathing meditation",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["breathing", "attention", "calming mind"]
+  },
+  {
+    "id": "instructional_005",
+    "tibetan": "མཆོད་པ་འབུལ་སྐབས་མེ་ཏོག་དང་བདུག་སྤོས་རྣམས་དཀོན་མཆོག་གསུམ་ལ་འབུལ།",
+    "english": "When making offerings, present flowers and incense to the Three Jewels (མཆོད་པ་འབུལ་སྐབས་མེ་ཏོག་དང་བདུག་སྤོས་རྣམས་དཀོན་མཆོག་གསུམ་ལ་འབུལ།)",
+    "category": "instructional",
+    "subcategory": "ritual practice",
+    "complexity": "simple",
+    "length": "medium",
+    "keywords": ["offerings", "three jewels", "ritual"]
+  },
+  {
+    "id": "instructional_006",
+    "tibetan": "ཉིན་རེའི་ཐུན་བཞིར་བསམ་གཏན་བྱ་རྒྱུ་གལ་ཆེན་པོ་རེད།",
+    "english": "It is essential to meditate in four sessions each day (ཉིན་རེའི་ཐུན་བཞིར་བསམ་གཏན་བྱ་རྒྱུ་གལ་ཆེན་པོ་རེད།)",
+    "category": "instructional",
+    "subcategory": "practice schedule",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["daily practice", "four sessions", "meditation"]
+  },
+  {
+    "id": "instructional_007",
+    "tibetan": "སྔགས་བཟླ་སྐབས་རྗེས་སུ་དྲན་པ་ལ་རྩེ་གཅིག་ཏུ་གནས་དགོས།",
+    "english": "When reciting mantras, you must remain one-pointedly focused on mindfulness (སྔགས་བཟླ་སྐབས་རྗེས་སུ་དྲན་པ་ལ་རྩེ་གཅིག་ཏུ་གནས་དགོས།)",
+    "category": "instructional",
+    "subcategory": "mantra recitation",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["mantra", "recitation", "mindfulness"]
+  },
+  {
+    "id": "instructional_008",
+    "tibetan": "བསྔོ་སྨོན་ཤུགས་དྲག་པོས་གདབ་དགོས་ལ་སེམས་ཅན་ཐམས་ཅད་ཀྱི་དོན་དུ་བསྔོ་བ།",
+    "english": "You must make dedications with strong intention for the benefit of all sentient beings (བསྔོ་སྨོན་ཤུགས་དྲག་པོས་གདབ་དགོས་ལ་སེམས་ཅན་ཐམས་ཅད་ཀྱི་དོན་དུ་བསྔོ་བ།)",
+    "category": "instructional",
+    "subcategory": "dedication",
+    "complexity": "medium",
+    "length": "long",
+    "keywords": ["dedication", "aspiration", "altruism"]
+  },
+  {
+    "id": "instructional_009",
+    "tibetan": "དུས་རྟག་ཏུ་དྲན་ཤེས་དང་བག་ཡོད་ལ་གནས་དགོས།",
+    "english": "You must always remain in mindfulness and conscientiousness (དུས་རྟག་ཏུ་དྲན་ཤེས་དང་བག་ཡོད་ལ་གནས་དགོས།)",
+    "category": "instructional",
+    "subcategory": "conduct",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["mindfulness", "awareness", "diligence"]
+  },
+  {
+    "id": "instructional_010",
+    "tibetan": "བླ་མའི་རྣམ་ཐར་དང་གསུང་རབ་རྣམས་ཐོས་བསམ་བྱ་དགོས།",
+    "english": "You must study and contemplate the life stories of the gurus and the scriptures (བླ་མའི་རྣམ་ཐར་དང་གསུང་རབ་རྣམས་ཐོས་བསམ་བྱ་དགོས།)",
+    "category": "instructional",
+    "subcategory": "study",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["study", "contemplation", "biography", "scripture"]
+  },
+  {
+    "id": "historical_001",
+    "tibetan": "ལོ་ངོ་མང་པོའི་སྔོན་བོད་ཀྱི་ཆོས་ལུགས་དར་ཁྱབ་ཆེན་པོ་བྱུང་།",
+    "english": "Many years ago, Buddhism spread widely throughout Tibet (ལོ་ངོ་མང་པོའི་སྔོན་བོད་ཀྱི་ཆོས་ལུགས་དར་ཁྱབ་ཆེན་པོ་བྱུང་།)",
+    "category": "historical",
+    "subcategory": "religious history",
+    "complexity": "simple",
+    "length": "medium",
+    "keywords": ["history", "buddhism", "tibet", "spread"]
+  },
+  {
+    "id": "historical_002",
+    "tibetan": "རྒྱལ་པོ་ཁྲི་སྲོང་ལྡེ་བཙན་གྱིས་བསམ་ཡས་དགོན་པ་བཙུགས།",
+    "english": "King Trisong Detsen founded Samye Monastery (རྒྱལ་པོ་ཁྲི་སྲོང་ལྡེ་བཙན་གྱིས་བསམ་ཡས་དགོན་པ་བཙུགས།)",
+    "category": "historical",
+    "subcategory": "founding",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["king", "trisong detsen", "samye", "monastery"]
+  },
+  {
+    "id": "historical_003",
+    "tibetan": "པདྨ་འབྱུང་གནས་དང་ཞི་བ་འཚོས་བོད་ལ་ཆོས་འཕེལ་བ་ལ་མཛད།",
+    "english": "Padmasambhava and Shantarakshita caused the Dharma to flourish in Tibet (པདྨ་འབྱུང་གནས་དང་ཞི་བ་འཚོས་བོད་ལ་ཆོས་འཕེལ་བ་ལ་མཛད།)",
+    "category": "historical",
+    "subcategory": "masters arrival",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["padmasambhava", "shantarakshita", "dharma", "tibet"]
+  },
+  {
+    "id": "historical_004",
+    "tibetan": "དགོན་པ་འདི་བརྒྱད་ཁྲི་དང་བཞི་སྟོང་བཞི་བརྒྱ་ལ་བཙུགས་པ་ཡིན།",
+    "english": "This monastery was founded in the year 8404 (དགོན་པ་འདི་བརྒྱད་ཁྲི་དང་བཞི་སྟོང་བཞི་བརྒྱ་ལ་བཙུགས་པ་ཡིན།)",
+    "category": "historical",
+    "subcategory": "dates",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["monastery", "founding", "date"]
+  },
+  {
+    "id": "historical_005",
+    "tibetan": "ས་སྐྱ་པའི་གོང་མ་ལྔ་ནི་བོད་ཀྱི་ཆོས་ལུགས་ལ་ཤིན་ཏུ་གལ་ཆེན་པོ་རེད།",
+    "english": "The five patriarchs of Sakya were extremely important to Tibetan Buddhism (ས་སྐྱ་པའི་གོང་མ་ལྔ་ནི་བོད་ཀྱི་ཆོས་ལུགས་ལ་ཤིན་ཏུ་གལ་ཆེན་པོ་རེད།)",
+    "category": "historical",
+    "subcategory": "lineage",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["sakya", "patriarchs", "lineage", "importance"]
+  },
+  {
+    "id": "historical_006",
+    "tibetan": "སྔར་གྱི་དུས་སུ་བོད་ནས་རྒྱ་གར་བར་ལམ་རིང་པོ་བརྒྱུད་དེ་ཕྱིན་དགོས།",
+    "english": "In ancient times, one had to travel from Tibet to India via a long and arduous route (སྔར་གྱི་དུས་སུ་བོད་ནས་རྒྱ་གར་བར་ལམ་རིང་པོ་བརྒྱུད་དེ་ཕྱིན་དགོས།)",
+    "category": "historical",
+    "subcategory": "travel",
+    "complexity": "medium",
+    "length": "long",
+    "keywords": ["ancient times", "tibet", "india", "travel"]
+  },
+  {
+    "id": "historical_007",
+    "tibetan": "དུས་རབས་བཅུ་གཅིག་པར་ཨ་ཏི་ཤས་བོད་ལ་ཕེབས།",
+    "english": "In the eleventh century, Atisha arrived in Tibet (དུས་རབས་བཅུ་གཅིག་པར་ཨ་ཏི་ཤས་བོད་ལ་ཕེབས།)",
+    "category": "historical",
+    "subcategory": "arrival of masters",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["atisha", "eleventh century", "tibet", "arrival"]
+  },
+  {
+    "id": "historical_008",
+    "tibetan": "ལོ་ཙཱ་བ་མང་པོས་རྒྱ་གར་ནས་གསུང་རབ་བསྒྱུར་བ་དང་བོད་ལ་དར་རྒྱས་གནང་།",
+    "english": "Many translators translated scriptures from India and spread them throughout Tibet (ལོ་ཙཱ་བ་མང་པོས་རྒྱ་གར་ནས་གསུང་རབ་བསྒྱུར་བ་དང་བོད་ལ་དར་རྒྱས་གནང་།)",
+    "category": "historical",
+    "subcategory": "translation activity",
+    "complexity": "complex",
+    "length": "long",
+    "keywords": ["translators", "scriptures", "india", "tibet", "dissemination"]
+  },
+  {
+    "id": "historical_009",
+    "tibetan": "མོང་གོལ་གྱི་རྒྱལ་པོ་རྣམས་དང་ས་སྐྱའི་བླ་མ་ཆོས་སྦྱིན་གྱི་འབྲེལ་བ་ཡོད།",
+    "english": "There was a patron-priest relationship between the Mongol rulers and the Sakya lamas (མོང་གོལ་གྱི་རྒྱལ་པོ་རྣམས་དང་ས་སྐྱའི་བླ་མ་ཆོས་སྦྱིན་གྱི་འབྲེལ་བ་ཡོད།)",
+    "category": "historical",
+    "subcategory": "political relations",
+    "complexity": "complex",
+    "length": "long",
+    "keywords": ["mongol", "sakya", "patron-priest", "relationship"]
+  },
+  {
+    "id": "historical_010",
+    "tibetan": "ཆོས་ཀྱི་ལོ་རྒྱུས་དེ་བསྟན་པའི་སྙིང་པོ་ཡིན་པས་ཤེས་དགོས།",
+    "english": "The history of the Dharma is the heart of the teachings and must be understood (ཆོས་ཀྱི་ལོ་རྒྱུས་དེ་བསྟན་པའི་སྙིང་པོ་ཡིན་པས་ཤེས་དགོས།)",
+    "category": "historical",
+    "subcategory": "importance",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["dharma history", "teachings", "importance", "understanding"]
+  },
+  {
+    "id": "letters_001",
+    "tibetan": "བཀྲིས་བདེ་ལེགས། ཁྱེད་ཀྱི་སྐུ་གཟུགས་བདེ་བ་ཡིན་པས་ང་ལ་དགའ་པོ་ཡིན།",
+    "english": "Greetings and good fortune (བཀྲིས་བདེ་ལེགས།). I am pleased to hear that you are well (ཁྱེད་ཀྱི་སྐུ་གཟུགས་བདེ་བ་ཡིན་པས་ང་ལ་དགའ་པོ་ཡིན།)",
+    "category": "letters",
+    "subcategory": "greeting",
+    "complexity": "simple",
+    "length": "medium",
+    "keywords": ["greeting", "health", "well-being"]
+  },
+  {
+    "id": "letters_002",
+    "tibetan": "ཁྱེད་ཀྱི་བརྗོད་དོན་ནི་ངས་ཧ་གོ་བྱུང་། འདི་འདྲ་བསམ་བློ་གཏོང་དགོས།",
+    "english": "I have understood your message (ཁྱེད་ཀྱི་བརྗོད་དོན་ནི་ངས་ཧ་གོ་བྱུང་།). We must consider such matters carefully (འདི་འདྲ་བསམ་བློ་གཏོང་དགོས།)",
+    "category": "letters",
+    "subcategory": "acknowledgment",
+    "complexity": "simple",
+    "length": "medium",
+    "keywords": ["understanding", "message", "consideration"]
+  },
+  {
+    "id": "letters_003",
+    "tibetan": "དགོན་པའི་གནས་སྟངས་ཤིན་ཏུ་ལེགས་པོ་རེད། སློབ་གྲྭའི་སློབ་ཕྲུག་རྣམས་འབད་བརྩོན་ཆེན་པོ་བྱེད་ཀྱི་ཡོད།",
+    "english": "The situation at the monastery is very good (དགོན་པའི་གནས་སྟངས་ཤིན་ཏུ་ལེགས་པོ་རེད།). The students are practicing diligently (སློབ་གྲྭའི་སློབ་ཕྲུག་རྣམས་འབད་བརྩོན་ཆེན་པོ་བྱེད་ཀྱི་ཡོད།)",
+    "category": "letters",
+    "subcategory": "report",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["monastery", "students", "diligence"]
+  },
+  {
+    "id": "letters_004",
+    "tibetan": "ངས་ཁྱེད་ཀྱི་མཐུན་འགྱུར་ལ་ཐུགས་རྗེ་ཆེ་ཞུ་རྒྱུ་ཡིན།",
+    "english": "I would like to express my gratitude for your assistance (ངས་ཁྱེད་ཀྱི་མཐུན་འགྱུར་ལ་ཐུགས་རྗེ་ཆེ་ཞུ་རྒྱུ་ཡིན།)",
+    "category": "letters",
+    "subcategory": "gratitude",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["gratitude", "thanks", "assistance"]
+  },
+  {
+    "id": "letters_005",
+    "tibetan": "མཆོད་པའི་རྫས་རྣམས་མཁྱེན་ན་གནང་རོགས། ང་ཚོ་ཐུགས་རྗེའི་ཚོགས་འདུའི་དོན་དུ་འདི་དགོས་ཀྱི་ཡོད།",
+    "english": "Please send the offering materials (མཆོད་པའི་རྫས་རྣམས་མཁྱེན་ན་གནང་རོགས།). We need these for the compassion assembly (ང་ཚོ་ཐུགས་རྗེའི་ཚོགས་འདུའི་དོན་དུ་འདི་དགོས་ཀྱི་ཡོད།)",
+    "category": "letters",
+    "subcategory": "request",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["request", "offerings", "ritual"]
+  },
+  {
+    "id": "letters_006",
+    "tibetan": "གསུང་ཆོས་ཚོགས་འདུ་ནང་བཞིན་ལ་ལེགས་པར་འགྲུབ་པར་སྨོན།",
+    "english": "May the Dharma teachings and gathering proceed successfully (གསུང་ཆོས་ཚོགས་འདུ་ནང་བཞིན་ལ་ལེགས་པར་འགྲུབ་པར་སྨོན།)",
+    "category": "letters",
+    "subcategory": "aspiration",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["dharma teaching", "gathering", "success"]
+  },
+  {
+    "id": "letters_007",
+    "tibetan": "དུས་མཐའ་མར་ཐུགས་ཕམ་གྱི་ཡིན་པ་ང་ལ་གོ། འདི་འཕྲལ་མར་ངེས་པར་དུ་སེལ་དགོས།",
+    "english": "I understand that you are ultimately disappointed (དུས་མཐའ་མར་ཐུགས་ཕམ་གྱི་ཡིན་པ་ང་ལ་གོ།). This must be resolved immediately (འདི་འཕྲལ་མར་ངེས་པར་དུ་སེལ་དགོས།)",
+    "category": "letters",
+    "subcategory": "sympathy",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["disappointment", "understanding", "resolution"]
+  },
+  {
+    "id": "letters_008",
+    "tibetan": "སྡིང་ཁ་ལས་བརྒྱུད་ནས་ཁྱེད་རང་དང་བརྡ་འབྲེལ་བྱས་སོང་།",
+    "english": "I have communicated with you through a messenger (སྡིང་ཁ་ལས་བརྒྱུད་ནས་ཁྱེད་རང་དང་བརྡ་འབྲེལ་བྱས་སོང་།)",
+    "category": "letters",
+    "subcategory": "communication",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["messenger", "communication", "contact"]
+  },
+  {
+    "id": "letters_009",
+    "tibetan": "ང་ཚོའི་སྦྱིན་བདག་རྣམས་ལ་ཐུགས་རྗེ་ཆེ་ཞུ་རྒྱུ་དང་བཀྲིས་བདེ་ལེགས་ཕུལ་རྒྱུ།",
+    "english": "We express gratitude to our sponsors and offer them blessings (ང་ཚོའི་སྦྱིན་བདག་རྣམས་ལ་ཐུགས་རྗེ་ཆེ་ཞུ་རྒྱུ་དང་བཀྲིས་བདེ་ལེགས་ཕུལ་རྒྱུ།)",
+    "category": "letters",
+    "subcategory": "thanks to donors",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["sponsors", "gratitude", "blessings"]
+  },
+  {
+    "id": "letters_010",
+    "tibetan": "མཐོང་དུས་ང་ཚོ་གཉིས་ཀྱིས་སྔོན་གྱི་དོན་དག་ཞིབ་མོར་བཤད་ཀྱི་ཡིན།",
+    "english": "When we meet, we two will discuss the previous matters in detail (མཐོང་དུས་ང་ཚོ་གཉིས་ཀྱིས་སྔོན་གྱི་དོན་དག་ཞིབ་མོར་བཤད་ཀྱི་ཡིན།)",
+    "category": "letters",
+    "subcategory": "future plans",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["meeting", "discussion", "matters"]
+  },
+  {
+    "id": "general_001",
+    "tibetan": "དཀར་ཆགས།",
+    "english": "Table of Contents (དཀར་ཆགས།)",
+    "category": "general",
+    "subcategory": "document structure",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["table of contents", "index"]
+  },
+  {
+    "id": "general_002",
+    "tibetan": "དཔེ་དེབ་འདི་བོད་ཀྱི་ལོ་རྒྱུས་དང་རིག་གནས་སྐོར་ཡིན།",
+    "english": "This book is about Tibetan history and culture (དཔེ་དེབ་འདི་བོད་ཀྱི་ལོ་རྒྱུས་དང་རིག་གནས་སྐོར་ཡིན།)",
+    "category": "general",
+    "subcategory": "book description",
+    "complexity": "simple",
+    "length": "medium",
+    "keywords": ["book", "history", "culture"]
+  },
+  {
+    "id": "general_003",
+    "tibetan": "ལེའུ་དང་པོ། དབུ་མ་པའི་ལྟ་བ།",
+    "english": "Chapter One: The Madhyamaka View (ལེའུ་དང་པོ། དབུ་མ་པའི་ལྟ་བ།)",
+    "category": "general",
+    "subcategory": "chapter heading",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["chapter", "madhyamaka", "view"]
+  },
+  {
+    "id": "general_004",
+    "tibetan": "འདི་ནི་བོད་ཡིག་གི་རིག་གནས་དཔེ་དེབ་ཅིག་ཡིན།",
+    "english": "This is a Tibetan language and culture textbook (འདི་ནི་བོད་ཡིག་གི་རིག་གནས་དཔེ་དེབ་ཅིག་ཡིན།)",
+    "category": "general",
+    "subcategory": "introduction",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["textbook", "tibetan language", "culture"]
+  },
+  {
+    "id": "general_005",
+    "tibetan": "དོན་འདི་དག་གལ་ཆེན་པོ་རེད་ལ་བཤད་དགོས།",
+    "english": "These matters are important and must be explained (དོན་འདི་དག་གལ་ཆེན་པོ་རེད་ལ་བཤད་དགོས།)",
+    "category": "general",
+    "subcategory": "importance statement",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["importance", "explanation", "matters"]
+  },
+  {
+    "id": "general_006",
+    "tibetan": "གཞུང་ལུགས་ཀྱི་སློབ་གྲུབ།",
+    "english": "Traditional scholarly system (གཞུང་ལུགས་ཀྱི་སློབ་གྲུབ།)",
+    "category": "general",
+    "subcategory": "education",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["tradition", "scholarly", "system"]
+  },
+  {
+    "id": "general_007",
+    "tibetan": "ལོ་རྒྱུས་ཤེས་བྱ་མཁས་པའི་མགུལ་རྒྱན།",
+    "english": "Historical knowledge, the ornament of the learned (ལོ་རྒྱུས་ཤེས་བྱ་མཁས་པའི་མགུལ་རྒྱན།)",
+    "category": "general",
+    "subcategory": "knowledge",
+    "complexity": "medium",
+    "length": "short",
+    "keywords": ["history", "knowledge", "ornament"]
+  },
+  {
+    "id": "general_008",
+    "tibetan": "བོད་ཀྱི་སྐད་ཡིག་ནི་ནང་པའི་ཆོས་ལུགས་ཀྱི་གཞི་རྟེན་ཡིན།",
+    "english": "The Tibetan language is the foundation of Buddhist teachings (བོད་ཀྱི་སྐད་ཡིག་ནི་ནང་པའི་ཆོས་ལུགས་ཀྱི་གཞི་རྟེན་ཡིན།)",
+    "category": "general",
+    "subcategory": "language importance",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["tibetan language", "buddhism", "foundation"]
+  },
+  {
+    "id": "general_009",
+    "tibetan": "རྒྱལ་ཁབ་དེའི་ས་ཆ་རྒྱ་ཆེ་ལ་མི་མང་པོ་ཡོད།",
+    "english": "That country has a vast territory and a large population (རྒྱལ་ཁབ་དེའི་ས་ཆ་རྒྱ་ཆེ་ལ་མི་མང་པོ་ཡོད།)",
+    "category": "general",
+    "subcategory": "geography",
+    "complexity": "simple",
+    "length": "medium",
+    "keywords": ["country", "territory", "population"]
+  },
+  {
+    "id": "general_010",
+    "tibetan": "སྨན་པས་ན་བའི་རིགས་དང་བཅོས་ཐབས་སྐོར་ལ་བཤད།",
+    "english": "The doctor explained the types of illnesses and their treatments (སྨན་པས་ན་བའི་རིགས་དང་བཅོས་ཐབས་སྐོར་ལ་བཤད།)",
+    "category": "general",
+    "subcategory": "medicine",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["doctor", "illness", "treatment"]
+  },
+  {
+    "id": "general_011",
+    "tibetan": "དཔལ་ལྡན་བླ་མ་རིན་པོ་ཆེ་མཆོག",
+    "english": "The glorious and precious root lama (དཔལ་ལྡན་བླ་མ་རིན་པོ་ཆེ་མཆོག)",
+    "category": "general",
+    "subcategory": "honorific title",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["lama", "precious", "title"]
+  },
+  {
+    "id": "general_012",
+    "tibetan": "གསུང་རབ་འདི་དག་རིན་ཐང་ཆེན་པོ་ཡོད།",
+    "english": "These scriptures are of great value (གསུང་རབ་འདི་དག་རིན་ཐང་ཆེན་པོ་ཡོད།)",
+    "category": "general",
+    "subcategory": "value statement",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["scriptures", "value", "importance"]
+  },
+  {
+    "id": "general_013",
+    "tibetan": "གནས་ཚུལ་གསལ་པོ་ཞིག་ང་ཚོར་དགོས།",
+    "english": "We need a clear explanation of the situation (གནས་ཚུལ་གསལ་པོ་ཞིག་ང་ཚོར་དགོས།)",
+    "category": "general",
+    "subcategory": "request for information",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["situation", "explanation", "clarity"]
+  },
+  {
+    "id": "general_014",
+    "tibetan": "ཚོགས་འདུ་ད་ལྟའི་བར་དུ་མཇུག་སྒྲིལ་བ་མིན།",
+    "english": "The meeting has not yet concluded (ཚོགས་འདུ་ད་ལྟའི་བར་དུ་མཇུག་སྒྲིལ་བ་མིན།)",
+    "category": "general",
+    "subcategory": "status update",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["meeting", "conclusion", "status"]
+  },
+  {
+    "id": "general_015",
+    "tibetan": "རང་གི་ལས་དོན་ཐོག་འབད་བརྩོན་བྱེད་དགོས།",
+    "english": "One must work diligently at one's duties (རང་གི་ལས་དོན་ཐོག་འབད་བརྩོན་བྱེད་དགོས།)",
+    "category": "general",
+    "subcategory": "advice",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["work", "diligence", "duty"]
+  },
+  {
+    "id": "general_016",
+    "tibetan": "རྩོམ་པ་པོ་དེས་དཔེ་དེབ་མང་པོ་བྲིས་ཡོད།",
+    "english": "That author has written many books (རྩོམ་པ་པོ་དེས་དཔེ་དེབ་མང་པོ་བྲིས་ཡོད།)",
+    "category": "general",
+    "subcategory": "authorship",
+    "complexity": "simple",
+    "length": "short",
+    "keywords": ["author", "books", "writing"]
+  },
+  {
+    "id": "general_017",
+    "tibetan": "འདི་ལ་དོགས་གཞི་ཡོད་པ་དང་ཕྱི་ནས་ཞིབ་འཇུག་བྱ་དགོས།",
+    "english": "There are doubts about this, and we must investigate further later (འདི་ལ་དོགས་གཞི་ཡོད་པ་དང་ཕྱི་ནས་ཞིབ་འཇུག་བྱ་དགོས།)",
+    "category": "general",
+    "subcategory": "investigation",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["doubt", "investigation", "research"]
+  },
+  {
+    "id": "general_018",
+    "tibetan": "སློབ་གྲྭར་སློབ་མ་གསར་པ་རྣམས་འདི་ལོ་འབྱོར་འདུག",
+    "english": "New students are coming to the school this year (སློབ་གྲྭར་སློབ་མ་གསར་པ་རྣམས་འདི་ལོ་འབྱོར་འདུག)",
+    "category": "general",
+    "subcategory": "education",
+    "complexity": "simple",
+    "length": "medium",
+    "keywords": ["school", "students", "new"]
+  },
+  {
+    "id": "general_019",
+    "tibetan": "ནམ་མཁའ་སྔོན་པོ་ལ་སྤྲིན་མེད་ལ་ཉི་མ་གསལ་པོ་ཡོད།",
+    "english": "The blue sky is cloudless and the sun is bright (ནམ་མཁའ་སྔོན་པོ་ལ་སྤྲིན་མེད་ལ་ཉི་མ་གསལ་པོ་ཡོད།)",
+    "category": "general",
+    "subcategory": "nature description",
+    "complexity": "simple",
+    "length": "medium",
+    "keywords": ["sky", "weather", "sun"]
+  },
+  {
+    "id": "general_020",
+    "tibetan": "གྲོང་ཁྱེར་དེ་ནི་སྔོན་མ་ལས་མི་མང་པོ་དང་འགྲིག་དཀའ་བ་ཡིན།",
+    "english": "That city is now more crowded than before (གྲོང་ཁྱེར་དེ་ནི་སྔོན་མ་ལས་མི་མང་པོ་དང་འགྲིག་དཀའ་བ་ཡིན།)",
+    "category": "general",
+    "subcategory": "urban description",
+    "complexity": "medium",
+    "length": "medium",
+    "keywords": ["city", "crowded", "comparison"]
+  }
+]
