@@ -20,7 +20,9 @@ import type {
 import type {
   TranslationProvider,
   CacheProvider,
+  EmbeddingProvider,
 } from '../../../tests/utils/mocks.js';
+import { MultiModelTranslator } from '../confidence/MultiModelTranslator.js';
 
 /**
  * Configuration for TranslationService
@@ -32,6 +34,8 @@ export interface TranslationServiceConfig {
   maxParallelChunks?: number;
   /** Enable metrics tracking (default: true) */
   enableMetrics?: boolean;
+  /** Embedding provider for multi-model consensus (required if useMultiModel is enabled) */
+  embeddingProvider?: EmbeddingProvider;
 }
 
 /**
@@ -129,8 +133,9 @@ export class TranslationService {
   private providers: TranslationProvider[];
   private cache: CacheProvider;
   private deps: TranslationServiceDependencies;
-  private config: Required<TranslationServiceConfig>;
+  private config: TranslationServiceConfig & { cacheTTL: number; maxParallelChunks: number; enableMetrics: boolean };
   private metrics: TranslationMetrics;
+  private multiModelTranslator?: MultiModelTranslator;
 
   /**
    * Create a new TranslationService
@@ -153,7 +158,16 @@ export class TranslationService {
       cacheTTL: config.cacheTTL ?? 3600,
       maxParallelChunks: config.maxParallelChunks ?? 5,
       enableMetrics: config.enableMetrics ?? true,
+      embeddingProvider: config.embeddingProvider,
     };
+
+    // Initialize MultiModelTranslator if embedding provider is available
+    if (config.embeddingProvider && providers.length > 1) {
+      this.multiModelTranslator = new MultiModelTranslator(
+        providers,
+        config.embeddingProvider
+      );
+    }
 
     this.metrics = {
       totalTranslations: 0,
@@ -223,7 +237,43 @@ export class TranslationService {
       // 3. Generate enhanced prompt
       const prompt = await this.generatePrompt(request);
 
-      // 4. Try providers in priority order
+      // 4. Check if multi-model translation is requested and available
+      if (request.options?.useMultiModel && this.multiModelTranslator) {
+        try {
+          const result = await this.multiModelTranslator.translate(request.text, prompt);
+
+          // Convert to our standard format
+          const translationResult: TranslationResult = {
+            translation: result.translation,
+            confidence: result.confidence,
+            metadata: {
+              ...result.metadata,
+              cached: false,
+              processingTimeMs: Date.now() - startTime,
+              tokenCount: this.estimateTokenCount(request.text),
+            },
+          };
+
+          // 5. Cache successful result
+          await this.cache.set(cacheKey, translationResult, this.config.cacheTTL);
+
+          // 6. Store in translation memory
+          if (this.deps.translationMemory) {
+            await this.deps.translationMemory.save(request, translationResult);
+          }
+
+          // 7. Update metrics
+          const modelName = result.metadata.modelsUsed?.join('+') || 'multi-model';
+          this.updateMetrics(startTime, modelName, false);
+
+          return translationResult;
+        } catch (error) {
+          console.error('Multi-model translation failed:', error);
+          // Fall back to single provider
+        }
+      }
+
+      // 4b. Try providers in priority order (single model mode)
       let lastError: Error | null = null;
       for (const provider of this.providers) {
         try {

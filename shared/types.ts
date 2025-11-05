@@ -83,6 +83,15 @@ export interface TranslationOptions {
    * Default: 3
    */
   exampleCount?: number;
+
+  /**
+   * Whether to use multiple models for consensus translation
+   * When enabled, translates using 2-3 models and selects best result
+   * Provides higher confidence through model agreement
+   * Default: false (single model for cost-effectiveness)
+   * Enable for: critical content, low confidence translations
+   */
+  useMultiModel?: boolean;
 }
 
 /**

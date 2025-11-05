@@ -134,6 +134,22 @@ export const glossaries = pgTable("glossaries", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Manual review table for fallback system (Phase 2.3)
+export const manualReview = pgTable("manual_review", {
+  id: text("id").primaryKey(),
+  sourceText: text("source_text").notNull(),
+  pageNumber: integer("page_number"),
+  attemptedTranslation: text("attempted_translation"),
+  errorMessage: text("error_message").notNull(),
+  strategyFailures: text("strategy_failures"), // JSON array of failed strategies
+  status: text("status", { enum: ["pending", "completed", "skipped"] }).notNull().default("pending"),
+  completedTranslation: text("completed_translation"),
+  reviewedBy: text("reviewed_by"),
+  reviewNotes: text("review_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+
 export const insertTranslationMetricsSchema = createInsertSchema(translationMetrics);
 export const selectTranslationMetricsSchema = createSelectSchema(translationMetrics);
 export type InsertTranslationMetrics = z.infer<typeof insertTranslationMetricsSchema>;
@@ -153,3 +169,8 @@ export const insertGlossariesSchema = createInsertSchema(glossaries);
 export const selectGlossariesSchema = createSelectSchema(glossaries);
 export type InsertGlossary = z.infer<typeof insertGlossariesSchema>;
 export type Glossary = z.infer<typeof selectGlossariesSchema>;
+
+export const insertManualReviewSchema = createInsertSchema(manualReview);
+export const selectManualReviewSchema = createSelectSchema(manualReview);
+export type InsertManualReview = z.infer<typeof insertManualReviewSchema>;
+export type ManualReviewRecord = z.infer<typeof selectManualReviewSchema>;
