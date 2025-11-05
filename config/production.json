@@ -1,0 +1,69 @@
+{
+  "_comment": "Production Environment Configuration",
+  "_description": "Optimized settings for production deployment with emphasis on reliability and performance",
+
+  "server": {
+    "port": 5001,
+    "environment": "production",
+    "enableCors": false,
+    "_enableCors_comment": "Disable CORS in production - configure reverse proxy instead",
+    "enableLogging": false,
+    "_enableLogging_comment": "Disable verbose logging in production",
+    "requestTimeout": 120000,
+    "maxBodySize": "50mb"
+  },
+
+  "translation": {
+    "models": [],
+    "_models_comment": "Models loaded from environment variables for security",
+    "maxTokens": 4000,
+    "temperature": 0.2,
+    "_temperature_comment": "Lower temperature for more consistent results",
+    "qualityThreshold": 0.75,
+    "_qualityThreshold_comment": "Higher threshold to ensure quality",
+    "enableParallel": true,
+    "maxParallelRequests": 10,
+    "_maxParallelRequests_comment": "Higher for production throughput",
+    "retry": {
+      "maxRetries": 5,
+      "_maxRetries_comment": "More retries in production for reliability",
+      "baseDelay": 2000,
+      "maxDelay": 120000,
+      "exponentialBackoff": true
+    }
+  },
+
+  "database": {
+    "url": "REQUIRED_FROM_ENV",
+    "_url_comment": "Must be set via DATABASE_URL environment variable",
+    "type": "postgresql",
+    "maxConnections": 50,
+    "_maxConnections_comment": "Higher connection pool for production load",
+    "ssl": true,
+    "_ssl_comment": "Always use SSL in production",
+    "connectionTimeout": 5000,
+    "enableLogging": false,
+    "_enableLogging_comment": "Disable SQL logging for performance"
+  },
+
+  "cache": {
+    "enabled": true,
+    "type": "memory",
+    "_type_comment": "Use 'redis' for multi-instance deployments",
+    "maxSize": 5000,
+    "_maxSize_comment": "Larger cache for production",
+    "defaultTTL": 7200,
+    "_defaultTTL_comment": "2 hours - longer TTL for production efficiency"
+  },
+
+  "monitoring": {
+    "enabled": true,
+    "metricsInterval": 30000,
+    "_metricsInterval_comment": "30 seconds - balanced for production",
+    "enablePerformance": true,
+    "enableQuality": true,
+    "enableErrors": true,
+    "bufferSize": 200,
+    "_bufferSize_comment": "Larger buffer to reduce database writes"
+  }
+}

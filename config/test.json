@@ -1,0 +1,78 @@
+{
+  "_comment": "Test Environment Configuration",
+  "_description": "Fast, deterministic settings optimized for automated testing with minimal external dependencies",
+
+  "server": {
+    "port": 5002,
+    "_port_comment": "Different port to avoid conflicts with dev server",
+    "environment": "test",
+    "enableCors": true,
+    "enableLogging": false,
+    "_enableLogging_comment": "Disable logging to keep test output clean",
+    "requestTimeout": 30000,
+    "_requestTimeout_comment": "Shorter timeout for faster test failures",
+    "maxBodySize": "10mb"
+  },
+
+  "translation": {
+    "models": [
+      {
+        "_comment": "Mock model for testing",
+        "provider": "gemini",
+        "model": "test-model",
+        "apiKey": "test-api-key",
+        "priority": 0,
+        "maxTokens": 2000,
+        "temperature": 0.0
+      }
+    ],
+    "maxTokens": 2000,
+    "_maxTokens_comment": "Smaller for faster tests",
+    "temperature": 0.0,
+    "_temperature_comment": "Deterministic results for testing",
+    "qualityThreshold": 0.5,
+    "_qualityThreshold_comment": "Lower threshold to test edge cases",
+    "enableParallel": false,
+    "_enableParallel_comment": "Disable parallel processing for deterministic test execution",
+    "maxParallelRequests": 1,
+    "retry": {
+      "maxRetries": 1,
+      "_maxRetries_comment": "Minimal retries for faster test execution",
+      "baseDelay": 100,
+      "maxDelay": 1000,
+      "exponentialBackoff": false
+    }
+  },
+
+  "database": {
+    "url": "sqlite://:memory:",
+    "_url_comment": "In-memory database for fast, isolated tests",
+    "type": "sqlite",
+    "maxConnections": 1,
+    "_maxConnections_comment": "Single connection for in-memory DB",
+    "ssl": false,
+    "connectionTimeout": 1000,
+    "enableLogging": false,
+    "_enableLogging_comment": "Disable logging in tests"
+  },
+
+  "cache": {
+    "enabled": true,
+    "type": "memory",
+    "maxSize": 100,
+    "_maxSize_comment": "Small cache for testing",
+    "defaultTTL": 300,
+    "_defaultTTL_comment": "5 minutes - short TTL for test isolation"
+  },
+
+  "monitoring": {
+    "enabled": false,
+    "_enabled_comment": "Disable monitoring in tests to reduce overhead",
+    "metricsInterval": 10000,
+    "enablePerformance": false,
+    "enableQuality": false,
+    "enableErrors": true,
+    "_enableErrors_comment": "Keep error tracking for debugging tests",
+    "bufferSize": 10
+  }
+}

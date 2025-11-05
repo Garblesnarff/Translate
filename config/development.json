@@ -1,0 +1,63 @@
+{
+  "_comment": "Development Environment Configuration",
+  "_description": "Loose settings optimized for local development with detailed logging and fast iteration",
+
+  "server": {
+    "port": 5001,
+    "environment": "development",
+    "enableCors": true,
+    "enableLogging": true,
+    "requestTimeout": 300000,
+    "maxBodySize": "100mb"
+  },
+
+  "translation": {
+    "models": [],
+    "_models_comment": "Models will be loaded from environment variables (GEMINI_API_KEY_ODD, etc.)",
+    "maxTokens": 4000,
+    "temperature": 0.3,
+    "qualityThreshold": 0.6,
+    "_qualityThreshold_comment": "Lower threshold in dev to see more results",
+    "enableParallel": true,
+    "maxParallelRequests": 3,
+    "_maxParallelRequests_comment": "Reduced to avoid rate limits during testing",
+    "retry": {
+      "maxRetries": 2,
+      "_maxRetries_comment": "Fewer retries in dev for faster feedback",
+      "baseDelay": 500,
+      "maxDelay": 30000,
+      "exponentialBackoff": true
+    }
+  },
+
+  "database": {
+    "url": "sqlite://tibetan_translation.db",
+    "type": "sqlite",
+    "maxConnections": 5,
+    "_maxConnections_comment": "Lower for local SQLite",
+    "ssl": false,
+    "connectionTimeout": 10000,
+    "enableLogging": true,
+    "_enableLogging_comment": "Enable SQL logging for debugging"
+  },
+
+  "cache": {
+    "enabled": true,
+    "type": "memory",
+    "maxSize": 500,
+    "_maxSize_comment": "Smaller cache in dev to ensure fresh results",
+    "defaultTTL": 1800,
+    "_defaultTTL_comment": "30 minutes - shorter TTL for development"
+  },
+
+  "monitoring": {
+    "enabled": true,
+    "metricsInterval": 60000,
+    "_metricsInterval_comment": "1 minute - more frequent in dev",
+    "enablePerformance": true,
+    "enableQuality": true,
+    "enableErrors": true,
+    "bufferSize": 50,
+    "_bufferSize_comment": "Smaller buffer for faster metric visibility"
+  }
+}

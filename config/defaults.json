@@ -1,0 +1,72 @@
+{
+  "_comment": "Default Configuration for Tibetan Translation Tool",
+  "_description": "This file contains sensible defaults for all settings. Environment-specific configs override these values.",
+
+  "server": {
+    "_comment": "Server configuration",
+    "port": 5001,
+    "environment": "development",
+    "enableCors": true,
+    "enableLogging": true,
+    "requestTimeout": 120000,
+    "maxBodySize": "50mb"
+  },
+
+  "translation": {
+    "_comment": "Translation service configuration",
+    "models": [
+      {
+        "_comment": "Primary Gemini model for odd pages",
+        "provider": "gemini",
+        "model": "gemini-2.0-flash",
+        "apiKey": "REQUIRED_FROM_ENV",
+        "priority": 0,
+        "maxTokens": 8192,
+        "temperature": 0.3
+      }
+    ],
+    "maxTokens": 4000,
+    "temperature": 0.3,
+    "qualityThreshold": 0.7,
+    "enableParallel": true,
+    "maxParallelRequests": 5,
+    "retry": {
+      "_comment": "Retry configuration for failed requests",
+      "maxRetries": 3,
+      "baseDelay": 1000,
+      "maxDelay": 60000,
+      "exponentialBackoff": true
+    }
+  },
+
+  "database": {
+    "_comment": "Database configuration - defaults to SQLite for local development",
+    "url": "sqlite://tibetan_translation.db",
+    "type": "sqlite",
+    "maxConnections": 20,
+    "ssl": false,
+    "connectionTimeout": 5000,
+    "enableLogging": false
+  },
+
+  "cache": {
+    "_comment": "Caching configuration - improves performance by caching translations",
+    "enabled": true,
+    "type": "memory",
+    "maxSize": 1000,
+    "defaultTTL": 3600,
+    "_ttl_comment": "defaultTTL is in seconds (3600 = 1 hour)"
+  },
+
+  "monitoring": {
+    "_comment": "Monitoring and metrics configuration",
+    "enabled": true,
+    "metricsInterval": 30000,
+    "_interval_comment": "metricsInterval is in milliseconds (30000 = 30 seconds)",
+    "enablePerformance": true,
+    "enableQuality": true,
+    "enableErrors": true,
+    "bufferSize": 100,
+    "_bufferSize_comment": "Number of metrics to buffer before flushing to database"
+  }
+}
