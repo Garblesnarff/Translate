@@ -12,6 +12,7 @@ import fileUpload from 'express-fileupload';
 import rateLimit from 'express-rate-limit';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
+import swaggerRouter from './routes/swagger';
 
 // Import controllers
 import {
@@ -61,6 +62,11 @@ export function registerRoutes(app: Express) {
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
     abortOnLimit: true
   }));
+
+  // ====================================
+  // API Documentation (Swagger UI)
+  // ====================================
+  app.use('/api-docs', swaggerRouter);
 
   // ====================================
   // Translation Routes

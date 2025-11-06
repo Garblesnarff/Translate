@@ -1,0 +1,1067 @@
+openapi: 3.0.3
+info:
+  title: Tibetan Translation API
+  description: |
+    Professional Tibetan-to-English translation API powered by Google Gemini 2.0 Flash.
+
+    ## Features
+    - Single document translation with advanced quality analysis
+    - Batch processing with checkpointing and progress tracking
+    - Real-time translation streaming with Server-Sent Events (SSE)
+    - Multi-model consensus for improved accuracy
+    - PDF generation with bilingual output
+    - Comprehensive monitoring and metrics
+
+    ## Authentication
+    All endpoints require an API key passed via the `Authorization` header:
+    ```
+    Authorization: Bearer YOUR_API_KEY
+    ```
+
+    ## Rate Limits
+    - 100 requests per 15-minute window
+    - Rate limit headers included in all responses
+
+    ## Base URL
+    - Development: `http://localhost:5001`
+    - Production: Configure via `PORT` environment variable
+
+  version: 2.0.0
+  contact:
+    name: Translation Service Team
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5001
+    description: Development server
+  - url: https://api.example.com
+    description: Production server
+
+tags:
+  - name: Translation
+    description: Core translation operations
+  - name: Batch
+    description: Batch processing operations
+  - name: PDF
+    description: PDF generation
+  - name: History
+    description: Translation history and retrieval
+  - name: Session
+    description: Session management
+  - name: Status
+    description: System status and health
+  - name: Monitoring
+    description: Monitoring and metrics
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/translate:
+    post:
+      summary: Translate Tibetan text
+      description: |
+        Translate Tibetan text to English with advanced quality analysis.
+
+        ## Features
+        - Multi-pass translation with helper AI models
+        - Chain-of-thought reasoning
+        - Quality scoring and validation
+        - Context-aware translation
+
+        ## Processing Time
+        Typically 5-30 seconds depending on text length and configuration.
+      operationId: translateText
+      tags:
+        - Translation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranslationRequest'
+            examples:
+              basic:
+                summary: Basic translation
+                value:
+                  text: "བཀྲ་ཤིས་བདེ་ལེགས།"
+              advanced:
+                summary: Advanced configuration
+                value:
+                  text: "བཀྲ་ཤིས་བདེ་ལེགས།"
+                  config:
+                    useHelperAI: true
+                    useMultiPass: true
+                    maxIterations: 3
+                    qualityThreshold: 0.8
+      responses:
+        '200':
+          description: Translation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslationResponse'
+              examples:
+                success:
+                  value:
+                    translation: "Tashi Delek (Greetings and good fortune)"
+                    confidence: 0.95
+                    quality:
+                      grade: "A"
+                      score: 95
+                      issues: []
+                      strengths: ["Accurate terminology", "Natural phrasing"]
+                    processingTime: 3245
+                    iterationsUsed: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/translate/stream:
+    post:
+      summary: Stream translation progress
+      description: |
+        Real-time translation streaming using Server-Sent Events (SSE).
+        Provides progress updates, partial results, and completion status.
+      operationId: streamTranslation
+      tags:
+        - Translation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranslationRequest'
+      responses:
+        '200':
+          description: SSE stream of translation progress
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                data: {"type":"progress","stage":"extracting","progress":0.1}
+
+                data: {"type":"progress","stage":"translating","progress":0.5}
+
+                data: {"type":"complete","translation":"Hello","confidence":0.95}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/translation/capabilities:
+    get:
+      summary: Get translation capabilities
+      description: Returns available features, models, and configuration options
+      operationId: getCapabilities
+      tags:
+        - Translation
+      responses:
+        '200':
+          description: Capabilities retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    items:
+                      type: string
+                    example: ["gemini-2.0-flash-exp", "gemini-1.5-pro"]
+                  features:
+                    type: object
+                    properties:
+                      multiPass:
+                        type: boolean
+                      helperAI:
+                        type: boolean
+                      chainOfThought:
+                        type: boolean
+                      qualityAnalysis:
+                        type: boolean
+                  maxTextLength:
+                    type: integer
+                    example: 100000
+                  supportedFormats:
+                    type: array
+                    items:
+                      type: string
+                    example: ["pdf", "txt", "docx"]
+
+  /api/translation/config:
+    get:
+      summary: Get translation configuration
+      description: Returns current translation service configuration
+      operationId: getConfig
+      tags:
+        - Translation
+      responses:
+        '200':
+          description: Configuration retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslationConfig'
+
+    post:
+      summary: Update translation configuration
+      description: Update translation service configuration (requires admin)
+      operationId: updateConfig
+      tags:
+        - Translation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranslationConfigUpdate'
+      responses:
+        '200':
+          description: Configuration updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  config:
+                    $ref: '#/components/schemas/TranslationConfig'
+
+  /api/batch/translate:
+    post:
+      summary: Batch translate documents
+      description: |
+        Submit multiple documents for batch translation.
+
+        ## Features
+        - Checkpointing: Progress saved after each page
+        - Partial success: Keeps successfully translated pages even if some fail
+        - Webhook notifications on completion
+
+        ## File Support
+        - PDF (up to 50MB)
+        - TXT
+        - DOCX
+      operationId: batchTranslate
+      tags:
+        - Batch
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+              required:
+                - files
+      responses:
+        '200':
+          description: Batch job created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [processing]
+                  totalFiles:
+                    type: integer
+                  message:
+                    type: string
+                example:
+                  jobId: "123e4567-e89b-12d3-a456-426614174000"
+                  status: "processing"
+                  totalFiles: 3
+                  message: "Batch translation started"
+
+  /api/batch/status/{jobId}:
+    get:
+      summary: Get batch job status
+      description: Check progress and status of a batch translation job
+      operationId: getBatchStatus
+      tags:
+        - Batch
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Batch job ID
+      responses:
+        '200':
+          description: Job status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchJobStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/batch/{jobId}/pdf:
+    get:
+      summary: Download batch translation PDF
+      description: Generate and download PDF with all translations from a completed batch job
+      operationId: getBatchPDF
+      tags:
+        - Batch
+        - PDF
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: PDF generated
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Job not completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/generate-pdf:
+    post:
+      summary: Generate bilingual PDF
+      description: Generate PDF document with Tibetan and English side-by-side
+      operationId: generatePDF
+      tags:
+        - PDF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PDFGenerationRequest'
+      responses:
+        '200':
+          description: PDF generated
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/translations/recent:
+    get:
+      summary: Get recent translations
+      description: Retrieve recently completed translations with pagination
+      operationId: getRecentTranslations
+      tags:
+        - History
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+          description: Number of translations to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Pagination offset
+      responses:
+        '200':
+          description: Translations retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  translations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TranslationRecord'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+
+  /api/translations/{id}:
+    get:
+      summary: Get translation by ID
+      description: Retrieve a specific translation by its database ID
+      operationId: getTranslation
+      tags:
+        - History
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Translation ID
+      responses:
+        '200':
+          description: Translation retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslationRecord'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/translate/cancel/{sessionId}:
+    post:
+      summary: Cancel translation session
+      description: Cancel an in-progress translation session
+      operationId: cancelSession
+      tags:
+        - Session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Session ID
+      responses:
+        '200':
+          description: Session cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /api/translate/sessions:
+    get:
+      summary: Get active sessions
+      description: List all currently active translation sessions
+      operationId: getActiveSessions
+      tags:
+        - Session
+      responses:
+        '200':
+          description: Sessions retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        sessionId:
+                          type: string
+                        startTime:
+                          type: string
+                          format: date-time
+                        status:
+                          type: string
+
+  /api/status:
+    get:
+      summary: Get system status
+      description: Health check and system information
+      operationId: getSystemStatus
+      tags:
+        - Status
+      responses:
+        '200':
+          description: System status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded, unhealthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  database:
+                    type: string
+                    enum: [connected, disconnected]
+                  apiKeys:
+                    type: object
+                    properties:
+                      odd:
+                        type: boolean
+                      even:
+                        type: boolean
+
+  /api/dictionary/entries:
+    get:
+      summary: Get dictionary entries
+      description: Retrieve Tibetan-English dictionary entries
+      operationId: getDictionaryEntries
+      tags:
+        - Status
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search term (Tibetan or English)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Dictionary entries retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tibetan:
+                          type: string
+                        english:
+                          type: string
+                        category:
+                          type: string
+
+  /api/monitoring/health:
+    get:
+      summary: Health check
+      description: Service health check with system metrics
+      operationId: getHealth
+      tags:
+        - Monitoring
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, unhealthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  uptime:
+                    type: number
+                    description: Process uptime in seconds
+                  memory:
+                    type: object
+                    properties:
+                      used:
+                        type: integer
+                      total:
+                        type: integer
+                      percentage:
+                        type: number
+
+  /api/monitoring/metrics:
+    get:
+      summary: Get metrics summary
+      description: Current metrics including translations, performance, and quality
+      operationId: getMetrics
+      tags:
+        - Monitoring
+      responses:
+        '200':
+          description: Metrics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalTranslations:
+                    type: integer
+                  avgConfidence:
+                    type: number
+                  avgProcessingTime:
+                    type: number
+                  successRate:
+                    type: number
+
+  /api/monitoring/performance:
+    get:
+      summary: Get performance report
+      description: Detailed performance statistics for a time period
+      operationId: getPerformance
+      tags:
+        - Monitoring
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date (ISO 8601)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date (ISO 8601)
+      responses:
+        '200':
+          description: Performance report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  report:
+                    type: object
+                  alerts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+
+  /api/monitoring/quality:
+    get:
+      summary: Get quality report
+      description: Translation quality metrics and trends
+      operationId: getQuality
+      tags:
+        - Monitoring
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: documentId
+          in: query
+          schema:
+            type: string
+          description: Get quality for specific document
+      responses:
+        '200':
+          description: Quality report
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/monitoring/errors:
+    get:
+      summary: Get error statistics
+      description: Error tracking and analysis
+      operationId: getErrors
+      tags:
+        - Monitoring
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Error summary
+          content:
+            application/json:
+              schema:
+                type: object
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API_KEY
+      description: API key authentication. Contact admin for API key.
+
+  schemas:
+    TranslationRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 10
+          maxLength: 100000
+          description: Tibetan text to translate (must contain Tibetan Unicode characters U+0F00-U+0FFF)
+          example: "བཀྲ་ཤིས་བདེ་ལེགས།"
+        sessionId:
+          type: string
+          description: Optional session ID for cancellation tracking
+        config:
+          $ref: '#/components/schemas/TranslationConfig'
+
+    TranslationConfig:
+      type: object
+      properties:
+        useHelperAI:
+          type: boolean
+          default: true
+          description: Use helper AI models for improved quality
+        useMultiPass:
+          type: boolean
+          default: true
+          description: Enable multi-pass translation refinement
+        maxIterations:
+          type: integer
+          minimum: 1
+          maximum: 5
+          default: 3
+          description: Maximum refinement iterations
+        qualityThreshold:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.8
+          description: Minimum quality score (0-1)
+        useChainOfThought:
+          type: boolean
+          default: false
+          description: Enable chain-of-thought reasoning (slower but more accurate)
+        contextWindow:
+          type: integer
+          minimum: 0
+          maximum: 10
+          default: 2
+          description: Number of surrounding pages for context
+        enableQualityAnalysis:
+          type: boolean
+          default: true
+          description: Enable detailed quality analysis
+        timeout:
+          type: integer
+          minimum: 1000
+          default: 90000
+          description: Translation timeout in milliseconds
+
+    TranslationConfigUpdate:
+      type: object
+      properties:
+        useHelperAI:
+          type: boolean
+        useMultiPass:
+          type: boolean
+        maxIterations:
+          type: integer
+          minimum: 1
+          maximum: 5
+        qualityThreshold:
+          type: number
+          minimum: 0
+          maximum: 1
+        useChainOfThought:
+          type: boolean
+        enableQualityAnalysis:
+          type: boolean
+        timeout:
+          type: integer
+          minimum: 1000
+
+    TranslationResponse:
+      type: object
+      properties:
+        translation:
+          type: string
+          description: Translated English text
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Translation confidence score
+        quality:
+          $ref: '#/components/schemas/QualityReport'
+        modelAgreement:
+          type: number
+          description: Agreement score across multiple models (if multi-model used)
+        iterationsUsed:
+          type: integer
+          description: Number of refinement iterations used
+        helperModels:
+          type: array
+          items:
+            type: string
+          description: Helper models used
+        processingTime:
+          type: number
+          description: Processing time in milliseconds
+        metadata:
+          type: object
+          additionalProperties: true
+
+    QualityReport:
+      type: object
+      properties:
+        grade:
+          type: string
+          enum: [A, B, C, D, F]
+          description: Overall quality grade
+        score:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Quality score (0-100)
+        issues:
+          type: array
+          items:
+            type: string
+          description: List of quality issues found
+        strengths:
+          type: array
+          items:
+            type: string
+          description: List of translation strengths
+        formatCompliance:
+          type: number
+          minimum: 0
+          maximum: 100
+        termConsistency:
+          type: number
+          minimum: 0
+          maximum: 100
+        contextAccuracy:
+          type: number
+          minimum: 0
+          maximum: 100
+        structuralIntegrity:
+          type: number
+          minimum: 0
+          maximum: 100
+
+    BatchJobStatus:
+      type: object
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [processing, completed, failed]
+        totalFiles:
+          type: integer
+        processedFiles:
+          type: integer
+        failedFiles:
+          type: integer
+        completedTranslations:
+          type: array
+          items:
+            type: integer
+          description: Array of translation IDs
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Progress percentage
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
+
+    PDFGenerationRequest:
+      type: object
+      required:
+        - pages
+      properties:
+        pages:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required:
+              - pageNumber
+              - tibetanText
+              - englishText
+            properties:
+              pageNumber:
+                type: integer
+                minimum: 1
+              tibetanText:
+                type: string
+              englishText:
+                type: string
+              confidence:
+                type: number
+                minimum: 0
+                maximum: 1
+
+    TranslationRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        sourceText:
+          type: string
+        translatedText:
+          type: string
+        confidence:
+          type: string
+        sourceFileName:
+          type: string
+        pageCount:
+          type: integer
+        textLength:
+          type: integer
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        processingTime:
+          type: number
+
+    Alert:
+      type: object
+      properties:
+        severity:
+          type: string
+          enum: [critical, warning, info]
+        category:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        metric:
+          type: string
+        threshold:
+          type: number
+        currentValue:
+          type: number
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error details
+
+  responses:
+    BadRequest:
+      description: Bad request - Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            validation:
+              value:
+                error: "Text must contain Tibetan characters"
+                code: "VALIDATION_ERROR"
+            missing:
+              value:
+                error: "Text field is required"
+                code: "INVALID_INPUT"
+
+    Unauthorized:
+      description: Unauthorized - Invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Invalid API key"
+            code: "UNAUTHORIZED"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Translation not found"
+            code: "NOT_FOUND"
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Too many requests"
+            code: "RATE_LIMIT_EXCEEDED"
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Request limit per window
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Requests remaining in window
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Time when rate limit resets (Unix timestamp)
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Internal server error"
+            code: "INTERNAL_ERROR"

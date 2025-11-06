@@ -98,3 +98,43 @@ export const insertTranslationMetricsSchema = createInsertSchema(translationMetr
 export const selectTranslationMetricsSchema = createSelectSchema(translationMetrics);
 export type InsertTranslationMetrics = z.infer<typeof insertTranslationMetricsSchema>;
 export type TranslationMetricsRecord = z.infer<typeof selectTranslationMetricsSchema>;
+
+// API keys table for authentication (Phase 4.1.1)
+export const apiKeys = sqliteTable("api_keys", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  name: text("name").notNull(),
+  userId: text("user_id"),
+  permissions: text("permissions").notNull(), // JSON array: ['translate', 'jobs', 'admin']
+  rateLimit: integer("rate_limit").notNull().default(100), // requests per hour
+  requestsCount: integer("requests_count").notNull().default(0),
+  lastUsedAt: text("last_used_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  expiresAt: text("expires_at"),
+  revoked: integer("revoked").notNull().default(0), // boolean as integer
+});
+
+// Audit logs table for security events (Phase 4.1.4)
+export const auditLogs = sqliteTable("audit_logs", {
+  id: text("id").primaryKey(),
+  timestamp: text("timestamp").notNull().default(sql`CURRENT_TIMESTAMP`),
+  eventType: text("event_type").notNull(),
+  userId: text("user_id"),
+  apiKeyId: text("api_key_id").references(() => apiKeys.id),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  resource: text("resource"),
+  action: text("action"),
+  success: integer("success").notNull(), // boolean as integer
+  details: text("details"), // JSON object
+});
+
+export const insertApiKeySchema = createInsertSchema(apiKeys);
+export const selectApiKeySchema = createSelectSchema(apiKeys);
+export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
+export type ApiKey = z.infer<typeof selectApiKeySchema>;
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs);
+export const selectAuditLogSchema = createSelectSchema(auditLogs);
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type AuditLog = z.infer<typeof selectAuditLogSchema>;

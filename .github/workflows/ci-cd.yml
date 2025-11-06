@@ -1,0 +1,265 @@
+name: CI/CD Pipeline
+
+# Trigger on pushes to main/develop and all pull requests
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+# Permissions for GitHub Actions
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  # ============================================
+  # Job 1: Code Quality & Type Checking
+  # ============================================
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type checking
+        run: npm run check
+
+      - name: Lint check (if configured)
+        run: npm run lint || echo "No lint script configured"
+        continue-on-error: true
+
+  # ============================================
+  # Job 2: Unit & Integration Tests
+  # ============================================
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test:unit || npm test
+        env:
+          NODE_ENV: test
+
+      - name: Run integration tests
+        run: npm run test:integration || echo "No integration tests"
+        continue-on-error: true
+        env:
+          NODE_ENV: test
+
+      - name: Generate coverage report
+        run: npm run test:coverage || echo "No coverage script"
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.node-version == 18
+        continue-on-error: true
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  # ============================================
+  # Job 3: Build Verification
+  # ============================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [quality, test]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+          retention-days: 7
+
+  # ============================================
+  # Job 4: Docker Build & Test
+  # ============================================
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: tibetan-translate:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test Docker image
+        run: |
+          docker run -d --name test-app -p 5439:5439 \
+            -e NODE_ENV=production \
+            -e DATABASE_URL=sqlite:///app/test.db \
+            tibetan-translate:${{ github.sha }}
+
+          # Wait for app to start
+          sleep 10
+
+          # Test health endpoint
+          curl -f http://localhost:5439/api/health || exit 1
+
+          # Cleanup
+          docker stop test-app
+          docker rm test-app
+
+  # ============================================
+  # Job 5: Security Scanning
+  # ============================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+  # ============================================
+  # Job 6: Deploy to Staging (main branch only)
+  # ============================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build, docker, security]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: staging
+      url: https://staging.tibetan-translate.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+
+      - name: Deploy to staging server
+        run: |
+          echo "Deployment script would go here"
+          echo "Examples:"
+          echo "- Push to Docker Hub"
+          echo "- Deploy to Heroku"
+          echo "- Deploy to AWS/GCP/Azure"
+          echo "- SSH to VPS and update"
+        # Add your actual deployment commands here
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests on staging..."
+          # curl -f https://staging.tibetan-translate.example.com/api/health
+
+  # ============================================
+  # Job 7: Deploy to Production (manual approval)
+  # ============================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://tibetan-translate.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+
+      - name: Deploy to production server
+        run: |
+          echo "Production deployment script would go here"
+          # Add your actual deployment commands here
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests on production..."
+          # curl -f https://tibetan-translate.example.com/api/health
+
+      - name: Notify deployment
+        run: |
+          echo "Production deployment completed successfully"
+          # Add notification (Slack, email, etc.)
+
+# ============================================
+# Workflow Status Notifications
+# ============================================
+# Add these as needed:
+# - Slack notifications
+# - Email notifications
+# - GitHub commit status updates
+# ============================================

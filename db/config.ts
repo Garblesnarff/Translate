@@ -48,18 +48,22 @@ export function getDatabase() {
 // Export the appropriate schema tables based on database type
 export function getTables() {
   const databaseUrl = process.env.DATABASE_URL;
-  
+
   if (!databaseUrl || databaseUrl.startsWith("sqlite:") || databaseUrl.endsWith(".db")) {
     return {
       translations: sqliteSchema.translations,
       batchJobs: sqliteSchema.batchJobs,
       dictionary: sqliteSchema.dictionary,
+      apiKeys: sqliteSchema.apiKeys,
+      auditLogs: sqliteSchema.auditLogs,
     };
   } else {
     return {
       translations: pgSchema.translations,
       batchJobs: pgSchema.batchJobs,
       dictionary: pgSchema.dictionary,
+      apiKeys: pgSchema.apiKeys,
+      auditLogs: pgSchema.auditLogs,
     };
   }
 }

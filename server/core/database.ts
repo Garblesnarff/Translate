@@ -26,6 +26,19 @@ export interface DatabaseConfig {
 
   // SQLite configuration
   sqlitePath?: string;
+
+  // Health check configuration
+  healthCheckInterval?: number; // milliseconds (default: 30000)
+  enableHealthChecks?: boolean; // default: true
+
+  // Retry configuration
+  maxRetries?: number; // default: 3
+  retryDelayMs?: number; // default: 1000
+
+  // Monitoring configuration
+  enableLeakDetection?: boolean; // default: true
+  leakDetectionInterval?: number; // milliseconds (default: 300000)
+  leakThresholdMs?: number; // milliseconds (default: 60000)
 }
 
 /**
@@ -41,6 +54,15 @@ export interface Transaction {
 }
 
 /**
+ * Active query tracking for leak detection
+ */
+interface ActiveQuery {
+  sql: string;
+  startTime: number;
+  params?: any[];
+}
+
+/**
  * Database Service
  * Handles connection pooling, queries, and transactions
  */
@@ -49,8 +71,27 @@ export class DatabaseService {
   private pool?: Pool;
   private sqlite?: SQLiteDatabase;
   private isShuttingDown = false;
+  private config: DatabaseConfig;
+
+  // Health check
+  private healthCheckInterval?: NodeJS.Timeout;
+  private lastHealthCheck?: Date;
+  private healthCheckFailures = 0;
+
+  // Leak detection
+  private activeQueries = new Map<string, ActiveQuery>();
+  private leakDetectionInterval?: NodeJS.Timeout;
+
+  // Metrics
+  private metrics = {
+    totalQueries: 0,
+    failedQueries: 0,
+    retries: 0,
+    connectionErrors: 0,
+  };
 
   constructor(config?: DatabaseConfig) {
+    this.config = config || {};
     const databaseUrl = config?.connectionString || process.env.DATABASE_URL;
 
     // Determine dialect
@@ -63,6 +104,16 @@ export class DatabaseService {
       this.dialect = 'postgres';
       this.pool = this.createPool(config, databaseUrl);
       console.log('🐘 DatabaseService initialized (PostgreSQL)');
+    }
+
+    // Start health checks (default: enabled)
+    if (this.config.enableHealthChecks !== false) {
+      this.startHealthChecks();
+    }
+
+    // Start leak detection (default: enabled)
+    if (this.config.enableLeakDetection !== false) {
+      this.startLeakDetection();
     }
   }
 
@@ -102,7 +153,7 @@ export class DatabaseService {
   }
 
   /**
-   * Execute a query
+   * Execute a query with retry logic
    * Returns array of results
    */
   async query<T = any>(sql: string, params?: any[]): Promise<T[]> {
@@ -110,11 +161,78 @@ export class DatabaseService {
       throw new Error('Database is shutting down');
     }
 
-    if (this.dialect === 'postgres') {
-      return this.queryPostgres<T>(sql, params);
-    } else {
-      return this.querySqlite<T>(sql, params);
+    const queryId = `query_${Date.now()}_${Math.random()}`;
+    this.trackQuery(queryId, sql, params);
+
+    try {
+      this.metrics.totalQueries++;
+
+      // Execute with retry logic
+      const result = await this.queryWithRetry<T>(sql, params);
+
+      this.releaseQuery(queryId);
+      return result;
+    } catch (error) {
+      this.metrics.failedQueries++;
+      this.releaseQuery(queryId);
+      throw error;
     }
+  }
+
+  /**
+   * Execute query with exponential backoff retry
+   */
+  private async queryWithRetry<T>(sql: string, params?: any[]): Promise<T[]> {
+    const maxRetries = this.config.maxRetries || 3;
+    const baseDelay = this.config.retryDelayMs || 1000;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        if (this.dialect === 'postgres') {
+          return await this.queryPostgres<T>(sql, params);
+        } else {
+          return await this.querySqlite<T>(sql, params);
+        }
+      } catch (error: any) {
+        lastError = error;
+
+        // Don't retry on certain errors
+        if (this.shouldNotRetry(error)) {
+          throw error;
+        }
+
+        // Only retry if not the last attempt
+        if (attempt < maxRetries - 1) {
+          this.metrics.retries++;
+          const delay = Math.min(baseDelay * Math.pow(2, attempt), 10000); // Max 10s
+          console.warn(`Query failed (attempt ${attempt + 1}/${maxRetries}), retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    throw lastError || new Error('Query failed after all retries');
+  }
+
+  /**
+   * Determine if error should not be retried
+   */
+  private shouldNotRetry(error: any): boolean {
+    const message = error.message?.toLowerCase() || '';
+
+    // Don't retry syntax errors, permission errors, etc.
+    const nonRetryableErrors = [
+      'syntax error',
+      'permission denied',
+      'does not exist',
+      'duplicate key',
+      'unique constraint',
+      'foreign key',
+      'check constraint',
+    ];
+
+    return nonRetryableErrors.some(err => message.includes(err));
   }
 
   /**
@@ -316,11 +434,118 @@ export class DatabaseService {
       } else {
         await this.query('SELECT 1');
       }
+      this.lastHealthCheck = new Date();
+      this.healthCheckFailures = 0;
       return true;
     } catch (error) {
-      console.error('Database health check failed:', error);
+      this.healthCheckFailures++;
+      console.error(`Database health check failed (${this.healthCheckFailures} consecutive failures):`, error);
       return false;
     }
+  }
+
+  /**
+   * Start periodic health checks
+   */
+  private startHealthChecks(): void {
+    const interval = this.config.healthCheckInterval || 30000; // 30 seconds
+
+    this.healthCheckInterval = setInterval(async () => {
+      const healthy = await this.healthCheck();
+
+      if (!healthy && this.healthCheckFailures >= 3) {
+        console.error('⚠️  Database health checks failing consistently. Consider restarting the service.');
+        this.metrics.connectionErrors++;
+      }
+    }, interval);
+
+    console.log(`✅ Health checks started (interval: ${interval}ms)`);
+  }
+
+  /**
+   * Stop health checks
+   */
+  private stopHealthChecks(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = undefined;
+      console.log('Health checks stopped');
+    }
+  }
+
+  /**
+   * Track active query
+   */
+  private trackQuery(id: string, sql: string, params?: any[]): void {
+    this.activeQueries.set(id, {
+      sql,
+      startTime: Date.now(),
+      params,
+    });
+  }
+
+  /**
+   * Release active query
+   */
+  private releaseQuery(id: string): void {
+    this.activeQueries.delete(id);
+  }
+
+  /**
+   * Start leak detection
+   */
+  private startLeakDetection(): void {
+    const interval = this.config.leakDetectionInterval || 5 * 60 * 1000; // 5 minutes
+    const threshold = this.config.leakThresholdMs || 60000; // 1 minute
+
+    this.leakDetectionInterval = setInterval(() => {
+      const now = Date.now();
+      const leaks: Array<{ id: string; sql: string; duration: number }> = [];
+
+      // Convert to array to avoid iterator issues
+      Array.from(this.activeQueries.entries()).forEach(([id, query]) => {
+        const duration = now - query.startTime;
+        if (duration > threshold) {
+          leaks.push({
+            id,
+            sql: query.sql.substring(0, 100),
+            duration,
+          });
+        }
+      });
+
+      if (leaks.length > 0) {
+        console.error(`⚠️  Potential connection leaks detected (${leaks.length} queries):`);
+        leaks.forEach(leak => {
+          console.error(`  - Query running for ${(leak.duration / 1000).toFixed(2)}s: ${leak.sql}`);
+        });
+      }
+    }, interval);
+
+    console.log(`✅ Leak detection started (interval: ${interval}ms, threshold: ${threshold}ms)`);
+  }
+
+  /**
+   * Stop leak detection
+   */
+  private stopLeakDetection(): void {
+    if (this.leakDetectionInterval) {
+      clearInterval(this.leakDetectionInterval);
+      this.leakDetectionInterval = undefined;
+      console.log('Leak detection stopped');
+    }
+  }
+
+  /**
+   * Get database metrics
+   */
+  getMetrics() {
+    return {
+      ...this.metrics,
+      activeQueries: this.activeQueries.size,
+      lastHealthCheck: this.lastHealthCheck,
+      healthCheckFailures: this.healthCheckFailures,
+    };
   }
 
   /**
@@ -345,6 +570,24 @@ export class DatabaseService {
 
     console.log('🔌 Closing database connections...');
 
+    // Stop monitoring
+    this.stopHealthChecks();
+    this.stopLeakDetection();
+
+    // Wait for active queries to complete (max 30s)
+    const maxWaitTime = 30000;
+    const startTime = Date.now();
+
+    while (this.activeQueries.size > 0 && Date.now() - startTime < maxWaitTime) {
+      console.log(`⏳ Waiting for ${this.activeQueries.size} active queries to complete...`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    if (this.activeQueries.size > 0) {
+      console.warn(`⚠️  Forcefully closing with ${this.activeQueries.size} active queries remaining`);
+    }
+
+    // Close connections
     if (this.dialect === 'postgres' && this.pool) {
       await this.pool.end();
       console.log('✅ PostgreSQL pool closed');
@@ -352,6 +595,9 @@ export class DatabaseService {
       this.sqlite.close();
       console.log('✅ SQLite connection closed');
     }
+
+    // Log final metrics
+    console.log('📊 Final database metrics:', this.getMetrics());
   }
 
   /**

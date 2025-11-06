@@ -1,0 +1,189 @@
+version: '3.8'
+
+# Tibetan Translation Tool - Development Stack
+# This compose file sets up the complete development environment
+
+services:
+  # Main Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tibetan-translate-app
+    ports:
+      - "5439:5439"
+    environment:
+      # Application
+      NODE_ENV: production
+      PORT: 5439
+
+      # Database
+      DATABASE_URL: postgresql://postgres:postgres_password_change_me@db:5432/tibetan_translate
+
+      # Redis (optional - for caching and rate limiting)
+      REDIS_URL: redis://redis:6379
+
+      # AI Providers (set these in .env file)
+      GEMINI_API_KEY_ODD: ${GEMINI_API_KEY_ODD}
+      GEMINI_API_KEY_EVEN: ${GEMINI_API_KEY_EVEN}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+      # Security
+      SESSION_SECRET: ${SESSION_SECRET:-change_me_in_production_minimum_32_chars}
+      API_KEY_ENCRYPTION_KEY: ${API_KEY_ENCRYPTION_KEY:-change_me_in_production_minimum_32_chars}
+
+      # Features
+      ENABLE_OCR: ${ENABLE_OCR:-true}
+      ENABLE_CACHING: ${ENABLE_CACHING:-true}
+
+      # Performance
+      MAX_CONNECTIONS: ${MAX_CONNECTIONS:-20}
+      CACHE_MAX_SIZE: ${CACHE_MAX_SIZE:-1000}
+      CACHE_TTL: ${CACHE_TTL:-3600}
+
+    volumes:
+      # Persistent storage
+      - app_uploads:/app/uploads
+      - app_cache:/app/cache
+      - app_logs:/app/logs
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+    networks:
+      - tibetan-network
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 512M
+
+  # PostgreSQL Database
+  db:
+    image: postgres:14-alpine
+    container_name: tibetan-translate-db
+    environment:
+      POSTGRES_DB: tibetan_translate
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password_change_me
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - tibetan-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: tibetan-translate-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - tibetan-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # pgAdmin (Database Management - Optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: tibetan-translate-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@tibetan-translate.local
+      PGADMIN_DEFAULT_PASSWORD: admin_change_me
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - tibetan-network
+    profiles:
+      - tools
+
+volumes:
+  # Application volumes
+  app_uploads:
+    driver: local
+  app_cache:
+    driver: local
+  app_logs:
+    driver: local
+
+  # Database volumes
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  tibetan-network:
+    driver: bridge
+
+# ============================================
+# Usage:
+# ============================================
+#
+# Start all services:
+#   docker-compose up -d
+#
+# Start with pgAdmin:
+#   docker-compose --profile tools up -d
+#
+# View logs:
+#   docker-compose logs -f app
+#
+# Stop all services:
+#   docker-compose down
+#
+# Stop and remove volumes:
+#   docker-compose down -v
+#
+# Rebuild and restart:
+#   docker-compose up -d --build
+#
+# Scale app instances:
+#   docker-compose up -d --scale app=3
+#
+# ============================================

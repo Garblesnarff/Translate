@@ -1,0 +1,77 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Build outputs
+dist
+build
+.cache
+
+# Development
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing
+coverage
+.nyc_output
+tests
+*.test.ts
+*.spec.ts
+test_*.pdf
+
+# Documentation
+*.md
+!README.md
+docs
+
+# Database files (use external volumes)
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Temporary files
+tmp
+temp
+uploads/*
+cache/*
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+.circleci
+
+# Misc
+replit.nix
+.replit
+save-branch.sh
+n8n-workflows
+scripts
+migrations-v2
+generated-icon.png
+theme.json
