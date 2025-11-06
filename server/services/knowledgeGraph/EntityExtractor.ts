@@ -129,8 +129,8 @@ export class EntityExtractor {
 
       const translationData = translation[0];
 
-      if (!translationData.englishText) {
-        throw new Error(`Translation ${translationId} has no English text`);
+      if (!translationData.translatedText) {
+        throw new Error(`Translation ${translationId} has no translated text`);
       }
 
       // 2. Create extraction job record
@@ -145,8 +145,8 @@ export class EntityExtractor {
 
       // 3. Build extraction prompt
       const prompt = buildEntityExtractionPrompt(
-        translationData.englishText,
-        translationData.tibetanText || undefined,
+        translationData.translatedText,
+        translationData.sourceText || undefined,
         context
       );
 
