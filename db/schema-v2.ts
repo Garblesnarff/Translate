@@ -215,6 +215,28 @@ export const glossaries = pgTable("glossaries", {
 }));
 
 /**
+ * Jobs Table (Phase 3.2)
+ * Background job queue for long-running translation tasks
+ */
+export const jobs = pgTable("jobs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  type: varchar("type", { length: 50 }).notNull().default("translation"), // Job type
+  status: varchar("status", { length: 20, enum: ["pending", "processing", "completed", "failed", "cancelled"] }).notNull().default("pending"),
+  request: jsonb("request").notNull(), // TranslationRequest
+  result: jsonb("result"), // TranslationResult
+  error: text("error"), // Error message if failed
+  progress: real("progress").notNull().default(0), // 0-100
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  cancelledAt: timestamp("cancelled_at"),
+}, (table) => ({
+  statusIdx: index("idx_jobs_status").on(table.status),
+  createdIdx: index("idx_jobs_created").on(table.createdAt.desc()),
+  typeStatusIdx: index("idx_jobs_type_status").on(table.type, table.status),
+}));
+
+/**
  * Migration Tracking Table
  * Tracks applied migrations
  */
@@ -270,3 +292,8 @@ export const insertMigrationSchema = createInsertSchema(migrations);
 export const selectMigrationSchema = createSelectSchema(migrations);
 export type InsertMigration = z.infer<typeof insertMigrationSchema>;
 export type Migration = z.infer<typeof selectMigrationSchema>;
+
+export const insertJobSchema = createInsertSchema(jobs);
+export const selectJobSchema = createSelectSchema(jobs);
+export type InsertJob = z.infer<typeof insertJobSchema>;
+export type Job = z.infer<typeof selectJobSchema>;
