@@ -5,7 +5,7 @@
  * from translated Tibetan texts.
  */
 
-interface ExtractionContext {
+export interface ExtractionContext {
   documentTitle?: string;
   pageNumber?: string;
   documentType?: string;

@@ -56,6 +56,12 @@ export function getTables() {
       dictionary: sqliteSchema.dictionary,
       apiKeys: sqliteSchema.apiKeys,
       auditLogs: sqliteSchema.auditLogs,
+      // Knowledge graph tables
+      entities: sqliteSchema.entities,
+      relationships: sqliteSchema.relationships,
+      lineages: sqliteSchema.lineages,
+      extractionJobs: sqliteSchema.extractionJobs,
+      batchExtractionJobs: sqliteSchema.batchExtractionJobs,
     };
   } else {
     return {
@@ -64,6 +70,12 @@ export function getTables() {
       dictionary: pgSchema.dictionary,
       apiKeys: pgSchema.apiKeys,
       auditLogs: pgSchema.auditLogs,
+      // Knowledge graph tables
+      entities: pgSchema.entities,
+      relationships: pgSchema.relationships,
+      lineages: pgSchema.lineages,
+      extractionJobs: pgSchema.extractionJobs,
+      batchExtractionJobs: pgSchema.batchExtractionJobs,
     };
   }
 }

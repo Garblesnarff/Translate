@@ -40,6 +40,14 @@ import {
   getDictionaryEntries
 } from './controllers/statusController';
 
+import {
+  extractEntities,
+  getExtractionStatus,
+  getEntitiesForTranslation,
+  getRelationshipsForTranslation,
+  getKnowledgeGraphStats
+} from './controllers/knowledgeGraphController';
+
 // Configure rate limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -194,6 +202,45 @@ export function registerRoutes(app: Express) {
     limiter,
     requestLogger,
     getDictionaryEntries
+  );
+
+  // ====================================
+  // Knowledge Graph Routes
+  // ====================================
+
+  // Extract entities from translation
+  app.post('/api/kg/extract/:translationId',
+    limiter,
+    requestLogger,
+    extractEntities
+  );
+
+  // Get extraction job status
+  app.get('/api/kg/extract/status/:jobId',
+    limiter,
+    requestLogger,
+    getExtractionStatus
+  );
+
+  // Get entities for translation
+  app.get('/api/kg/entities/:translationId',
+    limiter,
+    requestLogger,
+    getEntitiesForTranslation
+  );
+
+  // Get relationships for translation
+  app.get('/api/kg/relationships/:translationId',
+    limiter,
+    requestLogger,
+    getRelationshipsForTranslation
+  );
+
+  // Get knowledge graph statistics
+  app.get('/api/kg/stats',
+    limiter,
+    requestLogger,
+    getKnowledgeGraphStats
   );
 
   // Register error handler

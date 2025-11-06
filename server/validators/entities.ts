@@ -225,7 +225,11 @@ export const RelationshipSchema = z.object({
   sourceDocumentId: z.string().optional(),
   sourcePage: z.string().optional(),
   sourceQuote: z.string().optional(),
-  createdBy: z.string().default('ai')
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  createdBy: z.string().default('ai'),
+  verifiedBy: z.string().optional(),
+  verifiedAt: z.date().optional(),
 });
 
 // ============================================================================
