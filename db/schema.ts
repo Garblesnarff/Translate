@@ -337,3 +337,34 @@ export const insertBatchExtractionJobSchema = createInsertSchema(batchExtraction
 export const selectBatchExtractionJobSchema = createSelectSchema(batchExtractionJobs);
 export type InsertBatchExtractionJob = z.infer<typeof insertBatchExtractionJobSchema>;
 export type BatchExtractionJob = z.infer<typeof selectBatchExtractionJobSchema>;
+
+// Extraction metrics table - tracks quality and performance metrics for entity extraction
+export const extractionMetrics = pgTable("extraction_metrics", {
+  id: text("id").primaryKey(),
+  extractionId: text("extraction_id").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+
+  // Entity and relationship counts
+  entitiesCount: integer("entities_count").notNull(),
+  relationshipsCount: integer("relationships_count").notNull(),
+
+  // Quality metrics
+  avgConfidence: text("avg_confidence").notNull(), // stored as text for precision
+
+  // Performance metrics
+  processingTimeMs: integer("processing_time_ms").notNull(),
+
+  // Type distribution (stored as JSON)
+  entityTypeDistribution: text("entity_type_distribution").notNull(), // JSON: {person: 5, place: 3, ...}
+
+  // Confidence distribution (stored as JSON histogram)
+  confidenceDistribution: text("confidence_distribution").notNull(), // JSON: {low: 2, medium: 5, high: 8}
+
+  // Model information
+  modelUsed: text("model_used").notNull(),
+});
+
+export const insertExtractionMetricsSchema = createInsertSchema(extractionMetrics);
+export const selectExtractionMetricsSchema = createSelectSchema(extractionMetrics);
+export type InsertExtractionMetrics = z.infer<typeof insertExtractionMetricsSchema>;
+export type ExtractionMetrics = z.infer<typeof selectExtractionMetricsSchema>;

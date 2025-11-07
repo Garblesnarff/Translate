@@ -134,24 +134,134 @@ export const EventEntitySchema = EntityBaseSchema.extend({
   })
 });
 
+// Event Extraction Supporting Schemas
+export const EventParticipantSchema = z.object({
+  eventId: z.string(),
+  participantId: z.string(),
+  role: z.enum(['teacher', 'student', 'organizer', 'sponsor', 'attendee', 'recipient', 'witness', 'performer']),
+  sourceQuote: z.string().optional()
+});
+
+export const EventRelatedTextSchema = z.object({
+  eventId: z.string(),
+  textId: z.string(),
+  relationship: z.enum(['taught', 'composed', 'revealed', 'received_transmission', 'commented_on', 'translated']),
+  sourceQuote: z.string().optional()
+});
+
+export const EventTemporalRelationshipSchema = z.object({
+  event1Id: z.string(),
+  event2Id: z.string(),
+  relationship: z.enum(['before', 'after', 'during', 'concurrent_with']),
+  timeDifference: z.string().optional(),
+  confidence: z.number().min(0).max(1),
+  sourceQuote: z.string().optional()
+});
+
+export const EventExtractionResultSchema = z.object({
+  events: z.array(EventEntitySchema),
+  participants: z.array(EventParticipantSchema).optional(),
+  relatedTexts: z.array(EventRelatedTextSchema).optional(),
+  temporalRelationships: z.array(EventTemporalRelationshipSchema).optional(),
+  ambiguities: z.array(z.string()).optional()
+});
+
+// ============================================================================
+// Concept Extraction Supporting Schemas (Phase 1, Task 1.1.4)
+// ============================================================================
+
+// Enhanced concept definition schema with school tracking
+export const ConceptDefinitionSchema = z.object({
+  text: z.string().min(1).max(5000),
+  source: z.string(), // Text ID or description
+  author: z.string(), // Person ID or name
+  school: z.string().optional(), // Which tradition's interpretation
+  context: z.string().optional(), // Additional context about this definition
+  confidence: z.number().min(0).max(1).optional()
+});
+
+// Related concepts schema with prerequisite and progression tracking
+export const RelatedConceptsSchema = z.object({
+  broader: z.array(z.string()).optional(), // Parent concepts
+  narrower: z.array(z.string()).optional(), // Sub-concepts
+  related: z.array(z.string()).optional(), // Associated concepts
+  contradicts: z.array(z.string()).optional(), // Opposing views
+  prerequisite: z.array(z.string()).optional(), // Required prior understanding
+  leads_to: z.array(z.string()).optional() // Advanced concepts this leads to
+});
+
+// Practice-specific details for meditation practices
+export const PracticeDetailsSchema = z.object({
+  stages: z.array(z.string()).optional(), // Stages of practice
+  prerequisites: z.array(z.string()).optional(), // What's needed before this practice
+  duration: z.string().optional(), // Typical practice duration
+  results: z.array(z.string()).optional(), // Expected outcomes
+  techniques: z.array(z.string()).optional(), // Specific techniques involved
+  warnings: z.array(z.string()).optional() // Cautions or requirements
+});
+
+// School-specific interpretation tracking
+export const SchoolInterpretationSchema = z.object({
+  school: z.string(), // Gelug, Kagyu, Sakya, Nyingma, Jonang, etc.
+  interpretation: z.string().min(1).max(5000),
+  proponents: z.array(z.string()).optional(), // Person IDs or names
+  sources: z.array(z.string()).optional(), // Text IDs or references
+  confidence: z.number().min(0).max(1).optional(),
+  period: z.string().optional(), // When this interpretation emerged
+  context: z.string().optional() // Historical or doctrinal context
+});
+
+// Debate and controversy tracking
+export const ConceptControversySchema = z.object({
+  description: z.string().min(1).max(2000),
+  schools_involved: z.array(z.string()).optional(),
+  significance: z.string().optional(),
+  resolution: z.string().optional(), // How/if it was resolved
+  ongoing: z.boolean().optional() // Still debated?
+});
+
+// Debate position schema for tracking different views
+export const DebatePositionSchema = z.object({
+  school: z.string(),
+  view: z.string().min(1).max(2000),
+  proponents: z.array(z.string()).optional(),
+  sources: z.array(z.string()).optional(),
+  confidence: z.number().min(0).max(1).optional()
+});
+
+// Full debate schema
+export const DebateSchema = z.object({
+  concept: z.string(), // Concept ID or tempId
+  conceptName: z.string(),
+  description: z.string(),
+  positions: z.array(DebatePositionSchema),
+  significance: z.string().optional(),
+  resolution: z.string().optional(),
+  ongoing: z.boolean().default(true)
+});
+
+// Enhanced Concept Entity Schema
 export const ConceptEntitySchema = EntityBaseSchema.extend({
   type: z.literal('concept'),
   attributes: z.object({
     conceptType: z.enum(['philosophical_view', 'meditation_practice', 'deity', 'doctrine', 'technical_term']),
-    definitions: z.array(z.object({
-      text: z.string(),
-      source: z.string(),
-      author: z.string(),
-      school: z.string().optional()
-    })).optional(),
-    relatedConcepts: z.object({
-      broader: z.array(z.string()).optional(),
-      narrower: z.array(z.string()).optional(),
-      related: z.array(z.string()).optional(),
-      contradicts: z.array(z.string()).optional()
-    }).optional(),
+    definitions: z.array(ConceptDefinitionSchema).optional(),
+    relatedConcepts: RelatedConceptsSchema.optional(),
     sanskritTerm: z.string().optional(),
-    paliTerm: z.string().optional()
+    paliTerm: z.string().optional(),
+    chineseTerm: z.string().optional(),
+    // Practice-specific details (for meditation practices)
+    practiceDetails: PracticeDetailsSchema.optional(),
+    // School-specific interpretations (CRITICAL for concepts)
+    schoolInterpretations: z.array(SchoolInterpretationSchema).optional(),
+    // Debates and controversies
+    controversies: z.array(ConceptControversySchema).optional(),
+    // Known practitioners or teachers of this concept/practice
+    notablePractitioners: z.array(z.string()).optional(), // Person IDs
+    // Key texts that teach this concept
+    keyTexts: z.array(z.string()).optional(), // Text IDs
+    // Historical context
+    historicalContext: z.string().optional()
   })
 });
 
@@ -165,7 +275,29 @@ export const InstitutionEntitySchema = EntityBaseSchema.extend({
       parent: z.string().optional(),
       subsidiaries: z.array(z.string()).optional()
     }).optional(),
-    description: z.string().optional()
+    description: z.string().optional(),
+    // Founding information
+    founders: z.array(z.string()).optional(), // Person IDs or tempIds
+    // Notable leaders over time
+    notableAbbots: z.array(z.object({
+      personId: z.string().optional(),
+      personName: z.string(),
+      period: z.string().optional(), // e.g., "mid-13th century", "1450-1475"
+      significance: z.string().optional() // What they accomplished
+    })).optional(),
+    // Texts produced at this institution
+    textsProduced: z.array(z.object({
+      textId: z.string().optional(),
+      textName: z.string(),
+      year: z.number().int().optional(),
+      significance: z.string().optional()
+    })).optional(),
+    // Major historical events at this institution
+    majorEvents: z.array(z.object({
+      eventId: z.string().optional(),
+      description: z.string(),
+      date: DateInfoSchema.optional()
+    })).optional()
   })
 });
 
@@ -260,6 +392,14 @@ export const ExtractionResultSchema = z.object({
   ambiguities: z.array(z.string()).optional()
 });
 
+// Concept-specific extraction result schema
+export const ConceptExtractionResultSchema = z.object({
+  concepts: z.array(z.union([ConceptEntitySchema, DeityEntitySchema])),
+  relationships: z.array(RelationshipSchema).optional(),
+  debates: z.array(DebateSchema).optional(),
+  ambiguities: z.array(z.string()).optional()
+});
+
 // ============================================================================
 // Type Exports (inferred from schemas)
 // ============================================================================
@@ -276,6 +416,22 @@ export type DeityEntityInput = z.infer<typeof DeityEntitySchema>;
 export type LineageEntityInput = z.infer<typeof LineageEntitySchema>;
 export type RelationshipInput = z.infer<typeof RelationshipSchema>;
 export type ExtractionResultInput = z.infer<typeof ExtractionResultSchema>;
+
+// Event Extraction Result Types
+export type EventParticipantInput = z.infer<typeof EventParticipantSchema>;
+export type EventRelatedTextInput = z.infer<typeof EventRelatedTextSchema>;
+export type EventTemporalRelationshipInput = z.infer<typeof EventTemporalRelationshipSchema>;
+export type EventExtractionResultInput = z.infer<typeof EventExtractionResultSchema>;
+
+// Concept Extraction Result Types (Phase 1, Task 1.1.4)
+export type ConceptDefinitionInput = z.infer<typeof ConceptDefinitionSchema>;
+export type RelatedConceptsInput = z.infer<typeof RelatedConceptsSchema>;
+export type PracticeDetailsInput = z.infer<typeof PracticeDetailsSchema>;
+export type SchoolInterpretationInput = z.infer<typeof SchoolInterpretationSchema>;
+export type ConceptControversyInput = z.infer<typeof ConceptControversySchema>;
+export type DebatePositionInput = z.infer<typeof DebatePositionSchema>;
+export type DebateInput = z.infer<typeof DebateSchema>;
+export type ConceptExtractionResultInput = z.infer<typeof ConceptExtractionResultSchema>;
 
 // ============================================================================
 // Validation Helper Functions
@@ -339,6 +495,24 @@ export function validateExtractionResult(data: unknown): ExtractionResultInput {
 export function safeValidateEntity(data: unknown) {
   try {
     return { success: true as const, data: validateEntity(data) };
+  } catch (error) {
+    return { success: false as const, error };
+  }
+}
+
+/**
+ * Validate an event extraction result
+ */
+export function validateEventExtractionResult(data: unknown): EventExtractionResultInput {
+  return EventExtractionResultSchema.parse(data);
+}
+
+/**
+ * Safe validate event extraction result without throwing
+ */
+export function safeValidateEventExtraction(data: unknown) {
+  try {
+    return { success: true as const, data: validateEventExtractionResult(data) };
   } catch (error) {
     return { success: false as const, error };
   }

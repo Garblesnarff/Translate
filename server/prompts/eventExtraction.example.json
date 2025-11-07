@@ -1,0 +1,108 @@
+{
+  "description": "Example output from eventExtraction prompt",
+  "exampleInput": "In 1073, the great Sakya Pandita received the Hevajra empowerment from Drogmi Lotsawa at Mugulung Monastery. The teaching lasted three days and was attended by over 500 monks. During the empowerment, Sakya Pandita taught the Hevajra Tantra root text. After receiving the empowerment, he entered a six-month retreat at age 25, during which he attained realization of the deity.",
+  "exampleOutput": {
+    "events": [
+      {
+        "tempId": "EVENT_1",
+        "type": "event",
+        "canonicalName": "Sakya Pandita Receives Hevajra Empowerment",
+        "names": {
+          "tibetan": ["ཧེ་བཛྲ་དབང་བསྐུར།"],
+          "english": ["Hevajra Empowerment at Mugulung"],
+          "phonetic": ["Hevajra Wang Kur"],
+          "wylie": ["he badz+ra dbang bskur"]
+        },
+        "attributes": {
+          "eventType": "empowerment",
+          "location": "PLACE_1 (Mugulung Monastery)",
+          "duration": "3 days",
+          "significance": "Major tantric empowerment that established Sakya Pandita's mastery of the Hevajra practice",
+          "description": "Sakya Pandita received the complete Hevajra empowerment transmission from the renowned translator Drogmi Lotsawa",
+          "attendeeCount": 500,
+          "outcome": "Sakya Pandita became qualified to practice and teach Hevajra"
+        },
+        "dates": {
+          "occurred": {
+            "year": 1073,
+            "precision": "exact",
+            "confidence": 0.95,
+            "source": "Explicitly stated in text"
+          }
+        },
+        "confidence": 0.95,
+        "extractionReason": "Explicitly described with date, location, participants, and duration"
+      },
+      {
+        "tempId": "EVENT_2",
+        "type": "event",
+        "canonicalName": "Sakya Pandita's Six-Month Retreat",
+        "names": {
+          "tibetan": ["མཚམས།"],
+          "english": ["Six-Month Hevajra Retreat"],
+          "phonetic": ["Tsam"],
+          "wylie": ["mtshams"]
+        },
+        "attributes": {
+          "eventType": "retreat",
+          "duration": "6 months",
+          "significance": "Retreat during which Sakya Pandita attained realization of Hevajra deity",
+          "description": "Solitary meditation retreat following the empowerment",
+          "outcome": "Attained realization of the deity"
+        },
+        "dates": {
+          "started": {
+            "year": 1073,
+            "relative": "after EVENT_1 (after receiving empowerment)",
+            "precision": "estimated",
+            "confidence": 0.85,
+            "source": "Calculated from age mentioned and sequence"
+          }
+        },
+        "confidence": 0.9,
+        "extractionReason": "Described as occurring after the empowerment with specific duration and outcome"
+      }
+    ],
+    "participants": [
+      {
+        "eventId": "EVENT_1",
+        "participantId": "PERSON_1 (Sakya Pandita)",
+        "role": "recipient",
+        "sourceQuote": "Sakya Pandita received the Hevajra empowerment"
+      },
+      {
+        "eventId": "EVENT_1",
+        "participantId": "PERSON_2 (Drogmi Lotsawa)",
+        "role": "teacher",
+        "sourceQuote": "received the Hevajra empowerment from Drogmi Lotsawa"
+      },
+      {
+        "eventId": "EVENT_2",
+        "participantId": "PERSON_1 (Sakya Pandita)",
+        "role": "attendee",
+        "sourceQuote": "he entered a six-month retreat"
+      }
+    ],
+    "relatedTexts": [
+      {
+        "eventId": "EVENT_1",
+        "textId": "TEXT_1 (Hevajra Tantra)",
+        "relationship": "taught",
+        "sourceQuote": "Sakya Pandita taught the Hevajra Tantra root text"
+      }
+    ],
+    "temporalRelationships": [
+      {
+        "event1Id": "EVENT_1",
+        "event2Id": "EVENT_2",
+        "relationship": "before",
+        "confidence": 0.95,
+        "sourceQuote": "After receiving the empowerment, he entered a six-month retreat"
+      }
+    ],
+    "ambiguities": [
+      "Age 25 mentioned for retreat but birth year not provided - cannot calculate exact year",
+      "Location of retreat not specified - may have been at Mugulung or elsewhere"
+    ]
+  }
+}

@@ -9,6 +9,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { entityExtractor } from '../services/knowledgeGraph';
+import { batchExtractor } from '../services/extraction/BatchExtractor';
 import type { ExtractionContext } from '../prompts/entityExtraction';
 
 /**
@@ -37,6 +38,21 @@ const JobIdParamSchema = z.object({
 
 const TranslationIdParamSchema = z.object({
   translationId: z.string().regex(/^\d+$/).transform(Number),
+});
+
+const BatchExtractionRequestSchema = z.object({
+  translationIds: z.array(z.number().int().positive()).optional(),
+  collectionId: z.string().optional(),
+  options: z.object({
+    parallel: z.number().int().positive().optional(),
+  }).optional(),
+}).refine(
+  (data) => data.translationIds || data.collectionId,
+  { message: 'Either translationIds or collectionId must be provided' }
+);
+
+const BatchJobIdParamSchema = z.object({
+  batchJobId: z.string().uuid(),
 });
 
 /**
@@ -229,4 +245,151 @@ export async function getKnowledgeGraphStats(
     success: false,
     error: 'Not yet implemented',
   });
+}
+
+/**
+ * POST /api/extract/batch
+ *
+ * Start batch entity extraction from multiple translations
+ */
+export async function handleBatchExtraction(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    // Validate request body
+    const { translationIds, collectionId, options } = BatchExtractionRequestSchema.parse(req.body);
+
+    console.log('[KG Controller] Starting batch extraction:', {
+      translationIds: translationIds?.length || 0,
+      collectionId,
+      options,
+    });
+
+    // Start batch extraction asynchronously
+    // The BatchExtractor creates the job record and returns the jobId
+    const extractionPromise = collectionId
+      ? batchExtractor.extractFromEntireCollection(collectionId)
+      : batchExtractor.extractFromMultipleDocuments(translationIds!, {
+          parallel: options?.parallel,
+          persistToDb: true,
+        });
+
+    // Start processing in background (don't block the response)
+    extractionPromise
+      .then((result) => {
+        console.log(`[KG Controller] Batch extraction completed: ${result.jobId}`, {
+          status: result.status,
+          processed: result.statistics.documentsProcessed,
+          failed: result.statistics.documentsFailed,
+          entities: result.statistics.totalEntities,
+        });
+      })
+      .catch((error) => {
+        console.error('[KG Controller] Batch extraction failed:', error);
+      });
+
+    // Wait briefly to ensure the job record is created in the database
+    // The BatchExtractor creates the job record immediately before processing
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Get the most recent batch job (this is a temporary workaround)
+    // In production, you'd want to modify BatchExtractor to return jobId synchronously
+    const recentJobs = await batchExtractor.getAllBatchJobs();
+    const jobId = recentJobs.length > 0 ? recentJobs[0].id : 'unknown';
+
+    // Return immediate response with job tracking info
+    res.status(202).json({
+      success: true,
+      message: 'Batch extraction started',
+      batchJobId: jobId,
+      status: 'processing',
+      totalDocuments: translationIds?.length || 0,
+      hint: 'Use GET /api/extract/batch/:batchJobId to check progress',
+    });
+
+  } catch (error) {
+    console.error('[KG Controller] Batch extraction request failed:', error);
+
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid request parameters',
+        details: error.errors,
+      });
+      return;
+    }
+
+    next(error);
+  }
+}
+
+/**
+ * GET /api/extract/batch/:batchJobId
+ *
+ * Get batch extraction job status and statistics
+ */
+export async function getBatchExtractionStatus(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    // Validate batch job ID
+    const { batchJobId } = BatchJobIdParamSchema.parse(req.params);
+
+    console.log(`[KG Controller] Getting batch extraction status for job ${batchJobId}`);
+
+    // Get batch job status
+    const job = await batchExtractor.getBatchJob(batchJobId);
+
+    if (!job) {
+      res.status(404).json({
+        success: false,
+        error: `Batch extraction job ${batchJobId} not found`,
+      });
+      return;
+    }
+
+    // Calculate progress percentage
+    const progress = job.totalDocuments > 0
+      ? Math.round(((job.documentsProcessed + job.documentsFailed) / job.totalDocuments) * 100)
+      : 0;
+
+    // Return batch job status with detailed information
+    res.status(200).json({
+      success: true,
+      job: {
+        id: job.id,
+        status: job.status,
+        progress,
+        totalDocuments: job.totalDocuments,
+        documentsProcessed: job.documentsProcessed,
+        documentsFailed: job.documentsFailed,
+        statistics: {
+          totalEntities: job.totalEntities,
+          totalRelationships: job.totalRelationships,
+          averageConfidence: job.avgConfidence ? parseFloat(job.avgConfidence) : null,
+        },
+        error: job.errorMessage,
+        startedAt: job.startedAt,
+        completedAt: job.completedAt,
+        createdAt: job.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error('[KG Controller] Failed to get batch extraction status:', error);
+
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid batch job ID format',
+        details: error.errors,
+      });
+      return;
+    }
+
+    next(error);
+  }
 }

@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Home from "./pages/Home";
 import Translate from "./pages/Translate";
 import Dashboard from "./pages/Dashboard";
+import ExtractionDashboard from "./pages/ExtractionDashboard";
 
 function Router() {
   return (
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/translate" component={Translate} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/extraction" component={ExtractionDashboard} />
       <Route>404 Page Not Found</Route>
     </Switch>
   );

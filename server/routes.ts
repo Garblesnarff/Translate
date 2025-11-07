@@ -45,8 +45,16 @@ import {
   getExtractionStatus,
   getEntitiesForTranslation,
   getRelationshipsForTranslation,
-  getKnowledgeGraphStats
+  getKnowledgeGraphStats,
+  handleBatchExtraction,
+  getBatchExtractionStatus
 } from './controllers/knowledgeGraphController';
+
+import {
+  getAggregateMetrics,
+  getQualityReport,
+  getRecentExtractionJobs
+} from './controllers/metricsController';
 
 // Configure rate limiter
 const limiter = rateLimit({
@@ -241,6 +249,49 @@ export function registerRoutes(app: Express) {
     limiter,
     requestLogger,
     getKnowledgeGraphStats
+  );
+
+  // ====================================
+  // Batch Entity Extraction Routes
+  // ====================================
+
+  // Start batch extraction from multiple translations
+  app.post('/api/extract/batch',
+    limiter,
+    requestLogger,
+    handleBatchExtraction
+  );
+
+  // Get batch extraction job status
+  app.get('/api/extract/batch/:batchJobId',
+    limiter,
+    requestLogger,
+    getBatchExtractionStatus
+  );
+
+  // ====================================
+  // Metrics and Monitoring Routes
+  // ====================================
+
+  // Get aggregate metrics
+  app.get('/api/metrics/aggregate',
+    limiter,
+    requestLogger,
+    getAggregateMetrics
+  );
+
+  // Get quality report
+  app.get('/api/metrics/quality',
+    limiter,
+    requestLogger,
+    getQualityReport
+  );
+
+  // Get recent extraction jobs
+  app.get('/api/extract/jobs',
+    limiter,
+    requestLogger,
+    getRecentExtractionJobs
   );
 
   // Register error handler

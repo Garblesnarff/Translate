@@ -274,6 +274,24 @@ export interface InstitutionEntity extends EntityBase {
       subsidiaries?: string[]; // Branch institution IDs
     };
     description?: string;
+    founders?: string[]; // Person IDs
+    notableAbbots?: Array<{
+      personId?: string;
+      personName: string;
+      period?: string; // e.g., "mid-13th century", "1450-1475"
+      significance?: string; // What they accomplished
+    }>;
+    textsProduced?: Array<{
+      textId?: string;
+      textName: string;
+      year?: number;
+      significance?: string;
+    }>;
+    majorEvents?: Array<{
+      eventId?: string;
+      description: string;
+      date?: DateInfo;
+    }>;
   };
   dates?: {
     founded?: DateInfo;
