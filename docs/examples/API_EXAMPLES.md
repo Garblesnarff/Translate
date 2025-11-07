@@ -269,7 +269,237 @@ document.getElementById('cancelBtn').onclick = () => {
 };
 ```
 
-### 7. Error Handling
+### 7. Knowledge Graph - Entity Extraction
+
+```javascript
+async function extractEntities(translationId) {
+  const response = await fetch('http://localhost:5001/api/extract/entities', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ translationId })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Extraction failed: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  console.log('Extraction Job ID:', result.jobId);
+  console.log('Status:', result.status);
+
+  return result;
+}
+
+// Poll for extraction completion
+async function pollExtractionStatus(jobId, interval = 5000) {
+  const checkStatus = async () => {
+    const response = await fetch(`http://localhost:5001/api/extract/jobs/${jobId}`);
+    const status = await response.json();
+
+    console.log(`Status: ${status.status}`);
+    if (status.status === 'completed') {
+      console.log(`Extracted ${status.entitiesExtracted} entities`);
+      console.log(`Extracted ${status.relationshipsExtracted} relationships`);
+      console.log(`Average confidence: ${status.confidenceAvg?.toFixed(2)}`);
+      return status;
+    } else if (status.status === 'failed') {
+      throw new Error(`Extraction failed: ${status.errorMessage}`);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, interval));
+    return checkStatus();
+  };
+
+  return checkStatus();
+}
+
+// Usage
+const extraction = await extractEntities('translation-uuid-here');
+const completed = await pollExtractionStatus(extraction.jobId);
+```
+
+### 8. Knowledge Graph - Query Entities
+
+```javascript
+async function getEntities(filters = {}) {
+  const params = new URLSearchParams({
+    type: filters.type || '',
+    verified: filters.verified !== undefined ? filters.verified : '',
+    limit: filters.limit || 50,
+    offset: filters.offset || 0
+  });
+
+  const response = await fetch(
+    `http://localhost:5001/api/entities?${params}`
+  );
+
+  if (!response.ok) {
+    throw new Error(`Query failed: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+async function getEntityWithRelationships(entityId) {
+  const response = await fetch(
+    `http://localhost:5001/api/entities/${entityId}`
+  );
+
+  if (!response.ok) {
+    throw new Error(`Entity not found: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+// Usage: Get all person entities
+const people = await getEntities({ type: 'person', limit: 100 });
+console.log('Found', people.entities.length, 'people');
+console.log('Total:', people.pagination.total);
+
+// Get specific entity with all relationships
+const entity = await getEntityWithRelationships('entity-uuid-here');
+console.log('Entity:', entity.entity.canonicalName);
+console.log('Relationships:', entity.relationships.length);
+
+// Display relationships
+entity.relationships.forEach(rel => {
+  console.log(`- ${rel.predicate} (confidence: ${rel.confidence})`);
+});
+```
+
+### 9. Knowledge Graph - Query Relationships
+
+```javascript
+async function getRelationships(filters = {}) {
+  const params = new URLSearchParams();
+
+  if (filters.subjectId) params.set('subjectId', filters.subjectId);
+  if (filters.objectId) params.set('objectId', filters.objectId);
+  if (filters.predicate) params.set('predicate', filters.predicate);
+  if (filters.verified !== undefined) params.set('verified', filters.verified);
+  params.set('limit', filters.limit || 50);
+  params.set('offset', filters.offset || 0);
+
+  const response = await fetch(
+    `http://localhost:5001/api/relationships?${params}`
+  );
+
+  if (!response.ok) {
+    throw new Error(`Query failed: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+// Usage: Find all teacher-student relationships
+const teacherRelationships = await getRelationships({
+  predicate: 'teacher_of',
+  verified: false,
+  limit: 100
+});
+
+console.log('Teacher-student relationships:', teacherRelationships.relationships.length);
+
+teacherRelationships.relationships.forEach(rel => {
+  console.log(`- Teacher: ${rel.subjectId}, Student: ${rel.objectId}`);
+  console.log(`  Confidence: ${rel.confidence}`);
+  if (rel.sourceQuote) {
+    console.log(`  Quote: "${rel.sourceQuote.substring(0, 80)}..."`);
+  }
+});
+
+// Find all relationships for a specific person
+const personRelationships = await getRelationships({
+  subjectId: 'person-uuid-here'
+});
+console.log('Relationships where person is subject:', personRelationships.relationships.length);
+```
+
+### 10. Knowledge Graph - Full Workflow
+
+```javascript
+// Complete workflow: Translate → Extract → Query
+async function fullKnowledgeGraphWorkflow(tibetanText) {
+  // Step 1: Translate text
+  console.log('Step 1: Translating...');
+  const translation = await fetch('http://localhost:5001/api/translate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: tibetanText })
+  }).then(r => r.json());
+
+  console.log(`Translation completed: ${translation.id}`);
+
+  // Step 2: Extract entities
+  console.log('Step 2: Extracting entities...');
+  const extraction = await fetch('http://localhost:5001/api/extract/entities', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ translationId: translation.id })
+  }).then(r => r.json());
+
+  console.log(`Extraction job started: ${extraction.jobId}`);
+
+  // Step 3: Poll for completion
+  console.log('Step 3: Waiting for extraction...');
+  let job;
+  while (true) {
+    job = await fetch(
+      `http://localhost:5001/api/extract/jobs/${extraction.jobId}`
+    ).then(r => r.json());
+
+    if (job.status === 'completed') break;
+    if (job.status === 'failed') throw new Error(job.errorMessage);
+
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
+
+  console.log(`Extracted ${job.entitiesExtracted} entities, ${job.relationshipsExtracted} relationships`);
+
+  // Step 4: Query extracted entities
+  console.log('Step 4: Querying entities...');
+  const entities = await fetch(
+    'http://localhost:5001/api/entities?limit=10'
+  ).then(r => r.json());
+
+  console.log('\nTop 10 entities:');
+  entities.entities.forEach((entity, i) => {
+    console.log(`${i + 1}. ${entity.canonicalName} (${entity.type}) - confidence: ${entity.confidence.toFixed(2)}`);
+  });
+
+  // Step 5: Query relationships
+  const relationships = await fetch(
+    'http://localhost:5001/api/relationships?limit=10'
+  ).then(r => r.json());
+
+  console.log('\nTop 10 relationships:');
+  relationships.relationships.forEach((rel, i) => {
+    console.log(`${i + 1}. ${rel.predicate} (confidence: ${rel.confidence.toFixed(2)})`);
+  });
+
+  return {
+    translation,
+    extraction: job,
+    entities: entities.entities,
+    relationships: relationships.relationships
+  };
+}
+
+// Usage
+fullKnowledgeGraphWorkflow('Tibetan text about Buddhist masters...')
+  .then(result => {
+    console.log('\n=== WORKFLOW COMPLETE ===');
+    console.log(`Translation ID: ${result.translation.id}`);
+    console.log(`Entities extracted: ${result.extraction.entitiesExtracted}`);
+    console.log(`Relationships extracted: ${result.extraction.relationshipsExtracted}`);
+  })
+  .catch(error => console.error('Workflow failed:', error));
+```
+
+### 11. Error Handling
 
 ```javascript
 async function robustTranslate(text, maxRetries = 3) {
@@ -709,6 +939,57 @@ curl http://localhost:5001/api/status
 
 ```bash
 curl http://localhost:5001/api/monitoring/metrics
+```
+
+### 11. Knowledge Graph - Start Entity Extraction
+
+```bash
+curl -X POST http://localhost:5001/api/extract/entities \
+  -H "Content-Type: application/json" \
+  -d '{"translationId": "123e4567-e89b-12d3-a456-426614174000"}'
+
+# Response: {"jobId":"456e7890-e89b-12d3-a456-426614174001","status":"pending"}
+```
+
+### 12. Knowledge Graph - Check Extraction Status
+
+```bash
+curl http://localhost:5001/api/extract/jobs/456e7890-e89b-12d3-a456-426614174001
+```
+
+### 13. Knowledge Graph - Query Entities
+
+```bash
+# Get all entities (paginated)
+curl "http://localhost:5001/api/entities?limit=50&offset=0"
+
+# Get entities by type
+curl "http://localhost:5001/api/entities?type=person&limit=100"
+
+# Get verified entities only
+curl "http://localhost:5001/api/entities?verified=true"
+
+# Get specific entity with relationships
+curl http://localhost:5001/api/entities/123e4567-e89b-12d3-a456-426614174000
+```
+
+### 14. Knowledge Graph - Query Relationships
+
+```bash
+# Get all relationships
+curl "http://localhost:5001/api/relationships?limit=50"
+
+# Get relationships by predicate
+curl "http://localhost:5001/api/relationships?predicate=teacher_of&limit=100"
+
+# Get relationships for a specific entity (as subject)
+curl "http://localhost:5001/api/relationships?subjectId=123e4567-e89b-12d3-a456-426614174000"
+
+# Get relationships for a specific entity (as object)
+curl "http://localhost:5001/api/relationships?objectId=123e4567-e89b-12d3-a456-426614174000"
+
+# Filter by verification status
+curl "http://localhost:5001/api/relationships?verified=false&limit=50"
 ```
 
 ---
