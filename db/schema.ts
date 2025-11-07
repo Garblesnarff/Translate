@@ -236,6 +236,11 @@ export const entities = pgTable("entities", {
   createdBy: text("created_by").notNull().default('ai'),
   verifiedBy: text("verified_by"),
   verifiedAt: timestamp("verified_at"),
+  // Entity merge tracking (Phase 2.3)
+  mergeStatus: text("merge_status", {
+    enum: ["active", "merged", "deleted"]
+  }).notNull().default("active"),
+  mergedInto: text("merged_into").references((): any => entities.id),
 });
 
 // Relationships table - stores connections between entities
@@ -368,3 +373,70 @@ export const insertExtractionMetricsSchema = createInsertSchema(extractionMetric
 export const selectExtractionMetricsSchema = createSelectSchema(extractionMetrics);
 export type InsertExtractionMetrics = z.infer<typeof insertExtractionMetricsSchema>;
 export type ExtractionMetrics = z.infer<typeof selectExtractionMetricsSchema>;
+
+// Entity merge history table - tracks entity merge operations for rollback (Phase 2.3)
+export const entityMergeHistory = pgTable("entity_merge_history", {
+  id: text("id").primaryKey(),
+  primaryEntityId: text("primary_entity_id").notNull().references(() => entities.id),
+  duplicateEntityId: text("duplicate_entity_id").notNull().references(() => entities.id),
+  mergedAt: timestamp("merged_at").defaultNow().notNull(),
+  mergedBy: text("merged_by"),
+  mergeStrategy: text("merge_strategy").notNull(), // 'highest_confidence', 'most_recent', 'manual'
+  conflictsResolved: text("conflicts_resolved").notNull(), // JSON array of ConflictResolution objects
+  originalPrimary: text("original_primary").notNull(), // JSON snapshot of primary entity before merge
+  originalDuplicate: text("original_duplicate").notNull(), // JSON snapshot of duplicate entity before merge
+  relationshipsUpdated: integer("relationships_updated").notNull().default(0),
+  rollbackPossible: integer("rollback_possible").notNull().default(1), // boolean as integer
+  notes: text("notes"),
+});
+
+export const insertEntityMergeHistorySchema = createInsertSchema(entityMergeHistory);
+export const selectEntityMergeHistorySchema = createSelectSchema(entityMergeHistory);
+export type InsertEntityMergeHistory = z.infer<typeof insertEntityMergeHistorySchema>;
+export type EntityMergeHistory = z.infer<typeof selectEntityMergeHistorySchema>;
+
+// ============================================================================
+// ENTITY RESOLUTION TABLES (Phase 2: Entity Resolution)
+// ============================================================================
+
+// Entity resolution pairs table - stores detected duplicates for human review
+export const entityResolutionPairs = pgTable("entity_resolution_pairs", {
+  id: text("id").primaryKey(),
+  entity1Id: text("entity1_id").notNull().references(() => entities.id, { onDelete: "cascade" }),
+  entity2Id: text("entity2_id").notNull().references(() => entities.id, { onDelete: "cascade" }),
+
+  // Overall similarity score
+  similarityScore: text("similarity_score").notNull(), // stored as text for precision
+
+  // Individual signal scores
+  nameSimilarity: text("name_similarity").notNull(),
+  dateSimilarity: text("date_similarity"),
+  locationSimilarity: text("location_similarity"),
+  relationshipSimilarity: text("relationship_similarity"),
+  attributeSimilarity: text("attribute_similarity"),
+
+  // Confidence level classification
+  confidenceLevel: text("confidence_level", {
+    enum: ["very_high", "high", "medium", "low"]
+  }).notNull(),
+
+  // Resolution status
+  status: text("status", {
+    enum: ["pending", "merged", "rejected", "flagged"]
+  }).notNull().default("pending"),
+
+  // Metadata
+  detectedAt: timestamp("detected_at").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewedBy: text("reviewed_by"),
+  mergeDecision: text("merge_decision"), // Explanation of merge/rejection decision
+  notes: text("notes"),
+
+  // Tracking which entity was kept after merge
+  mergedIntoId: text("merged_into_id").references(() => entities.id),
+});
+
+export const insertEntityResolutionPairSchema = createInsertSchema(entityResolutionPairs);
+export const selectEntityResolutionPairSchema = createSelectSchema(entityResolutionPairs);
+export type InsertEntityResolutionPair = z.infer<typeof insertEntityResolutionPairSchema>;
+export type EntityResolutionPair = z.infer<typeof selectEntityResolutionPairSchema>;

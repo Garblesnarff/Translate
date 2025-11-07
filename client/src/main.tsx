@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import Translate from "./pages/Translate";
 import Dashboard from "./pages/Dashboard";
 import ExtractionDashboard from "./pages/ExtractionDashboard";
+import EntityReviewDashboard from "./pages/EntityReviewDashboard";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/translate" component={Translate} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/extraction" component={ExtractionDashboard} />
+      <Route path="/entity-review" component={EntityReviewDashboard} />
       <Route>404 Page Not Found</Route>
     </Switch>
   );
