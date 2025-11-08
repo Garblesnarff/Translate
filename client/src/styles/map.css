@@ -1,0 +1,435 @@
+/* Geographic Map Styles */
+
+/* Import Leaflet CSS */
+@import 'leaflet/dist/leaflet.css';
+
+/* Map Container */
+.geographic-map {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.leaflet-container {
+  font-family: inherit;
+  background: #f3f4f6;
+}
+
+/* Custom Markers */
+.custom-marker-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.custom-marker {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 2px solid white;
+  transition: transform 0.2s ease;
+}
+
+.custom-marker:hover {
+  transform: scale(1.1);
+  z-index: 1000 !important;
+}
+
+.marker-emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Marker Clusters */
+.marker-cluster {
+  background-clip: padding-box;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marker-cluster div {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.6);
+  border: 2px solid rgba(59, 130, 246, 0.9);
+}
+
+.marker-cluster-small {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+.marker-cluster-small div {
+  background-color: rgba(59, 130, 246, 0.6);
+  border-color: rgba(59, 130, 246, 0.9);
+}
+
+.marker-cluster-medium {
+  background-color: rgba(251, 191, 36, 0.2);
+}
+
+.marker-cluster-medium div {
+  background-color: rgba(251, 191, 36, 0.6);
+  border-color: rgba(251, 191, 36, 0.9);
+}
+
+.marker-cluster-large {
+  background-color: rgba(239, 68, 68, 0.2);
+}
+
+.marker-cluster-large div {
+  background-color: rgba(239, 68, 68, 0.6);
+  border-color: rgba(239, 68, 68, 0.9);
+}
+
+.marker-cluster span {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Popups */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  min-width: 250px;
+}
+
+.place-popup {
+  padding: 0;
+}
+
+.place-popup h4 {
+  margin: 0 0 4px 0;
+}
+
+.place-popup p {
+  margin: 2px 0;
+}
+
+/* Tooltips */
+.leaflet-tooltip {
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.leaflet-tooltip::before {
+  border-top-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Journey Routes */
+.leaflet-interactive {
+  cursor: pointer;
+}
+
+.journey-stop-tooltip {
+  min-width: 180px;
+  padding: 8px;
+}
+
+.journey-stop-tooltip h4 {
+  margin: 0 0 8px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Journey Legend */
+.journey-legend {
+  position: absolute;
+  bottom: 80px;
+  right: 16px;
+  max-width: 250px;
+  z-index: 1000;
+}
+
+/* Heat Map Legend */
+.heatmap-legend {
+  position: absolute;
+  bottom: 80px;
+  left: 16px;
+  min-width: 200px;
+  z-index: 1000;
+}
+
+/* Map Search */
+.map-search input {
+  height: 40px;
+  font-size: 14px;
+}
+
+.map-search input:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: rgb(59, 130, 246);
+}
+
+/* Map Controls */
+.map-controls {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-group {
+  padding: 8px 0;
+}
+
+.filter-group h4,
+.filter-group h5 {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+/* Place Details */
+.place-details {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.place-details-empty {
+  padding: 32px;
+  text-align: center;
+  color: #9ca3af;
+}
+
+.tibetan-font {
+  font-family: 'Noto Sans Tibetan', serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Journey Timeline */
+.journey-timeline {
+  padding: 16px;
+}
+
+/* Loading States */
+.map-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000;
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive Styles */
+@media (max-width: 1024px) {
+  .map-controls {
+    width: 280px;
+  }
+
+  .place-details {
+    width: 320px;
+  }
+
+  .map-search {
+    max-width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .map-controls,
+  .place-details {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 400px;
+    z-index: 1500;
+    box-shadow: 0 0 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .map-controls {
+    left: 0;
+  }
+
+  .place-details {
+    right: 0;
+  }
+
+  .map-search {
+    top: 80px;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.marker-cluster {
+  animation: fadeIn 0.3s ease;
+}
+
+.custom-marker {
+  animation: slideUp 0.3s ease;
+}
+
+/* Journey Route Animation */
+@keyframes drawLine {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.leaflet-interactive[stroke-dasharray] {
+  stroke-dasharray: 10, 5;
+  animation: drawLine 2s ease-in-out;
+}
+
+/* Heat Map Pulse Animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.leaflet-interactive[fill-opacity] {
+  animation: pulse 3s ease-in-out infinite;
+}
+
+/* Highlight Effect */
+.leaflet-marker-icon.highlighted {
+  animation: pulse 1s ease-in-out 3;
+  z-index: 1000 !important;
+}
+
+/* Cluster Hover Effect */
+.marker-cluster:hover {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+/* Map Info Panel */
+.map-info {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+}
+
+/* Filter Summary Badges */
+.filter-summary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Skeleton Loaders */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Accessibility */
+.leaflet-container:focus {
+  outline: 2px solid rgb(59, 130, 246);
+  outline-offset: 2px;
+}
+
+.custom-marker:focus {
+  outline: 2px solid rgb(59, 130, 246);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+/* Print Styles */
+@media print {
+  .map-controls,
+  .place-details,
+  .map-search {
+    display: none;
+  }
+
+  .geographic-map {
+    height: 100vh;
+  }
+
+  .leaflet-control-container {
+    display: none;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .leaflet-container {
+    background: #1f2937;
+  }
+
+  .custom-marker {
+    border-color: #374151;
+  }
+
+  .leaflet-popup-content-wrapper {
+    background: #1f2937;
+    color: #f3f4f6;
+  }
+
+  .leaflet-tooltip {
+    background: rgba(255, 255, 255, 0.9);
+    color: #1f2937;
+  }
+
+  .map-controls,
+  .place-details {
+    background: #1f2937;
+    color: #f3f4f6;
+  }
+}

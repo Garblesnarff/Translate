@@ -1,0 +1,405 @@
+/**
+ * Timeline Styles
+ *
+ * Custom styles for vis.js timeline visualization
+ */
+
+/* ============================================================================
+   VIS.JS TIMELINE OVERRIDES
+   ============================================================================ */
+
+/* Timeline container */
+.vis-timeline {
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  font-family: inherit;
+  background: hsl(var(--background));
+}
+
+/* Timeline labels and axes */
+.vis-time-axis .vis-text {
+  color: hsl(var(--foreground));
+  font-size: 12px;
+}
+
+.vis-time-axis .vis-grid {
+  border-color: hsl(var(--border));
+}
+
+.vis-time-axis .vis-grid.vis-minor {
+  border-color: hsl(var(--border));
+  opacity: 0.5;
+}
+
+.vis-time-axis .vis-grid.vis-major {
+  border-color: hsl(var(--border));
+}
+
+/* Timeline background */
+.vis-panel.vis-background {
+  background: hsl(var(--background));
+}
+
+.vis-panel.vis-center,
+.vis-panel.vis-left,
+.vis-panel.vis-right,
+.vis-panel.vis-top,
+.vis-panel.vis-bottom {
+  border-color: hsl(var(--border));
+}
+
+/* Timeline current time line (hidden by default in config) */
+.vis-current-time {
+  background-color: hsl(var(--destructive));
+  width: 2px;
+}
+
+/* ============================================================================
+   TIMELINE ITEMS
+   ============================================================================ */
+
+/* Base item styles */
+.vis-item {
+  border-radius: 4px;
+  border-width: 2px;
+  color: white;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.vis-item.vis-selected {
+  border-width: 3px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 100 !important;
+}
+
+.vis-item .vis-item-overflow {
+  overflow: visible;
+}
+
+/* Item content */
+.vis-item-content {
+  padding: 4px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Range items (person lifespans, etc.) */
+.vis-item.vis-range {
+  background-color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+}
+
+/* Point items (events, single dates) */
+.vis-item.vis-point {
+  background-color: hsl(var(--accent));
+  border-color: hsl(var(--accent));
+}
+
+/* Box items */
+.vis-item.vis-box {
+  border-radius: 4px;
+}
+
+/* Dot items */
+.vis-item.vis-dot {
+  border-radius: 50%;
+  border-width: 2px;
+}
+
+/* ============================================================================
+   ENTITY TYPE STYLES
+   ============================================================================ */
+
+.vis-item.timeline-item-person {
+  background-color: #3b82f6;
+  border-color: #2563eb;
+}
+
+.vis-item.timeline-item-event {
+  background-color: #ef4444;
+  border-color: #dc2626;
+}
+
+.vis-item.timeline-item-text {
+  background-color: #10b981;
+  border-color: #059669;
+}
+
+.vis-item.timeline-item-place {
+  background-color: #a855f7;
+  border-color: #9333ea;
+}
+
+.vis-item.timeline-item-lineage {
+  background-color: #f59e0b;
+  border-color: #d97706;
+}
+
+.vis-item.timeline-item-institution {
+  background-color: #ec4899;
+  border-color: #db2777;
+}
+
+.vis-item.timeline-item-concept {
+  background-color: #06b6d4;
+  border-color: #0891b2;
+}
+
+.vis-item.timeline-item-deity {
+  background-color: #8b5cf6;
+  border-color: #7c3aed;
+}
+
+/* ============================================================================
+   CONFIDENCE LEVEL STYLES
+   ============================================================================ */
+
+.vis-item.confidence-high {
+  opacity: 1;
+}
+
+.vis-item.confidence-medium {
+  opacity: 0.75;
+}
+
+.vis-item.confidence-low {
+  opacity: 0.5;
+}
+
+/* ============================================================================
+   TIMELINE GROUPS
+   ============================================================================ */
+
+.vis-labelset .vis-label {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+  background: hsl(var(--muted));
+}
+
+.vis-labelset .vis-label .vis-inner {
+  padding: 5px 10px;
+}
+
+/* Group-specific styles */
+.vis-label.timeline-group-person {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.vis-label.timeline-group-event {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.vis-label.timeline-group-text {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.vis-label.timeline-group-place {
+  background: rgba(168, 85, 247, 0.1);
+}
+
+.vis-label.timeline-group-lineage {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.vis-label.timeline-group-institution {
+  background: rgba(236, 72, 153, 0.1);
+}
+
+/* ============================================================================
+   TIMELINE TOOLTIPS
+   ============================================================================ */
+
+.vis-tooltip {
+  background: hsl(var(--popover));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  color: hsl(var(--popover-foreground));
+  padding: 8px 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  font-size: 12px;
+  z-index: 1000;
+}
+
+/* ============================================================================
+   CUSTOM TIMELINE COMPONENTS
+   ============================================================================ */
+
+/* Timeline page layout */
+.timeline-page {
+  min-height: 100vh;
+}
+
+/* Timeline viewer container */
+.timeline-viewer-container {
+  width: 100%;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+/* Timeline canvas */
+.timeline-canvas {
+  width: 100%;
+  height: 600px;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* Timeline loading state */
+.timeline-loading {
+  padding: 2rem;
+}
+
+/* Timeline info */
+.timeline-info {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+
+/* ============================================================================
+   FILTERS
+   ============================================================================ */
+
+.timeline-filters {
+  max-height: calc(100vh - 8rem);
+  overflow-y: auto;
+}
+
+.filter-section {
+  padding: 0.5rem 0;
+}
+
+/* ============================================================================
+   DETAILS
+   ============================================================================ */
+
+.timeline-details {
+  max-height: calc(100vh - 8rem);
+}
+
+.timeline-details-empty {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================================================
+   CONTROLS
+   ============================================================================ */
+
+.timeline-controls {
+  background: hsl(var(--card));
+}
+
+/* ============================================================================
+   RESPONSIVE STYLES
+   ============================================================================ */
+
+/* Tablet and below */
+@media (max-width: 1024px) {
+  .timeline-canvas {
+    height: 500px;
+  }
+
+  .timeline-filters,
+  .timeline-details {
+    max-height: none;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .timeline-canvas {
+    height: 400px;
+  }
+
+  .vis-item-content {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+
+  .timeline-controls {
+    overflow-x: auto;
+  }
+}
+
+/* ============================================================================
+   DARK MODE ADJUSTMENTS
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  .vis-timeline {
+    background: hsl(var(--background));
+  }
+
+  .vis-item {
+    filter: brightness(0.9);
+  }
+
+  .vis-item.vis-selected {
+    filter: brightness(1.1);
+  }
+}
+
+/* ============================================================================
+   PRINT STYLES
+   ============================================================================ */
+
+@media print {
+  .timeline-controls,
+  .timeline-filters,
+  .timeline-details {
+    display: none;
+  }
+
+  .timeline-canvas {
+    height: auto;
+    page-break-inside: avoid;
+  }
+
+  .timeline-page header,
+  .timeline-page footer {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   ACCESSIBILITY
+   ============================================================================ */
+
+.vis-item:focus {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.vis-item.vis-selected:focus {
+  outline: 3px solid hsl(var(--ring));
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .vis-item {
+    border-width: 3px;
+  }
+
+  .vis-timeline {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .vis-item {
+    transition: none;
+  }
+
+  .vis-timeline {
+    transition: none;
+  }
+}

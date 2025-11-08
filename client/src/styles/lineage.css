@@ -1,0 +1,435 @@
+/**
+ * Lineage Visualization Styles
+ *
+ * Custom styles for the lineage graph visualization components.
+ * Includes vis-network overrides and component-specific styling.
+ */
+
+/* ============================================================================
+   Page Layout
+   ============================================================================ */
+
+.lineage-page {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ============================================================================
+   Visualizer Container
+   ============================================================================ */
+
+.lineage-visualizer {
+  position: relative;
+  background: radial-gradient(circle at 50% 50%,
+    hsl(var(--muted) / 0.05) 0%,
+    hsl(var(--background)) 100%);
+}
+
+.lineage-visualizer canvas {
+  outline: none;
+  cursor: grab;
+}
+
+.lineage-visualizer canvas:active {
+  cursor: grabbing;
+}
+
+/* Loading State */
+.lineage-visualizer-loading {
+  background: radial-gradient(circle at 50% 50%,
+    hsl(var(--muted) / 0.1) 0%,
+    hsl(var(--background)) 100%);
+}
+
+/* Error State */
+.lineage-visualizer-error {
+  background: hsl(var(--background));
+}
+
+/* Empty State */
+.lineage-visualizer-empty {
+  background: radial-gradient(circle at 50% 50%,
+    hsl(var(--muted) / 0.05) 0%,
+    hsl(var(--background)) 100%);
+}
+
+/* ============================================================================
+   vis-network Overrides
+   ============================================================================ */
+
+/* Navigation buttons */
+.vis-network .vis-navigation {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+}
+
+.vis-network .vis-button {
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  color: hsl(var(--foreground));
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
+
+.vis-network .vis-button:hover {
+  background: hsl(var(--accent));
+  border-color: hsl(var(--primary));
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.vis-network .vis-button:active {
+  transform: scale(0.95);
+}
+
+/* Tooltip styling */
+.vis-tooltip {
+  position: absolute;
+  padding: 0;
+  background: hsl(var(--popover));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  pointer-events: none;
+  z-index: 50;
+  max-width: 320px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: hsl(var(--popover-foreground));
+}
+
+/* Tibetan font for tooltips */
+.font-tibetan {
+  font-family: 'Jomolhari', 'Noto Serif Tibetan', serif;
+}
+
+/* ============================================================================
+   Controls Panel
+   ============================================================================ */
+
+.lineage-controls {
+  height: 100%;
+}
+
+.lineage-controls .card-header {
+  padding-bottom: 12px;
+}
+
+.lineage-controls .card-content {
+  padding-top: 0;
+}
+
+/* Toggle group styling */
+.lineage-controls .toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  width: 100%;
+}
+
+/* Slider customization */
+.lineage-controls input[type="range"] {
+  cursor: pointer;
+}
+
+.lineage-controls input[type="range"]::-webkit-slider-thumb {
+  transition: transform 0.2s;
+}
+
+.lineage-controls input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+/* ============================================================================
+   Search Component
+   ============================================================================ */
+
+.lineage-search {
+  position: relative;
+}
+
+.lineage-search input {
+  transition: all 0.2s;
+}
+
+.lineage-search input:focus {
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+}
+
+/* Search results dropdown */
+.lineage-search .search-results {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.lineage-search .search-results button {
+  transition: all 0.15s;
+}
+
+.lineage-search .search-results button:hover {
+  transform: translateX(4px);
+}
+
+/* Compact search */
+.lineage-search-compact {
+  width: 100%;
+}
+
+/* ============================================================================
+   Node Details Panel
+   ============================================================================ */
+
+.lineage-node-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.lineage-node-details .card-header {
+  flex-shrink: 0;
+}
+
+.lineage-node-details .card-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Details sections */
+.lineage-node-details dl {
+  display: grid;
+  gap: 12px;
+}
+
+.lineage-node-details dt {
+  font-weight: 600;
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 4px;
+}
+
+.lineage-node-details dd {
+  font-size: 14px;
+  color: hsl(var(--foreground));
+}
+
+/* Confidence bar */
+.lineage-node-details .confidence-bar {
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: hsl(var(--muted));
+}
+
+.lineage-node-details .confidence-fill {
+  height: 100%;
+  background: hsl(var(--primary));
+  transition: width 0.3s ease;
+}
+
+/* ============================================================================
+   Responsive Design
+   ============================================================================ */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .lineage-page aside {
+    width: 280px;
+  }
+
+  .lineage-search {
+    width: 100%;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .lineage-page {
+    flex-direction: column;
+  }
+
+  .lineage-page header {
+    padding: 12px 16px;
+  }
+
+  .lineage-page aside {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto;
+    max-height: 50vh;
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid hsl(var(--border));
+    z-index: 40;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+  }
+
+  .lineage-page aside.open {
+    transform: translateY(0);
+  }
+
+  .lineage-page footer {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   Animations
+   ============================================================================ */
+
+/* Fade in */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.lineage-visualizer {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Slide up */
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.lineage-node-details {
+  animation: slideUp 0.3s ease;
+}
+
+/* Pulse (for loading) */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.lineage-visualizer-loading > div {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ============================================================================
+   Utility Classes
+   ============================================================================ */
+
+/* Tradition color dots */
+.tradition-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.tradition-dot.nyingma {
+  background-color: #dc2626;
+}
+
+.tradition-dot.kagyu {
+  background-color: #7c3aed;
+}
+
+.tradition-dot.sakya {
+  background-color: #2563eb;
+}
+
+.tradition-dot.gelug {
+  background-color: #ca8a04;
+}
+
+.tradition-dot.bon {
+  background-color: #059669;
+}
+
+.tradition-dot.rime {
+  background-color: #9333ea;
+}
+
+.tradition-dot.kadam {
+  background-color: #ea580c;
+}
+
+.tradition-dot.jonang {
+  background-color: #4f46e5;
+}
+
+/* Confidence indicators */
+.confidence-high {
+  color: #059669;
+}
+
+.confidence-medium {
+  color: #ca8a04;
+}
+
+.confidence-low {
+  color: #dc2626;
+}
+
+/* ============================================================================
+   Print Styles
+   ============================================================================ */
+
+@media print {
+  .lineage-page header,
+  .lineage-page footer,
+  .lineage-controls,
+  .lineage-node-details {
+    display: none;
+  }
+
+  .lineage-visualizer {
+    width: 100%;
+    height: 100vh;
+    page-break-after: avoid;
+  }
+}
+
+/* ============================================================================
+   Accessibility
+   ============================================================================ */
+
+/* Focus visible styles */
+.lineage-page button:focus-visible,
+.lineage-page a:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .lineage-visualizer,
+  .lineage-node-details,
+  .lineage-search .search-results button {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .lineage-visualizer {
+    background: hsl(var(--background));
+  }
+
+  .vis-tooltip {
+    border-width: 2px;
+  }
+}

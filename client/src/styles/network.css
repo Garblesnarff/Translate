@@ -1,0 +1,353 @@
+/**
+ * Network Graph Styles
+ *
+ * Custom styles for the network visualization components.
+ * Complements Tailwind CSS classes with graph-specific styling.
+ */
+
+/* ============================================================================
+   Page Layout
+   ============================================================================ */
+
+.network-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f9fafb; /* gray-50 */
+}
+
+.network-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.network-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ============================================================================
+   Sidebars
+   ============================================================================ */
+
+.network-sidebar {
+  background-color: white;
+  border-right: 1px solid #e5e7eb; /* gray-200 */
+  overflow-y: auto;
+}
+
+.network-sidebar-left {
+  width: 320px;
+  border-right: 1px solid #e5e7eb;
+}
+
+.network-sidebar-right {
+  width: 320px;
+  border-left: 1px solid #e5e7eb;
+}
+
+/* ============================================================================
+   Main Graph Area
+   ============================================================================ */
+
+.network-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #fafafa;
+  background-image:
+    linear-gradient(#e5e7eb 1px, transparent 1px),
+    linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: -1px -1px;
+  position: relative;
+}
+
+/* ============================================================================
+   SVG Graph
+   ============================================================================ */
+
+.network-graph-svg {
+  background-color: transparent;
+  user-select: none;
+}
+
+.network-graph-group {
+  /* D3 transforms are applied here */
+}
+
+/* ============================================================================
+   Nodes
+   ============================================================================ */
+
+.network-node {
+  transition: filter 0.2s ease;
+}
+
+.network-node:hover {
+  filter: brightness(1.1);
+}
+
+.network-node.selected {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+}
+
+.network-node.highlighted {
+  filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.6));
+}
+
+.node-circle {
+  transition: stroke-width 0.2s ease, stroke 0.2s ease;
+}
+
+.node-label {
+  font-family: system-ui, -apple-system, sans-serif;
+  paint-order: stroke fill;
+  stroke: white;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* ============================================================================
+   Links
+   ============================================================================ */
+
+.network-link {
+  transition: opacity 0.2s ease;
+}
+
+.network-link:hover {
+  opacity: 1 !important;
+}
+
+.network-link:hover .link-line {
+  stroke-width: 4px !important;
+}
+
+.link-line {
+  transition: stroke-width 0.2s ease, stroke 0.2s ease;
+}
+
+.link-hover-target {
+  cursor: pointer;
+}
+
+/* ============================================================================
+   Loading State
+   ============================================================================ */
+
+.network-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #6b7280; /* gray-500 */
+}
+
+/* ============================================================================
+   Responsive Design
+   ============================================================================ */
+
+@media (max-width: 1280px) {
+  .network-sidebar-left,
+  .network-sidebar-right {
+    width: 280px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .network-layout {
+    flex-direction: column;
+  }
+
+  .network-sidebar {
+    width: 100%;
+    max-height: 300px;
+    border-right: none;
+    border-left: none;
+  }
+
+  .network-sidebar-left {
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .network-sidebar-right {
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .network-main {
+    min-height: 500px;
+  }
+}
+
+/* ============================================================================
+   Control Panel Scrolling
+   ============================================================================ */
+
+.network-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.network-sidebar::-webkit-scrollbar-track {
+  background: #f3f4f6; /* gray-100 */
+}
+
+.network-sidebar::-webkit-scrollbar-thumb {
+  background: #d1d5db; /* gray-300 */
+  border-radius: 4px;
+}
+
+.network-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af; /* gray-400 */
+}
+
+/* ============================================================================
+   Animations
+   ============================================================================ */
+
+@keyframes pulse-node {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.network-node.pulsing {
+  animation: pulse-node 1.5s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.network-node,
+.network-link {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* ============================================================================
+   Performance Optimizations
+   ============================================================================ */
+
+.network-graph-svg {
+  /* Enable GPU acceleration */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.network-node,
+.network-link {
+  /* Optimize rendering for many elements */
+  pointer-events: all;
+}
+
+/* Reduce rendering cost for hidden labels */
+.node-label[visibility="hidden"] {
+  display: none;
+}
+
+/* ============================================================================
+   Print Styles
+   ============================================================================ */
+
+@media print {
+  .network-sidebar-left,
+  .network-sidebar-right {
+    display: none;
+  }
+
+  .network-header {
+    border-bottom: 2px solid black;
+  }
+
+  .network-main {
+    background: white;
+    background-image: none;
+  }
+
+  .network-graph-svg {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* ============================================================================
+   Dark Mode Support (Future)
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  .network-page {
+    background-color: #111827; /* gray-900 */
+  }
+
+  .network-header,
+  .network-sidebar {
+    background-color: #1f2937; /* gray-800 */
+    border-color: #374151; /* gray-700 */
+  }
+
+  .network-main {
+    background-color: #0f1419;
+    background-image:
+      linear-gradient(#374151 1px, transparent 1px),
+      linear-gradient(90deg, #374151 1px, transparent 1px);
+  }
+
+  .node-label {
+    stroke: #1f2937;
+    fill: #f3f4f6;
+  }
+}
+
+/* ============================================================================
+   Accessibility
+   ============================================================================ */
+
+.network-node:focus-visible {
+  outline: 3px solid #3b82f6; /* blue-500 */
+  outline-offset: 2px;
+}
+
+.network-link:focus-visible {
+  outline: 2px solid #3b82f6;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .network-node {
+    stroke-width: 3px !important;
+  }
+
+  .network-link {
+    stroke-width: 3px !important;
+  }
+
+  .node-label {
+    stroke-width: 4px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .network-node,
+  .network-link,
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
