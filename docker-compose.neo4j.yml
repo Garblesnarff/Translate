@@ -1,0 +1,206 @@
+version: '3.8'
+
+# Neo4j Graph Database - Tibetan Buddhist Knowledge Graph
+# Standalone compose file for Neo4j graph database with APOC and GDS plugins
+#
+# Usage:
+#   Start Neo4j: docker-compose -f docker-compose.neo4j.yml up -d
+#   Stop Neo4j:  docker-compose -f docker-compose.neo4j.yml down
+#   Logs:        docker-compose -f docker-compose.neo4j.yml logs -f neo4j
+#
+# Access Neo4j Browser: http://localhost:7474
+# Bolt Protocol:        bolt://localhost:7687
+
+services:
+  # Neo4j Graph Database
+  neo4j:
+    image: neo4j:5.25.1
+    container_name: tibetan-translate-neo4j
+    hostname: neo4j
+
+    ports:
+      - "7474:7474"  # HTTP - Neo4j Browser
+      - "7687:7687"  # Bolt Protocol
+
+    environment:
+      # Authentication
+      # Default: neo4j/neo4j (must change on first login)
+      # Override with NEO4J_AUTH in .env file
+      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/tibetan_knowledge_graph_2025}
+
+      # Database Configuration
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      NEO4J_server_default__database: ${NEO4J_DATABASE:-neo4j}
+
+      # Plugins - APOC and Graph Data Science
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+      NEO4JLABS_PLUGINS: '["apoc", "graph-data-science"]'
+
+      # APOC Configuration
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*,gds.*
+      NEO4J_dbms_security_procedures_allowlist: apoc.*,gds.*
+
+      # Memory Configuration (adjust based on your system)
+      # Heap size: Recommended 50% of available RAM (max 31GB)
+      NEO4J_server_memory_heap_initial__size: ${NEO4J_HEAP_INITIAL:-512m}
+      NEO4J_server_memory_heap_max__size: ${NEO4J_HEAP_MAX:-2g}
+
+      # Page cache: Recommended 50% of available RAM
+      NEO4J_server_memory_pagecache_size: ${NEO4J_PAGECACHE:-1g}
+
+      # Transaction Log Configuration
+      NEO4J_db_tx__log_rotation_retention__policy: "7 days"
+      NEO4J_db_tx__log_rotation_size: "250M"
+
+      # Query Performance
+      NEO4J_server_db_query__cache__size: 1000
+      NEO4J_server_cypher_min__replan__interval: 10s
+
+      # Connection Pool
+      NEO4J_server_bolt_thread__pool__min__size: 5
+      NEO4J_server_bolt_thread__pool__max__size: 400
+      NEO4J_server_bolt_listen__address: 0.0.0.0:7687
+
+      # HTTP Configuration
+      NEO4J_server_http_listen__address: 0.0.0.0:7474
+
+      # Logging
+      NEO4J_server_logs_user_stdout__enabled: "true"
+      NEO4J_server_logs_debug_level: ${NEO4J_LOG_LEVEL:-INFO}
+
+      # Security
+      NEO4J_dbms_security_auth__enabled: "true"
+      NEO4J_dbms_connector_bolt_tls__level: OPTIONAL
+
+    volumes:
+      # Persistent data storage
+      - neo4j_data:/data
+
+      # Transaction logs
+      - neo4j_logs:/logs
+
+      # Import directory (for CSV/JSON imports)
+      - neo4j_import:/var/lib/neo4j/import
+
+      # Backups (for neo4j-admin dump/load)
+      - neo4j_backups:/backups
+
+      # Plugins (auto-installed, but keeping for custom plugins)
+      - neo4j_plugins:/plugins
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    restart: unless-stopped
+
+    networks:
+      - tibetan-network
+
+    # Resource Limits (adjust based on your system)
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '2'
+          memory: 2G
+
+    # Labels for documentation
+    labels:
+      - "com.tibetan-translate.service=neo4j"
+      - "com.tibetan-translate.description=Tibetan Buddhist Knowledge Graph Database"
+      - "com.tibetan-translate.version=5.25.1"
+
+# Named Volumes
+volumes:
+  neo4j_data:
+    driver: local
+    labels:
+      - "com.tibetan-translate.volume=neo4j-data"
+      - "com.tibetan-translate.description=Neo4j graph database persistent storage"
+
+  neo4j_logs:
+    driver: local
+    labels:
+      - "com.tibetan-translate.volume=neo4j-logs"
+      - "com.tibetan-translate.description=Neo4j query and debug logs"
+
+  neo4j_import:
+    driver: local
+    labels:
+      - "com.tibetan-translate.volume=neo4j-import"
+      - "com.tibetan-translate.description=CSV and JSON import directory"
+
+  neo4j_backups:
+    driver: local
+    labels:
+      - "com.tibetan-translate.volume=neo4j-backups"
+      - "com.tibetan-translate.description=Database dumps and backups"
+
+  neo4j_plugins:
+    driver: local
+    labels:
+      - "com.tibetan-translate.volume=neo4j-plugins"
+      - "com.tibetan-translate.description=Custom Neo4j plugins"
+
+# Networks
+networks:
+  tibetan-network:
+    driver: bridge
+    name: tibetan-network
+
+# ============================================
+# Quick Start Commands
+# ============================================
+#
+# 1. Start Neo4j:
+#    docker-compose -f docker-compose.neo4j.yml up -d
+#
+# 2. View logs:
+#    docker-compose -f docker-compose.neo4j.yml logs -f neo4j
+#
+# 3. Access Neo4j Browser:
+#    Open http://localhost:7474 in your browser
+#    Default credentials: neo4j / tibetan_knowledge_graph_2025
+#    (Change password on first login)
+#
+# 4. Verify APOC plugin:
+#    RETURN apoc.version() AS version;
+#
+# 5. Verify GDS plugin:
+#    RETURN gds.version() AS version;
+#
+# 6. Stop Neo4j:
+#    docker-compose -f docker-compose.neo4j.yml down
+#
+# 7. Stop and remove volumes (WARNING: deletes all data):
+#    docker-compose -f docker-compose.neo4j.yml down -v
+#
+# 8. Backup database:
+#    docker exec tibetan-translate-neo4j neo4j-admin database dump neo4j --to-path=/backups
+#
+# 9. Restore from backup:
+#    docker exec tibetan-translate-neo4j neo4j-admin database load neo4j --from-path=/backups
+#
+# 10. Initialize schema:
+#     npm run init:neo4j
+#
+# ============================================
+# Production Deployment Notes
+# ============================================
+#
+# 1. Change default password in NEO4J_AUTH
+# 2. Enable TLS/SSL for production (see Neo4j docs)
+# 3. Adjust memory settings based on dataset size
+# 4. Set up automated backups
+# 5. Monitor disk usage for transaction logs
+# 6. Consider clustering for high availability
+# 7. Use secrets management for credentials
+# 8. Configure firewall rules (ports 7474, 7687)
+#
+# ============================================

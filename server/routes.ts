@@ -56,6 +56,38 @@ import {
   getRecentExtractionJobs
 } from './controllers/metricsController';
 
+import {
+  handleFullSync,
+  handleIncrementalSync,
+  handleSyncEntity,
+  handleSyncRelationship,
+  handleConsistencyCheck,
+  handleSyncStatus
+} from './controllers/syncController';
+
+import {
+  getLineage,
+  getIncarnationLine,
+  getShortestPath,
+  getAllPaths,
+  getNetwork,
+  getContemporaries,
+  getTimeline,
+  getEntityTimeline,
+  getTextsByAuthor,
+  getCitationNetwork,
+  getNearby,
+  getPersonJourney,
+  getMostInfluential,
+  detectCommunities,
+  suggestRelationships,
+  searchEntities,
+  customQuery,
+  getQueryMetrics,
+  getSlowQueries,
+  clearCache
+} from './controllers/graphQueryController';
+
 // Configure rate limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -292,6 +324,185 @@ export function registerRoutes(app: Express) {
     limiter,
     requestLogger,
     getRecentExtractionJobs
+  );
+
+  // ====================================
+  // Graph Synchronization Routes
+  // ====================================
+
+  // Full synchronization (PostgreSQL → Neo4j)
+  app.post('/api/sync/full',
+    limiter,
+    requestLogger,
+    handleFullSync
+  );
+
+  // Incremental synchronization
+  app.post('/api/sync/incremental',
+    limiter,
+    requestLogger,
+    handleIncrementalSync
+  );
+
+  // Sync single entity
+  app.post('/api/sync/entity/:entityId',
+    limiter,
+    requestLogger,
+    handleSyncEntity
+  );
+
+  // Sync single relationship
+  app.post('/api/sync/relationship/:relationshipId',
+    limiter,
+    requestLogger,
+    handleSyncRelationship
+  );
+
+  // Check consistency between databases
+  app.get('/api/sync/consistency',
+    limiter,
+    requestLogger,
+    handleConsistencyCheck
+  );
+
+  // Get sync status and metrics
+  app.get('/api/sync/status',
+    limiter,
+    requestLogger,
+    handleSyncStatus
+  );
+
+  // ====================================
+  // Graph Query Routes (Phase 4.4)
+  // ====================================
+
+  // LINEAGE QUERIES
+  app.get('/api/graph/lineage/:personId',
+    limiter,
+    requestLogger,
+    getLineage
+  );
+
+  app.get('/api/graph/incarnation/:personId',
+    limiter,
+    requestLogger,
+    getIncarnationLine
+  );
+
+  // PATH QUERIES
+  app.get('/api/graph/path',
+    limiter,
+    requestLogger,
+    getShortestPath
+  );
+
+  app.get('/api/graph/paths/all',
+    limiter,
+    requestLogger,
+    getAllPaths
+  );
+
+  // NETWORK QUERIES
+  app.get('/api/graph/network/:centerId',
+    limiter,
+    requestLogger,
+    getNetwork
+  );
+
+  app.get('/api/graph/contemporaries/:personId',
+    limiter,
+    requestLogger,
+    getContemporaries
+  );
+
+  // TIMELINE QUERIES
+  app.get('/api/graph/timeline',
+    limiter,
+    requestLogger,
+    getTimeline
+  );
+
+  app.get('/api/graph/entity/:entityId/timeline',
+    limiter,
+    requestLogger,
+    getEntityTimeline
+  );
+
+  // AUTHORSHIP QUERIES
+  app.get('/api/graph/author/:authorId/texts',
+    limiter,
+    requestLogger,
+    getTextsByAuthor
+  );
+
+  app.get('/api/graph/text/:textId/citations',
+    limiter,
+    requestLogger,
+    getCitationNetwork
+  );
+
+  // GEOGRAPHIC QUERIES
+  app.get('/api/graph/nearby',
+    limiter,
+    requestLogger,
+    getNearby
+  );
+
+  app.get('/api/graph/person/:personId/journey',
+    limiter,
+    requestLogger,
+    getPersonJourney
+  );
+
+  // ANALYSIS QUERIES
+  app.get('/api/graph/influential',
+    limiter,
+    requestLogger,
+    getMostInfluential
+  );
+
+  app.get('/api/graph/communities',
+    limiter,
+    requestLogger,
+    detectCommunities
+  );
+
+  app.get('/api/graph/suggest-relationships/:entityId',
+    limiter,
+    requestLogger,
+    suggestRelationships
+  );
+
+  // SEARCH QUERIES
+  app.get('/api/graph/search',
+    limiter,
+    requestLogger,
+    searchEntities
+  );
+
+  app.post('/api/graph/query',
+    limiter,
+    requestLogger,
+    customQuery
+  );
+
+  // METRICS & ADMIN
+  app.get('/api/graph/metrics',
+    limiter,
+    requestLogger,
+    getQueryMetrics
+  );
+
+  app.get('/api/graph/slow-queries',
+    limiter,
+    requestLogger,
+    getSlowQueries
+  );
+
+  app.post('/api/graph/cache/clear',
+    limiter,
+    requestLogger,
+    clearCache
   );
 
   // Register error handler
