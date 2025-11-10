@@ -72,50 +72,43 @@ export class MultiProviderAIService {
       });
     }
 
-    // OpenRouter providers
+    // OpenRouter providers - configured to use free-tier Chinese-origin models
     if (process.env.OPENROUTER_API_KEY) {
-      this.providers.set('openrouter-gpt-oss', {
-        apiKey: process.env.OPENROUTER_API_KEY,
-        baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
-        modelId: 'openai/gpt-oss-20b:free',
-        maxTokens: 4000,
-        contextWindow: 131072,
-        requestsPerMinute: 200,
-        tokensPerMinute: 50000,
-        dailyLimit: 1000000
-      });
-
-      this.providers.set('openrouter-kimi-k2', {
+      // 1) Kimi K2 Thinking (Chinese, strong reasoning)
+      this.providers.set('openrouter-kimi-k2-thinking', {
         apiKey: process.env.OPENROUTER_API_KEY,
         baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
         modelId: 'moonshotai/kimi-k2:free',
         maxTokens: 4000,
         contextWindow: 33000,
-        requestsPerMinute: 200,
-        tokensPerMinute: 50000,
-        dailyLimit: 1000000
+        requestsPerMinute: 60,
+        tokensPerMinute: 20000,
+        // Keep under 1000 free requests/day globally in practice via app-level routing
+        dailyLimit: 800
       });
 
-      this.providers.set('openrouter-deepseek-r1', {
+      // 2) DeepSeek latest free chat model (Chinese)
+      this.providers.set('openrouter-deepseek-chat', {
         apiKey: process.env.OPENROUTER_API_KEY,
         baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
-        modelId: 'tngtech/deepseek-r1t2-chimera:free',
+        modelId: 'deepseek/deepseek-chat:free',
         maxTokens: 4000,
-        contextWindow: 164000,
-        requestsPerMinute: 200,
-        tokensPerMinute: 50000,
-        dailyLimit: 1000000
+        contextWindow: 131072,
+        requestsPerMinute: 60,
+        tokensPerMinute: 20000,
+        dailyLimit: 800
       });
 
-      this.providers.set('openrouter-hunyuan', {
+      // 3) Qwen top-tier instruct (Chinese)
+      this.providers.set('openrouter-qwen', {
         apiKey: process.env.OPENROUTER_API_KEY,
         baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
-        modelId: 'tencent/hunyuan-a13b-instruct:free',
+        modelId: 'qwen/qwen2.5-72b-instruct:free',
         maxTokens: 4000,
-        contextWindow: 33000,
-        requestsPerMinute: 200,
-        tokensPerMinute: 50000,
-        dailyLimit: 1000000
+        contextWindow: 131072,
+        requestsPerMinute: 60,
+        tokensPerMinute: 20000,
+        dailyLimit: 800
       });
     }
 
@@ -260,12 +253,15 @@ export class MultiProviderAIService {
    */
   private selectAvailableProviders(maxProviders: number = 3): string[] {
     const priorityOrder = [
-      'cerebras-qwen3',     // Best free option
-      'cerebras-gpt-oss',   // Good alternative
-      'groq-qwen3',         // 500k daily tokens
-      'openrouter-gpt-oss', // When it works
-      'openrouter-deepseek-r1', // Backup OpenRouter
-      'groq-deepseek-r1'    // 100k daily tokens
+      // Prefer strong Chinese-origin OpenRouter models first (Kimi, DeepSeek, Qwen)
+      'openrouter-deepseek-chat',
+      'openrouter-qwen',
+      'openrouter-kimi-k2-thinking',
+      // Then fall back to other infra if configured
+      'cerebras-qwen3',
+      'cerebras-gpt-oss',
+      'groq-qwen3',
+      'groq-deepseek-r1'
     ];
     
     const available = priorityOrder.filter(providerId => {
