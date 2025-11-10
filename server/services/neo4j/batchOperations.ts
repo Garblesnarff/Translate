@@ -259,7 +259,7 @@ export async function batchUpsertRelationships(
   const relsByType = new Map<string, Relationship[]>();
 
   for (const rel of relationships) {
-    const relType = predicateToRelType(rel.predicate);
+    const relType = predicateToRelType(rel.predicate as any);
     if (!relsByType.has(relType)) {
       relsByType.set(relType, []);
     }

@@ -47,7 +47,7 @@ export class RedisCache implements CacheProvider {
     this.config = {
       host: config.host ?? 'localhost',
       port: config.port ?? 6379,
-      password: config.password ?? undefined,
+      password: config.password,
       db: config.db ?? 0,
       connectTimeout: config.connectTimeout ?? 5000,
       tls: config.tls ?? false,
@@ -55,7 +55,7 @@ export class RedisCache implements CacheProvider {
       maxSize: config.maxSize ?? 10000,
       defaultTtl: config.defaultTtl ?? 3600,
       enableStats: config.enableStats ?? true,
-    };
+    } as Required<RedisCacheConfig>;
 
     // Start connection (async, don't wait)
     this.connect().catch((error) => {
@@ -377,3 +377,6 @@ export class RedisCache implements CacheProvider {
 export function createRedisCache(config?: RedisCacheConfig): RedisCache {
   return new RedisCache(config);
 }
+
+// Re-export the config type
+export type { RedisCacheConfig } from './types.js';

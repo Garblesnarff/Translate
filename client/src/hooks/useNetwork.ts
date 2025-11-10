@@ -101,9 +101,9 @@ function transformToD3Links(
         properties: rel.properties,
         showLabel: false,
         highlighted: false,
-      };
+      } as D3Link;
     })
-    .filter((link): link is D3Link => link !== null);
+    .filter((link): link is D3Link => link !== null) as D3Link[];
 }
 
 // ============================================================================

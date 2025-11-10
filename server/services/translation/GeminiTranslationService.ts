@@ -77,7 +77,7 @@ export class GeminiTranslationService {
     const rawTranslation = response.text();
 
     // Enhanced confidence calculation
-    const confidence = calculateEnhancedConfidence(rawTranslation, chunk.content);
+    const confidence = await calculateEnhancedConfidence(rawTranslation, chunk.content);
 
     return {
       translation: rawTranslation,

@@ -93,7 +93,8 @@ export const getShortestPath = asyncHandler(async (req: Request, res: Response) 
   const { from, to, maxLength, relationshipTypes } = req.query;
 
   if (!from || !to) {
-    return res.status(400).json({ error: 'Missing required parameters: from, to' });
+    res.status(400).json({ error: 'Missing required parameters: from, to' });
+    return;
   }
 
   const service = getQueryService();
@@ -108,7 +109,8 @@ export const getShortestPath = asyncHandler(async (req: Request, res: Response) 
   const path = await service.findShortestPath(from as string, to as string, options);
 
   if (!path) {
-    return res.status(404).json({ error: 'No path found between entities' });
+    res.status(404).json({ error: 'No path found between entities' });
+    return;
   }
 
   res.json(cleanForResponse(path));
@@ -122,7 +124,8 @@ export const getAllPaths = asyncHandler(async (req: Request, res: Response) => {
   const { from, to, maxLength, limit } = req.query;
 
   if (!from || !to) {
-    return res.status(400).json({ error: 'Missing required parameters: from, to' });
+    res.status(400).json({ error: 'Missing required parameters: from, to' });
+    return;
   }
 
   const service = getQueryService();
@@ -198,7 +201,8 @@ export const getTimeline = asyncHandler(async (req: Request, res: Response) => {
   const { start, end, entityTypes, location, tradition } = req.query;
 
   if (!start || !end) {
-    return res.status(400).json({ error: 'Missing required parameters: start, end' });
+    res.status(400).json({ error: 'Missing required parameters: start, end' });
+    return;
   }
 
   const service = getQueryService();
@@ -285,7 +289,8 @@ export const getNearby = asyncHandler(async (req: Request, res: Response) => {
   const { lat, lon, radius, entityTypes } = req.query;
 
   if (!lat || !lon || !radius) {
-    return res.status(400).json({ error: 'Missing required parameters: lat, lon, radius' });
+    res.status(400).json({ error: 'Missing required parameters: lat, lon, radius' });
+    return;
   }
 
   const service = getQueryService();
@@ -396,7 +401,8 @@ export const searchEntities = asyncHandler(async (req: Request, res: Response) =
   const { q, entityTypes, fuzzy, limit } = req.query;
 
   if (!q) {
-    return res.status(400).json({ error: 'Missing required parameter: q' });
+    res.status(400).json({ error: 'Missing required parameter: q' });
+    return;
   }
 
   const service = getQueryService();
@@ -420,7 +426,8 @@ export const customQuery = asyncHandler(async (req: Request, res: Response) => {
   const { query, params } = req.body;
 
   if (!query) {
-    return res.status(400).json({ error: 'Missing required field: query' });
+    res.status(400).json({ error: 'Missing required field: query' });
+    return;
   }
 
   // Security: Only allow read queries (MATCH, RETURN, WITH, etc.)
@@ -429,9 +436,10 @@ export const customQuery = asyncHandler(async (req: Request, res: Response) => {
 
   for (const keyword of writeKeywords) {
     if (normalizedQuery.includes(keyword)) {
-      return res.status(403).json({
+      res.status(403).json({
         error: `Write operation not allowed: ${keyword}. Only read queries are permitted.`,
       });
+      return;
     }
   }
 

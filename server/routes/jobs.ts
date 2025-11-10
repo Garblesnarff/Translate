@@ -108,7 +108,7 @@ export function createJobRoutes(jobQueue: JobQueue, progressTracker: ProgressTra
         const status = await jobQueue.getStatus(jobId);
 
         // Get progress if job is processing
-        let progressInfo = null;
+        let progressInfo: any = null;
         if (status.status === 'processing') {
           try {
             progressInfo = await progressTracker.getProgress(jobId);

@@ -14,11 +14,9 @@ import neo4j, {
   Session,
   Transaction,
   Result,
-  QueryResult,
   Integer,
   auth,
   Config,
-  SessionMode,
   ManagedTransaction,
   Record as Neo4jRecord
 } from 'neo4j-driver';
@@ -205,7 +203,7 @@ export class Neo4jClient {
     try {
       session = this.driver.session({
         database: this.config.database,
-        defaultAccessMode: SessionMode.READ
+        defaultAccessMode: "READ"
       });
 
       const result = await session.run('RETURN 1 AS health');
@@ -239,8 +237,8 @@ export class Neo4jClient {
         connected: this.isConnected,
         database: this.config.database || this.DEFAULT_DATABASE,
         serverInfo: {
-          address: serverInfo.address,
-          version: serverInfo.agent,
+          address: serverInfo.address || 'unknown',
+          version: serverInfo.agent || 'unknown',
           edition: 'community' // Can be detected via query
         }
       };
@@ -269,7 +267,7 @@ export class Neo4jClient {
     try {
       session = this.driver.session({
         database: this.config.database,
-        defaultAccessMode: SessionMode.READ
+        defaultAccessMode: "READ"
       });
 
       const result = await session.run(query, params);
@@ -302,7 +300,7 @@ export class Neo4jClient {
     try {
       session = this.driver.session({
         database: this.config.database,
-        defaultAccessMode: SessionMode.WRITE
+        defaultAccessMode: "WRITE"
       });
 
       const result = await session.run(query, params);
@@ -332,7 +330,7 @@ export class Neo4jClient {
     try {
       session = this.driver.session({
         database: this.config.database,
-        defaultAccessMode: SessionMode.READ
+        defaultAccessMode: "READ"
       });
 
       return await session.executeRead(work);
@@ -359,7 +357,7 @@ export class Neo4jClient {
     try {
       session = this.driver.session({
         database: this.config.database,
-        defaultAccessMode: SessionMode.WRITE
+        defaultAccessMode: "WRITE"
       });
 
       return await session.executeWrite(work);
@@ -597,4 +595,4 @@ export function resetNeo4jClient(): void {
 }
 
 // Export Neo4j types for convenience
-export { Integer, Session, Transaction, Result, QueryResult };
+export { Integer, Session, Transaction, Result };

@@ -309,10 +309,10 @@ export class QueryMetrics {
    * Export metrics to JSON
    */
   export(): {
-    summary: ReturnType<typeof this.getSummary>;
+    summary: any;
     stats: Record<string, QueryStats>;
     slowQueries: SlowQuery[];
-    errors: ReturnType<typeof this.getErrors>;
+    errors: any;
   } {
     return {
       summary: this.getSummary(),

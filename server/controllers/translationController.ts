@@ -401,16 +401,16 @@ export async function handleStreamingTranslation(
       }
     });
 
-    const translations = [];
-    const errors = [];
-    let confidenceScores = [];
+    const translations: any[] = [];
+    const errors: any[] = [];
+    let confidenceScores: number[] = [];
 
     // Process chunks with progress reporting
     for (let i = 0; i < chunks.length; i += 2) {
       // Check if translation was cancelled
       CancellationManager.throwIfCancelled(abortSignal, 'stream chunk processing');
 
-      const currentPair = [];
+      const currentPair: any[] = [];
       const startPage = i + 1;
       const endPage = Math.min(i + 2, chunks.length);
 

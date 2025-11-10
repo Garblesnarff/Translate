@@ -76,9 +76,12 @@ class CachedTranslationService {
 }
 
 // Usage
-const translationService = new CachedTranslationService();
-const result = await translationService.translate('བཀྲ་ཤིས་བདེ་ལེགས།');
-console.log(result);
+async function runExample() {
+  const translationService = new CachedTranslationService();
+  const result = await translationService.translate('བཀྲ་ཤིས་བདེ་ལེགས།');
+  console.log(result);
+}
+// runExample();
 
 // ============================================================================
 // Example 2: Embedding Caching

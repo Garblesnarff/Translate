@@ -26,7 +26,7 @@ import '../styles/lineage.css';
 export default function LineagePage() {
   // URL params - /lineage/:personId
   const [match, params] = useRoute('/lineage/:personId');
-  const personId = params?.personId || '';
+  const personId = (params as any)?.personId || '';
 
   // Visualization state
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('tree');

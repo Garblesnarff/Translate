@@ -9,7 +9,7 @@
  * - Compression metrics tracking
  */
 
-import * as compression from 'compression';
+import compression from 'compression';
 import type { Request, Response, NextFunction } from 'express';
 
 /**

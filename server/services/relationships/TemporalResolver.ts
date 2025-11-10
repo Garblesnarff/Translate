@@ -563,8 +563,8 @@ export class TemporalResolver {
       const entityName = afterDeathMatch[1];
       const entity = await this.findEntity(entityName, context?.knownEntities);
 
-      if (entity && entity.dates?.death?.year) {
-        const deathYear = entity.dates.death.year;
+      if (entity && (entity.dates as any)?.death?.year) {
+        const deathYear = (entity.dates as any).death.year;
         return {
           year: deathYear + 1,
           gregorianYear: deathYear + 1,
@@ -588,8 +588,8 @@ export class TemporalResolver {
       const entityName = beforeBirthMatch[1];
       const entity = await this.findEntity(entityName, context?.knownEntities);
 
-      if (entity && entity.dates?.birth?.year) {
-        const birthYear = entity.dates.birth.year;
+      if (entity && (entity.dates as any)?.birth?.year) {
+        const birthYear = (entity.dates as any).birth.year;
         return {
           year: birthYear - 1,
           gregorianYear: birthYear - 1,
@@ -617,8 +617,8 @@ export class TemporalResolver {
 
       if (entity) {
         const referenceYear = eventType.includes('born') || eventType.includes('birth')
-          ? entity.dates?.birth?.year
-          : entity.dates?.death?.year;
+          ? (entity.dates as any)?.birth?.year
+          : (entity.dates as any)?.death?.year;
 
         if (referenceYear) {
           return {
@@ -719,13 +719,14 @@ export class TemporalResolver {
     // Pattern: "season of year"
     const seasonYearMatch = expr.match(/(spring|summer|fall|autumn|winter)\s+of\s+(\d{3,4})/i);
     if (seasonYearMatch) {
-      const season = seasonYearMatch[1].toLowerCase() as Season;
+      const seasonRaw = seasonYearMatch[1].toLowerCase();
+      const season = (seasonRaw === 'autumn' ? 'fall' : seasonRaw) as Season;
       const year = parseInt(seasonYearMatch[2], 10);
 
       return {
         year,
         gregorianYear: year,
-        season: season === 'autumn' ? 'fall' : season,
+        season: season,
         precision: 'exact',
         confidence: 0.95,
         originalExpression: expr,
@@ -827,9 +828,9 @@ export class TemporalResolver {
     if (afterMatch || beforeMatch) {
       const eventType = (afterMatch || beforeMatch)![2];
       if (eventType.includes('born') || eventType.includes('birth')) {
-        referenceDate = referenceEntity.dates?.birth;
+        referenceDate = (referenceEntity.dates as any)?.birth;
       } else {
-        referenceDate = referenceEntity.dates?.death;
+        referenceDate = (referenceEntity.dates as any)?.death;
       }
     }
 

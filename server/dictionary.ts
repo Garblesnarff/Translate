@@ -191,7 +191,7 @@ export class TibetanDictionary {
         .from(this.tables.dictionary)
         .where((table: any) => table.english.like(`%${english}%`));
 
-      return results.map(entry => this.parseExtendedEntry(entry));
+      return results.map((entry: any) => this.parseExtendedEntry(entry));
     } catch (error) {
       console.error("Failed to search by English:", error);
       return [];
@@ -211,7 +211,7 @@ export class TibetanDictionary {
       const relevantEntries = allEntries
         .filter((entry: any) => text.includes(entry.tibetan))
         .map((entry: any) => this.parseExtendedEntry(entry))
-        .sort((a, b) => {
+        .sort((a: any, b: any) => {
           // Sort by frequency: common > uncommon > rare > undefined
           const freqOrder: Record<string, number> = { 'common': 0, 'uncommon': 1, 'rare': 2 };
           const aFreq = a.frequency ? freqOrder[a.frequency] ?? 3 : 3;

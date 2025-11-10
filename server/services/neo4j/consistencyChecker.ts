@@ -205,7 +205,7 @@ export class ConsistencyChecker {
 
     for (const id of pgIds) {
       if (!neo4jIds.has(id)) {
-        missingInNeo4j.push(id);
+        missingInNeo4j.push(id as string);
 
         if (missingInNeo4j.length >= maxToReport) {
           break;
@@ -257,7 +257,7 @@ export class ConsistencyChecker {
 
     for (const id of pgIds) {
       if (!neo4jIds.has(id)) {
-        missingInNeo4j.push(id);
+        missingInNeo4j.push(id as string);
 
         if (missingInNeo4j.length >= maxToReport) {
           break;

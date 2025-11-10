@@ -29,7 +29,7 @@ export function NetworkPage(): JSX.Element {
   const [, navigate] = useLocation();
 
   // Get entity ID from URL params or use default
-  const entityId = params.entityId || 'default-entity-id';
+  const entityId = (params as any).entityId || 'default-entity-id';
 
   // ============================================================================
   // State Management

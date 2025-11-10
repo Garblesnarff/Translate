@@ -10,7 +10,7 @@
  * @module server/services/confidence/MultiModelTranslator
  */
 
-import type { TranslationProvider, EmbeddingProvider } from '../../../tests/utils/mocks.js';
+import type { TranslationProvider, EmbeddingProvider } from '../../core/interfaces.js';
 import type { TranslationResult } from '../../../shared/types.js';
 import { ConsensusBuilder, type ConsensusResult } from './ConsensusBuilder.js';
 

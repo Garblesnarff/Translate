@@ -6,7 +6,7 @@
  */
 
 import { createHash } from 'crypto';
-import type { CacheKeys } from './types.js';
+import type { CacheKeys as CacheKeysType } from './types.js';
 
 /**
  * Hash text using SHA-256 for deterministic cache keys
@@ -73,7 +73,7 @@ export function sanitizeKeyComponent(component: string): string {
  * - embed:def456...  (embedding)
  * - dict:བཀྲ་ཤིས་བདེ་ལེགས  (dictionary)
  */
-export const CacheKeys: CacheKeys = {
+export const CacheKeys: CacheKeysType = {
   /**
    * Translation result cache key
    * Uses hash of source text for deterministic keys

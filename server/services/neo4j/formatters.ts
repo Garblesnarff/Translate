@@ -258,8 +258,7 @@ export function formatTimeline(results: any[]): TimelineItem[] {
         return null;
       }
     })
-    .filter((item): item is TimelineItem => item !== null)
-    .sort((a, b) => a.timestamp - b.timestamp);
+    .filter((item) => item !== null) as TimelineItem[];
 }
 
 /**
@@ -320,7 +319,7 @@ export function formatTexts(results: any[]): Text[] {
         return null;
       }
     })
-    .filter((text): text is Text => text !== null);
+    .filter((text) => text !== null) as Text[];
 }
 
 // ============================================================================
@@ -352,7 +351,7 @@ export function formatJourneyStops(results: any[]): JourneyStop[] {
         return null;
       }
     })
-    .filter((stop): stop is JourneyStop => stop !== null);
+    .filter((stop) => stop !== null) as JourneyStop[];
 }
 
 // ============================================================================

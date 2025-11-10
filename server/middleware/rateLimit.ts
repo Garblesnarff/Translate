@@ -34,7 +34,7 @@ function keyGenerator(req: Request): string {
 function getRateLimitForKey(req: Request): number {
   // If API key is present and has custom rate limit
   if (req.apiKey && req.apiKey.rateLimit) {
-    return req.apiKey.rateLimit;
+    return req.apiKey.rateLimit as number;
   }
 
   // Default rate limit

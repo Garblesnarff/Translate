@@ -125,7 +125,7 @@ export const EXPANDED_NODE_STYLE = {
   borderWidth: 5,
   font: {
     size: 16,
-    bold: true,
+    bold: 'bold' as any,
   },
   shadow: {
     enabled: true,
@@ -163,7 +163,7 @@ export const ROOT_NODE_STYLE = {
   shape: 'star' as const,
   font: {
     size: 16,
-    bold: true,
+    bold: 'bold' as any,
   },
 };
 

@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5.25.1
+    container_name: tibetan-translate-neo4j
+    hostname: neo4j
+
+    ports:
+      - "7474:7474"  # HTTP - Neo4j Browser
+      - "7687:7687"  # Bolt Protocol
+
+    environment:
+      # Authentication
+      NEO4J_AUTH: neo4j/tibetan_knowledge_graph_2025
+
+      # Accept license
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+
+      # Plugins
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+
+      # Security - allow APOC and GDS procedures
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*,gds.*
+      NEO4J_dbms_security_procedures_allowlist: apoc.*,gds.*
+
+      # Memory
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 2g
+      NEO4J_server_memory_pagecache_size: 1g
+
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_backups:/backups
+      - neo4j_plugins:/plugins
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    restart: unless-stopped
+
+    networks:
+      - tibetan-network
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_backups:
+  neo4j_plugins:
+
+networks:
+  tibetan-network:
+    driver: bridge
+    name: tibetan-network

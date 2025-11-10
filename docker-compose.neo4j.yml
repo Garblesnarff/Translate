@@ -30,7 +30,7 @@ services:
 
       # Database Configuration
       NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
-      NEO4J_server_default__database: ${NEO4J_DATABASE:-neo4j}
+      NEO4J_initial_dbms_default__database: ${NEO4J_DATABASE:-neo4j}
 
       # Plugins - APOC and Graph Data Science
       NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
@@ -66,7 +66,6 @@ services:
 
       # Logging
       NEO4J_server_logs_user_stdout__enabled: "true"
-      NEO4J_server_logs_debug_level: ${NEO4J_LOG_LEVEL:-INFO}
 
       # Security
       NEO4J_dbms_security_auth__enabled: "true"

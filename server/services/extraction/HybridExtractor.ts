@@ -106,8 +106,8 @@ export class HybridExtractor {
       // Check OCR quality
       const quality = this.qualityAssessor.assessQuality({
         text: ocrResult.text,
-        confidence: ocrResult.ocrConfidence || 0,
-        quality: ocrResult.ocrQuality || 0,
+        confidence: (ocrResult as any).ocrConfidence || 0,
+        quality: (ocrResult as any).ocrQuality || 0,
       });
 
       // If OCR quality is poor but native extraction had some text,
@@ -119,7 +119,7 @@ export class HybridExtractor {
             ...nativeResult.metadata,
             extractionMethod: 'hybrid',
             ocrQuality: quality.score,
-            ocrConfidence: ocrResult.ocrConfidence,
+            ocrConfidence: (ocrResult as any).ocrConfidence,
             ocrWarnings: quality.warnings,
           },
           warnings: [

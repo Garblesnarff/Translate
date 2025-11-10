@@ -21,7 +21,7 @@ import type {
   TranslationProvider,
   CacheProvider,
   EmbeddingProvider,
-} from '../../../tests/utils/mocks.js';
+} from '../../core/interfaces.js';
 import { MultiModelTranslator } from '../confidence/MultiModelTranslator.js';
 
 /**

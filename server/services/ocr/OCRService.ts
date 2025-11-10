@@ -92,7 +92,7 @@ export class OCRService {
         text: cleanedText,
         confidence,
         quality: confidence, // Quality initially same as confidence
-        words: result.data.words?.map((word) => ({
+        words: (result.data as any).words?.map((word: any) => ({
           text: word.text,
           confidence: word.confidence / 100,
         })),
@@ -196,7 +196,7 @@ export class OCRService {
 
       // Set OCR parameters
       await this.worker.setParameters({
-        tessedit_pageseg_mode: this.config.psm.toString(),
+        tessedit_pageseg_mode: this.config.psm.toString() as any,
         tessedit_ocr_engine_mode: this.config.oem.toString(),
       });
 

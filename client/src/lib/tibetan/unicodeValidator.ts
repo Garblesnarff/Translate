@@ -194,8 +194,8 @@ export function detectCorruption(text: string): CorruptionIssue[] {
 
   // Check for common mojibake patterns
   const mojibakePatterns = [
-    /Ã[€-¿]/g,  // UTF-8 interpreted as Latin-1
-    /â[€-¿]{2}/g, // Common mojibake pattern
+    /Ã[\x80-\xBF]/g,  // UTF-8 interpreted as Latin-1
+    /â[\x80-\xBF]{2}/g, // Common mojibake pattern
   ];
 
   for (const pattern of mojibakePatterns) {

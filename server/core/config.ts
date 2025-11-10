@@ -355,7 +355,7 @@ export class ConfigService {
    * Build configuration from environment variables
    */
   private static buildConfigFromEnv(env: NodeJS.ProcessEnv): Partial<AppConfig> {
-    const models = [];
+    const models: any[] = [];
 
     // Gemini models (primary)
     if (env.GEMINI_API_KEY_ODD) {

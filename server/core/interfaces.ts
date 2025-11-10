@@ -8,6 +8,8 @@
  * @module server/core/interfaces
  */
 
+import type { TranslationResult } from '../../shared/types.js';
+
 /**
  * Provider for generating text embeddings used in semantic similarity operations.
  *

@@ -8,6 +8,8 @@
     "module": "ESNext",
     "target": "ES2015",
     "strict": true,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
     "lib": ["esnext", "dom", "dom.iterable"],
     "jsx": "preserve",
     "esModuleInterop": true,
