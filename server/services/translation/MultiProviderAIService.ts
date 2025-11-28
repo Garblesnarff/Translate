@@ -47,92 +47,122 @@ export class MultiProviderAIService {
    * Initialize all available providers based on environment variables
    */
   private initializeProviders(): void {
-    // Groq providers
+    // Groq providers (2025 latest - 128K context enabled)
     if (process.env.GROQ_API_KEY) {
-      this.providers.set('groq-deepseek-r1', {
+      // DeepSeek R1 Distill Llama 70B - Latest with full 128K context
+      this.providers.set('groq-deepseek-r1-llama', {
         apiKey: process.env.GROQ_API_KEY,
         baseUrl: 'https://api.groq.com/openai/v1/chat/completions',
         modelId: 'deepseek-r1-distill-llama-70b',
         maxTokens: 4000,
-        contextWindow: 131072,
-        requestsPerMinute: 6,
-        tokensPerMinute: 6000,
-        dailyLimit: 100000
+        contextWindow: 128000, // Full 128K enabled
+        requestsPerMinute: 30,
+        tokensPerMinute: 14000,
+        dailyLimit: 500000 // ~388 tokens/sec
       });
 
-      this.providers.set('groq-qwen3', {
+      // DeepSeek R1 Distill Qwen 32B - Latest with full 128K context
+      this.providers.set('groq-deepseek-r1-qwen', {
         apiKey: process.env.GROQ_API_KEY,
         baseUrl: 'https://api.groq.com/openai/v1/chat/completions',
-        modelId: 'qwen/qwen3-32b',
+        modelId: 'deepseek-r1-distill-qwen-32b',
         maxTokens: 4000,
-        contextWindow: 131072,
-        requestsPerMinute: 6,
-        tokensPerMinute: 6000,
-        dailyLimit: 500000
+        contextWindow: 128000, // Full 128K enabled
+        requestsPerMinute: 30,
+        tokensPerMinute: 14000,
+        dailyLimit: 500000 // ~388 tokens/sec
+      });
+
+      // Qwen 2.5 32B - Updated model
+      this.providers.set('groq-qwen-2.5', {
+        apiKey: process.env.GROQ_API_KEY,
+        baseUrl: 'https://api.groq.com/openai/v1/chat/completions',
+        modelId: 'qwen-2.5-32b',
+        maxTokens: 4000,
+        contextWindow: 128000,
+        requestsPerMinute: 30,
+        tokensPerMinute: 14000,
+        dailyLimit: 500000 // ~397 tokens/sec
       });
     }
 
-    // OpenRouter providers - configured to use free-tier Chinese-origin models
+    // OpenRouter providers - configured to use free-tier models (2025 latest)
     if (process.env.OPENROUTER_API_KEY) {
-      // 1) Kimi K2 Thinking (Chinese, strong reasoning)
+      // 1) Kimi K2 Thinking - Advanced reasoning (1000 req/day after $10 credit)
       this.providers.set('openrouter-kimi-k2-thinking', {
         apiKey: process.env.OPENROUTER_API_KEY,
         baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
-        modelId: 'moonshotai/kimi-k2:free',
+        modelId: 'moonshotai/kimi-k2-thinking',
         maxTokens: 4000,
-        contextWindow: 33000,
-        requestsPerMinute: 60,
-        tokensPerMinute: 20000,
-        // Keep under 1000 free requests/day globally in practice via app-level routing
-        dailyLimit: 800
+        contextWindow: 256000, // 256K context
+        requestsPerMinute: 200,
+        tokensPerMinute: 50000,
+        // 1000 req/day with $10 credit, 50/day without
+        dailyLimit: 950
       });
 
-      // 2) DeepSeek latest free chat model (Chinese)
-      this.providers.set('openrouter-deepseek-chat', {
+      // 2) DeepSeek V3.1 - Latest hybrid reasoning model (671B params)
+      this.providers.set('openrouter-deepseek-v3.1', {
         apiKey: process.env.OPENROUTER_API_KEY,
         baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
-        modelId: 'deepseek/deepseek-chat:free',
+        modelId: 'deepseek/deepseek-chat-v3.1:free',
         maxTokens: 4000,
-        contextWindow: 131072,
-        requestsPerMinute: 60,
-        tokensPerMinute: 20000,
-        dailyLimit: 800
+        contextWindow: 128000, // 128K context
+        requestsPerMinute: 200,
+        tokensPerMinute: 50000,
+        dailyLimit: 950
       });
 
-      // 3) Qwen top-tier instruct (Chinese)
-      this.providers.set('openrouter-qwen', {
+      // 3) Llama 4 Maverick - Latest Meta model
+      this.providers.set('openrouter-llama-4-maverick', {
         apiKey: process.env.OPENROUTER_API_KEY,
         baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
-        modelId: 'qwen/qwen2.5-72b-instruct:free',
+        modelId: 'meta-llama/llama-4-maverick:free',
         maxTokens: 4000,
-        contextWindow: 131072,
-        requestsPerMinute: 60,
-        tokensPerMinute: 20000,
-        dailyLimit: 800
+        contextWindow: 128000,
+        requestsPerMinute: 200,
+        tokensPerMinute: 50000,
+        dailyLimit: 950
       });
+
+      // 4) Qwen QWQ-32B - Reasoning model
+      this.providers.set('openrouter-qwen-qwq', {
+        apiKey: process.env.OPENROUTER_API_KEY,
+        baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
+        modelId: 'qwen/qwq-32b:free',
+        maxTokens: 4000,
+        contextWindow: 128000,
+        requestsPerMinute: 200,
+        tokensPerMinute: 50000,
+        dailyLimit: 950
+      });
+
+      // Note: Gemini removed - we have direct access via Google API (faster, no opt-in needed)
     }
 
-    // Cerebras providers
+    // Cerebras providers (1M free tokens/day, 30 req/min)
     if (process.env.CEREBRAS_API_KEY) {
-      this.providers.set('cerebras-gpt-oss', {
-        apiKey: process.env.CEREBRAS_API_KEY,
-        baseUrl: 'https://api.cerebras.ai/v1/chat/completions',
-        modelId: 'gpt-oss-120b',
-        maxTokens: 4000,
-        contextWindow: 65536,
-        requestsPerMinute: 30,
-        tokensPerMinute: 64000,
-        dailyLimit: 1000000
-      });
-
-      this.providers.set('cerebras-qwen3', {
+      // Qwen3 235B 2507 - Fastest free model (1400+ tokens/sec)
+      this.providers.set('cerebras-qwen3-235b', {
         apiKey: process.env.CEREBRAS_API_KEY,
         baseUrl: 'https://api.cerebras.ai/v1/chat/completions',
         modelId: 'qwen-3-235b-a22b-instruct-2507',
         maxTokens: 4000,
-        contextWindow: 64000,
+        contextWindow: 64000, // 64K for free tier, 131K for paid
         requestsPerMinute: 30,
         tokensPerMinute: 60000,
+        dailyLimit: 1000000 // 1M tokens/day free
+      });
+
+      // GPT-OSS 120B - High-quality alternative
+      this.providers.set('cerebras-gpt-oss-120b', {
+        apiKey: process.env.CEREBRAS_API_KEY,
+        baseUrl: 'https://api.cerebras.ai/v1/chat/completions',
+        modelId: 'gpt-oss-120b',
+        maxTokens: 4000,
+        contextWindow: 65536, // 65K context
+        requestsPerMinute: 30,
+        tokensPerMinute: 64000,
         dailyLimit: 1000000
       });
     }
@@ -250,18 +280,27 @@ export class MultiProviderAIService {
 
   /**
    * Select available providers based on priority and availability
+   * Priority order optimized for 2025 models: reasoning, speed, context
    */
   private selectAvailableProviders(maxProviders: number = 3): string[] {
     const priorityOrder = [
-      // Prefer strong Chinese-origin OpenRouter models first (Kimi, DeepSeek, Qwen)
-      'openrouter-deepseek-chat',
-      'openrouter-qwen',
-      'openrouter-kimi-k2-thinking',
-      // Then fall back to other infra if configured
-      'cerebras-qwen3',
-      'cerebras-gpt-oss',
-      'groq-qwen3',
-      'groq-deepseek-r1'
+      // Tier 1: Advanced reasoning models
+      'openrouter-kimi-k2-thinking',      // 1. Trillion-param MoE, 256K context
+      'openrouter-deepseek-v3.1',         // 2. 671B hybrid reasoning
+
+      // Tier 2: Fastest/largest free models
+      'cerebras-qwen3-235b',              // 3. 235B params, 1400+ t/s
+      'openrouter-llama-4-maverick',      // 4. Latest Meta, 128K context
+
+      // Tier 3: Fast execution models
+      'groq-deepseek-r1-llama',           // 5. 70B, 388 t/s
+      'groq-qwen-2.5',                    // 6. 32B, 397 t/s
+
+      // Tier 4: Specialized/backup
+      'openrouter-qwen-qwq',              // 7. 32B reasoning
+      'cerebras-gpt-oss-120b',            // 8. 120B alternative
+      'groq-deepseek-r1-qwen'             // 9. 32B fast
+      // Note: Gemini removed from OpenRouter - using direct Google API instead
     ];
     
     const available = priorityOrder.filter(providerId => {

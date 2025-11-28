@@ -43,6 +43,13 @@ export interface TranslationResult {
   };
 }
 
+export interface TranslationConfig {
+  useHelperAI?: boolean;
+  useMultiPass?: boolean;
+  maxIterations?: number;
+  qualityThreshold?: number;
+}
+
 export interface ProgressInfo {
   message: string;
   progress: number;
@@ -138,17 +145,17 @@ export const useTranslation = () => {
     }));
   }, []);
 
-  const translateWithStream = async (text: string): Promise<TranslationResult> => {
+  const translateWithStream = async (text: string, config?: TranslationConfig): Promise<TranslationResult> => {
     return new Promise(async (resolve, reject) => {
       startTimeRef.current = Date.now();
       let abortController = new AbortController();
       let resolved = false;
       const sessionId = generateSessionId();
-      
-      setState(prev => ({ 
-        ...prev, 
-        isTranslating: true, 
-        error: null, 
+
+      setState(prev => ({
+        ...prev,
+        isTranslating: true,
+        error: null,
         progressInfo: null,
         canCancel: true,
         progress: 0,
@@ -176,8 +183,26 @@ export const useTranslation = () => {
       };
 
       try {
+        // Build query parameters from config
+        const queryParams = new URLSearchParams();
+        if (config?.useHelperAI !== undefined) {
+          queryParams.append('useHelperAI', String(config.useHelperAI));
+        }
+        if (config?.useMultiPass !== undefined) {
+          queryParams.append('useMultiPass', String(config.useMultiPass));
+        }
+        if (config?.maxIterations !== undefined) {
+          queryParams.append('maxIterations', String(config.maxIterations));
+        }
+        if (config?.qualityThreshold !== undefined) {
+          queryParams.append('qualityThreshold', String(config.qualityThreshold));
+        }
+
+        const queryString = queryParams.toString();
+        const endpoint = queryString ? `${STREAM_API_ENDPOINT}?${queryString}` : STREAM_API_ENDPOINT;
+
         // First, start the translation process
-        const response = await fetch(STREAM_API_ENDPOINT, {
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text, sessionId }),
@@ -453,14 +478,14 @@ export const useTranslation = () => {
     });
   };
 
-  const translate = async (text: string): Promise<TranslationResult> => {
+  const translate = async (text: string, config?: TranslationConfig): Promise<TranslationResult> => {
     try {
       // First try streaming translation
-      return await translateWithStream(text);
+      return await translateWithStream(text, config);
     } catch (error) {
       // Fallback to regular API if SSE fails
       console.warn('Stream translation failed, falling back to regular API:', error);
-      
+
       // Reset state for fallback
       setState(prev => ({
         ...prev,
@@ -472,9 +497,9 @@ export const useTranslation = () => {
         canCancel: false,
         error: null
       }));
-      
+
       try {
-        return await translateFallback(text);
+        return await translateFallback(text, config);
       } catch (fallbackError) {
         console.error('Both streaming and fallback translation failed:', fallbackError);
         throw fallbackError;
@@ -482,23 +507,41 @@ export const useTranslation = () => {
     }
   };
 
-  const translateFallback = async (text: string): Promise<TranslationResult> => {
+  const translateFallback = async (text: string, config?: TranslationConfig): Promise<TranslationResult> => {
     let retries = 0;
     const startTime = Date.now();
     const sessionId = generateSessionId();
-    
-    setState(prev => ({ 
-      ...prev, 
-      isTranslating: true, 
-      error: null, 
+
+    setState(prev => ({
+      ...prev,
+      isTranslating: true,
+      error: null,
       currentSessionId: sessionId,
-      canCancel: true 
+      canCancel: true
     }));
     setProgress(0);
 
     while (retries <= MAX_RETRIES) {
       try {
-        const response = await fetch(GEMINI_API_ENDPOINT, {
+        // Build query parameters from config
+        const queryParams = new URLSearchParams();
+        if (config?.useHelperAI !== undefined) {
+          queryParams.append('useHelperAI', String(config.useHelperAI));
+        }
+        if (config?.useMultiPass !== undefined) {
+          queryParams.append('useMultiPass', String(config.useMultiPass));
+        }
+        if (config?.maxIterations !== undefined) {
+          queryParams.append('maxIterations', String(config.maxIterations));
+        }
+        if (config?.qualityThreshold !== undefined) {
+          queryParams.append('qualityThreshold', String(config.qualityThreshold));
+        }
+
+        const queryString = queryParams.toString();
+        const endpoint = queryString ? `${GEMINI_API_ENDPOINT}?${queryString}` : GEMINI_API_ENDPOINT;
+
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text, sessionId })

@@ -1,13 +1,14 @@
 /**
  * GeminiTranslationProvider - Google Gemini Translation Integration
  *
- * Provides AI-powered translation using Google's Gemini 2.0 Flash model.
+ * Provides AI-powered translation using Google's Gemini 2.5 Flash-Lite model.
  * Features:
  * - Streaming support for real-time updates
  * - Batch processing (5 chunks in parallel)
  * - Retry logic with exponential backoff (3 retries)
  * - Rate limit handling
  * - Confidence scoring
+ * - 40% faster than 2.0 (887 tokens/sec)
  *
  * @module server/providers/translation/GeminiTranslationProvider
  */
@@ -23,7 +24,7 @@ export interface GeminiTranslationConfig {
   /** Google Gemini API key */
   apiKey: string;
 
-  /** Model name (default: gemini-2.0-flash) */
+  /** Model name (default: gemini-2.5-flash-lite) */
   model?: string;
 
   /** Temperature for generation (default: 0.3) */
@@ -58,7 +59,7 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
  * ```typescript
  * const provider = new GeminiTranslationProvider({
  *   apiKey: process.env.GEMINI_API_KEY!,
- *   model: 'gemini-2.0-flash',
+ *   model: 'gemini-2.5-flash-lite',
  *   temperature: 0.3,
  *   maxTokens: 4000
  * });
@@ -95,7 +96,7 @@ export class GeminiTranslationProvider implements TranslationProvider {
     }
 
     this.client = new GoogleGenerativeAI(config.apiKey);
-    this.modelName = config.model || 'gemini-2.0-flash-exp';
+    this.modelName = config.model || 'gemini-2.5-flash-lite';
     this.temperature = config.temperature ?? 0.3;
     this.maxTokens = config.maxTokens || 4000;
     this.maxParallelRequests = config.maxParallelRequests || 5;

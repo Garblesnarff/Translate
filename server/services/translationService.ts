@@ -371,6 +371,14 @@ export class TranslationService {
 
       // Phase 8: Quality Gates (Phase 2.4.1-2.4.2)
       console.log(`[TranslationService] Running quality gates for page ${chunk.pageNumber}`);
+
+      // Disable Agreement gate if helper AI is not enabled (Fast Mode)
+      const agreementGateWasEnabled = this.qualityGateRunner.getGates().find(g => g.name === 'Agreement')?.enabled ?? true;
+      if (!mergedConfig.useHelperAI) {
+        console.log(`[TranslationService] Fast Mode: Skipping Agreement gate (helper AI disabled)`);
+        this.qualityGateRunner.setGateEnabled('Agreement', false);
+      }
+
       const gateInput: TranslationResultForGates = {
         translation: finalTranslation,
         originalText: chunk.content,
@@ -382,6 +390,11 @@ export class TranslationService {
       };
 
       const gateResults = await this.qualityGateRunner.runGates(gateInput);
+
+      // Restore Agreement gate state
+      if (!mergedConfig.useHelperAI && agreementGateWasEnabled) {
+        this.qualityGateRunner.setGateEnabled('Agreement', true);
+      }
       console.log(`[TranslationService] Quality gates ${gateResults.passed ? 'PASSED' : 'FAILED'}`);
       console.log(this.qualityGateRunner.generateReport(gateResults));
 

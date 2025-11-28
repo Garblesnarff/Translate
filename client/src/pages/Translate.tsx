@@ -2,11 +2,14 @@ import { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import TranslationPane from "../components/TranslationPane";
 import UploadDialog from "../components/UploadDialog";
 import ProgressIndicator from "../components/ProgressIndicator";
 import LogViewer from "../components/LogViewer";
+import ConsensusPanel from "../components/ConsensusPanel";
 import { useTranslation } from "../lib/gemini";
 import { extractTextContent } from "../lib/textExtractor";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +34,7 @@ export default function Translate() {
   const { toast } = useToast();
   const [sourceText, setSourceText] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
+  const [useConsensus, setUseConsensus] = useState(true); // AI Consensus Mode toggle
   const [translationState, setTranslationState] = useState<TranslationState>({
     pages: [],
     currentPage: 0,
@@ -87,7 +91,7 @@ export default function Translate() {
           (async () => {
             try {
               console.log(`Translating page ${i + 1}`);
-              const result = await translate(pageTexts[i]);
+              const result = await translate(pageTexts[i], { useHelperAI: useConsensus });
               return {
                 pageNumber: i + 1,
                 text: result.translatedText
@@ -108,7 +112,7 @@ export default function Translate() {
             (async () => {
               try {
                 console.log(`Translating page ${i + 2}`);
-                const result = await translate(pageTexts[i + 1]);
+                const result = await translate(pageTexts[i + 1], { useHelperAI: useConsensus });
                 return {
                   pageNumber: i + 2,
                   text: result.translatedText
@@ -184,11 +188,27 @@ export default function Translate() {
       <div className="p-4 bg-background/95 shadow-md">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-primary">Translation Studio</h1>
-          <div className="space-x-2">
-            <UploadDialog onUpload={handleFileUpload} />
-            <Button onClick={handleTranslate} disabled={isTranslating}>
-              Translate
-            </Button>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="consensus-mode"
+                checked={useConsensus}
+                onCheckedChange={setUseConsensus}
+                disabled={isTranslating}
+              />
+              <Label
+                htmlFor="consensus-mode"
+                className="text-sm font-medium cursor-pointer"
+              >
+                {useConsensus ? "Quality Mode (AI Consensus)" : "Fast Mode (Gemini Only)"}
+              </Label>
+            </div>
+            <div className="space-x-2">
+              <UploadDialog onUpload={handleFileUpload} />
+              <Button onClick={handleTranslate} disabled={isTranslating}>
+                Translate
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -207,7 +227,7 @@ export default function Translate() {
           direction="horizontal"
           className="min-h-[200px] rounded-lg border bg-background/95"
         >
-          <ResizablePanel defaultSize={50} minSize={30}>
+          <ResizablePanel defaultSize={useConsensus ? 35 : 50} minSize={25}>
             <TranslationPane
               title={documentTitle || "Source Text"} // Use documentTitle if available
               text={sourceText}
@@ -215,7 +235,7 @@ export default function Translate() {
             />
           </ResizablePanel>
           <ResizableHandle className="w-2 bg-muted hover:bg-muted-foreground/10 transition-colors" />
-          <ResizablePanel defaultSize={50} minSize={30}>
+          <ResizablePanel defaultSize={useConsensus ? 35 : 50} minSize={25}>
             {translationState.error ? (
               <div className="p-4">
                 <Alert variant="destructive">
@@ -268,6 +288,22 @@ export default function Translate() {
               </div>
             )}
           </ResizablePanel>
+
+          {/* Consensus Panel - Only shown when consensus mode is enabled */}
+          {useConsensus && (
+            <>
+              <ResizableHandle className="w-2 bg-muted hover:bg-muted-foreground/10 transition-colors" />
+              <ResizablePanel defaultSize={30} minSize={20} maxSize={40}>
+                <div className="h-full p-4">
+                  <ConsensusPanel
+                    logs={logs}
+                    progressInfo={progressInfo}
+                    isActive={isTranslating}
+                  />
+                </div>
+              </ResizablePanel>
+            </>
+          )}
         </ResizablePanelGroup>
       </div>
 
