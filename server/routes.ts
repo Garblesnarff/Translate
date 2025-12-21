@@ -24,7 +24,8 @@ import {
   getRecentTranslations,
   getTranslation,
   cancelTranslationSession,
-  getActiveSessions
+  getActiveSessions,
+  resetErrorRecovery
 } from './controllers/translationController';
 
 import {
@@ -224,6 +225,12 @@ export function registerRoutes(app: Express) {
     limiter,
     requestLogger,
     getActiveSessions
+  );
+
+  app.post('/api/translation/reset-recovery',
+    limiter,
+    requestLogger,
+    resetErrorRecovery
   );
 
   // ====================================

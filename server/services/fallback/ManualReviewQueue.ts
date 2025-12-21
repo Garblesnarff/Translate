@@ -128,7 +128,7 @@ export class ManualReviewQueue {
         completedTranslation: translation,
         reviewedBy: reviewedBy || null,
         reviewNotes: notes || null,
-        completedAt: new Date()
+        completedAt: new Date().toISOString()
       })
       .where(eq(manualReview.id, id));
 
@@ -147,7 +147,7 @@ export class ManualReviewQueue {
       .set({
         status: 'skipped',
         reviewNotes: reason || null,
-        completedAt: new Date()
+        completedAt: new Date().toISOString()
       })
       .where(eq(manualReview.id, id));
 

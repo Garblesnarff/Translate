@@ -645,6 +645,12 @@ Extract all relevant details and provide source quotes.`;
       preceded: { subject: ['person', 'event'], object: ['person', 'event'] },
       followed: { subject: ['person', 'event'], object: ['person', 'event'] },
       contemporary_with: { subject: ['person'], object: ['person'] },
+
+      // System
+      potential_duplicate_of: {
+        subject: ['person', 'place', 'text', 'event', 'lineage', 'concept', 'institution', 'deity'],
+        object: ['person', 'place', 'text', 'event', 'lineage', 'concept', 'institution', 'deity']
+      },
     };
 
     const rule = rules[predicate];

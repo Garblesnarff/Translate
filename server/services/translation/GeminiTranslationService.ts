@@ -86,6 +86,49 @@ export class GeminiTranslationService {
   }
 
   /**
+   * Performs a refinement pass focusing on specific quality issues
+   *
+   * @param originalText - The original Tibetan text
+   * @param previousTranslation - The translation to be improved
+   * @param focusAreas - List of quality issues to address
+   * @param pageNumber - The page number for service selection
+   * @param config - Translation configuration
+   * @param abortSignal - Optional abort signal
+   * @returns Promise with refined translation result
+   */
+  public async performRefinementPass(
+    originalText: string,
+    previousTranslation: string,
+    focusAreas: string[],
+    pageNumber: number,
+    config: TranslationConfig,
+    abortSignal?: AbortSignal
+  ): Promise<GeminiTranslationResult> {
+    const geminiService = this.getGeminiService(pageNumber);
+
+    const prompt = this.promptGenerator.createRefinementPrompt(
+      originalText,
+      previousTranslation,
+      focusAreas
+    );
+
+    // Check for cancellation before making the API call
+    CancellationManager.throwIfCancelled(abortSignal, 'Gemini refinement call');
+
+    const result = await geminiService.generateContent(prompt, config.timeout, abortSignal);
+    const response = await result.response;
+    const rawTranslation = response.text();
+
+    // Enhanced confidence calculation
+    const confidence = await calculateEnhancedConfidence(rawTranslation, originalText);
+
+    return {
+      translation: rawTranslation,
+      confidence
+    };
+  }
+
+  /**
    * Get the appropriate Gemini service based on page number
    *
    * @param pageNumber - The page number to determine service for

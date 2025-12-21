@@ -101,19 +101,31 @@ export class MultiProviderAIService {
         dailyLimit: 950
       });
 
-      // 2) DeepSeek V3.1 - Latest hybrid reasoning model (671B params)
-      this.providers.set('openrouter-deepseek-v3.1', {
+      // 2) GLM-4.5-Air - Latest high-performance model
+      this.providers.set('openrouter-glm-4.5-air', {
         apiKey: process.env.OPENROUTER_API_KEY,
         baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
-        modelId: 'deepseek/deepseek-chat-v3.1:free',
+        modelId: 'z-ai/glm-4.5-air:free',
         maxTokens: 4000,
-        contextWindow: 128000, // 128K context
+        contextWindow: 128000,
         requestsPerMinute: 200,
         tokensPerMinute: 50000,
         dailyLimit: 950
       });
 
-      // 3) Llama 4 Maverick - Latest Meta model
+      // 3) Mimo V2 Flash - Fastest flash model (Primary Fallback)
+      this.providers.set('openrouter-mimo-v2-flash', {
+        apiKey: process.env.OPENROUTER_API_KEY,
+        baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
+        modelId: 'xiaomi/mimo-v2-flash:free',
+        maxTokens: 4000,
+        contextWindow: 128000,
+        requestsPerMinute: 200,
+        tokensPerMinute: 50000,
+        dailyLimit: 950
+      });
+
+      // 4) Llama 4 Maverick - Latest Meta model
       this.providers.set('openrouter-llama-4-maverick', {
         apiKey: process.env.OPENROUTER_API_KEY,
         baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
@@ -130,6 +142,18 @@ export class MultiProviderAIService {
         apiKey: process.env.OPENROUTER_API_KEY,
         baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
         modelId: 'qwen/qwq-32b:free',
+        maxTokens: 4000,
+        contextWindow: 128000,
+        requestsPerMinute: 200,
+        tokensPerMinute: 50000,
+        dailyLimit: 950
+      });
+
+      // 5) Gemma 3 27B - Latest Google open model (Primary for KG extraction)
+      this.providers.set('openrouter-gemma-3-27b', {
+        apiKey: process.env.OPENROUTER_API_KEY,
+        baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
+        modelId: 'google/gemma-3-27b-it:free',
         maxTokens: 4000,
         contextWindow: 128000,
         requestsPerMinute: 200,
@@ -184,6 +208,18 @@ export class MultiProviderAIService {
   }
 
   /**
+   * Reset all provider states (for recovery)
+   */
+  public resetProviderStates(): void {
+    for (const state of this.providerStates.values()) {
+      state.status = 'available';
+      state.disabledUntil = undefined;
+      state.disabledReason = undefined;
+    }
+    console.log('[MultiProviderAI] All provider states have been reset');
+  }
+
+  /**
    * Check if provider is currently available for use
    */
   private isProviderAvailable(providerId: string): boolean {
@@ -218,10 +254,10 @@ export class MultiProviderAIService {
     if (errorMsg.includes('401') || errorMsg.includes('User not found') || 
         errorMsg.includes('authentication') || errorMsg.includes('unauthorized')) {
       state.status = 'disabled';
-      state.disabledUntil = Date.now() + 365 * 24 * 60 * 60 * 1000; // Disable for a year
+      state.disabledUntil = Date.now() + 60 * 60 * 1000; // Disable for 1 hour (allow for key fixes)
       state.disabledReason = 'Authentication failed - Invalid API key';
       state.lastError = errorMsg;
-      console.warn(`[MultiProviderAI] ${providerId} permanently disabled - Authentication failed`);
+      console.warn(`[MultiProviderAI] ${providerId} temporarily disabled for 1h - Authentication failed`);
       return;
     }
     
@@ -282,11 +318,14 @@ export class MultiProviderAIService {
    * Select available providers based on priority and availability
    * Priority order optimized for 2025 models: reasoning, speed, context
    */
-  private selectAvailableProviders(maxProviders: number = 3): string[] {
+  private selectAvailableProviders(maxProviders: number = 3, preferredProvider?: string): string[] {
     const priorityOrder = [
+      // Primary Fallback: Fastest free model
+      'openrouter-mimo-v2-flash',
+
       // Tier 1: Advanced reasoning models
       'openrouter-kimi-k2-thinking',      // 1. Trillion-param MoE, 256K context
-      'openrouter-deepseek-v3.1',         // 2. 671B hybrid reasoning
+      'openrouter-glm-4.5-air',           // 2. Latest high-performance model
 
       // Tier 2: Fastest/largest free models
       'cerebras-qwen3-235b',              // 3. 235B params, 1400+ t/s
@@ -302,6 +341,13 @@ export class MultiProviderAIService {
       'groq-deepseek-r1-qwen'             // 9. 32B fast
       // Note: Gemini removed from OpenRouter - using direct Google API instead
     ];
+
+    // If we have a preferred provider, put it at the start of the search
+    if (preferredProvider && this.providers.has(preferredProvider)) {
+      const idx = priorityOrder.indexOf(preferredProvider);
+      if (idx > -1) priorityOrder.splice(idx, 1);
+      priorityOrder.unshift(preferredProvider);
+    }
     
     const available = priorityOrder.filter(providerId => {
       return this.providers.has(providerId) && this.isProviderAvailable(providerId);
@@ -314,6 +360,76 @@ export class MultiProviderAIService {
     }
     
     return available;
+  }
+
+  /**
+   * Generic content generation using available providers
+   */
+  public async generateContent(
+    prompt: string,
+    maxProviders: number = 1,
+    preferredProvider?: string
+  ): Promise<AIResponse[]> {
+    const selectedProviders = this.selectAvailableProviders(maxProviders, preferredProvider);
+    
+    if (selectedProviders.length === 0) {
+      return [];
+    }
+
+    const promises = selectedProviders.map(providerId => 
+      this.callProviderRaw(providerId, prompt)
+        .catch(error => {
+          const errorMsg = error.message || String(error);
+          this.handleRateLimitError(providerId, error);
+          return {
+            translation: '',
+            confidence: 0,
+            model: this.providers.get(providerId)?.modelId || 'unknown',
+            provider: providerId,
+            reasoning: `Error: ${errorMsg}`
+          };
+        })
+    );
+
+    const results = await Promise.all(promises);
+    return results.filter(result => result.translation.length > 0);
+  }
+
+  /**
+   * Call provider with a raw prompt (no template)
+   */
+  private async callProviderRaw(
+    providerId: string,
+    prompt: string
+  ): Promise<AIResponse> {
+    const config = this.providers.get(providerId);
+    if (!config) throw new Error(`Provider ${providerId} not configured`);
+
+    const startTime = Date.now();
+    const requestBody = this.buildRequestBody(config, prompt);
+    const headers = this.buildHeaders(config, providerId);
+
+    const response = await fetch(config.baseUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      throw new Error(`${providerId} API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = this.extractTranslation(data, providerId);
+    this.updateRateLimit(providerId);
+
+    return {
+      translation: content, // Reusing field for result content
+      confidence: 0.9,
+      model: config.modelId,
+      provider: providerId,
+      processingTime: Date.now() - startTime
+    };
   }
 
   /**
@@ -397,7 +513,8 @@ export class MultiProviderAIService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`${providerId} API error: ${response.status} ${errorText}`);
+        console.error(`[MultiProviderAI] ${providerId} API error (${response.status}):`, errorText.substring(0, 200));
+        throw new Error(`${providerId} API error: ${response.status} ${errorText.substring(0, 100)}`);
       }
 
       const data = await response.json();
@@ -434,25 +551,37 @@ export class MultiProviderAIService {
     dictionaryContext: string,
     providerId: string
   ): string {
-    const basePrompt = `You are an expert Tibetan-English translator. Translate the following Tibetan text accurately and naturally.
+    const basePrompt = `You are a high-precision Tibetan-to-English translator specializing in Buddhist texts.
+
+CRITICAL FORMATTING REQUIREMENT:
+You MUST follow this exact pattern for EVERY single sentence:
+"English translation (Original Tibetan Text)"
+
+Example:
+Original: བཀྲ་ཤིས་བདེ་ལེགས།
+Translation: Tashi Delek (བཀྲ་ཤིས་བདེ་ལེགས།)
 
 DICTIONARY REFERENCE:
 ${dictionaryContext}
 
 GUIDELINES:
-- Translate each sentence into natural English
-- Include the original Tibetan text in parentheses after each sentence
-- Use dictionary references when appropriate
-- Preserve Buddhist and cultural terminology accuracy
-- Maintain the structure and meaning of the original text
+1. Translate each sentence into clear, natural English.
+2. IMMEDIATELY follow each English sentence with the original Tibetan text in parentheses.
+3. If you do not include the Tibetan text in parentheses, your translation will be rejected.
+4. Preserve technical Buddhist terminology using the provided dictionary.
+5. Maintain the sacred and philosophical nuance of the text.
 
-TIBETAN TEXT:
+TIBETAN TEXT TO TRANSLATE:
 ${tibetanText}
 
-Translation:`;
+Final Check: Did you include the (Tibetan text) in parentheses after EVERY sentence? 
+Begin Translation:`;
 
     // Provider-specific optimizations
     switch (true) {
+      case providerId.includes('mimo'):
+        return `${basePrompt}\n\nSTRICT FORMATTING RULE: Every sentence must be exactly "English (Tibetan)". Do NOT use newlines between English and Tibetan. They must be on the SAME line.`;
+
       case providerId.includes('deepseek'):
         return `${basePrompt}\n\nNote: Use step-by-step reasoning for complex Buddhist terminology.`;
       

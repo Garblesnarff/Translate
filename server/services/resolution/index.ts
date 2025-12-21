@@ -18,8 +18,15 @@ export {
   describeSimilarity,
 } from './FuzzyMatcher';
 
-// TODO: Phase 2.2 - Duplicate Detection Service
-// export { DuplicateDetector } from './DuplicateDetector';
+// Phase 2.2 - Duplicate Detection Service ✅
+export {
+  DuplicateDetector,
+  duplicateDetector,
+  type DuplicatePair,
+  type DuplicateScore,
+  type SignalScores,
+  type ConfidenceLevel,
+} from './DuplicateDetector';
 
 // Phase 2.3 - Entity Merger Service ✅
 export {

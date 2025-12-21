@@ -8,6 +8,13 @@
       "when": 1756261315711,
       "tag": "0000_icy_karma",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1766292620816,
+      "tag": "0001_sweet_cardiac",
+      "breakpoints": true
     }
   ]
 }

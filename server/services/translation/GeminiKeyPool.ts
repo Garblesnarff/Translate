@@ -81,8 +81,13 @@ export class GeminiKeyPool {
       return null;
     }
 
+    // Reset index if it's out of bounds for the current available set
+    if (this.currentIndex >= availableKeys.length) {
+      this.currentIndex = 0;
+    }
+
     // Simple round-robin rotation
-    const key = availableKeys[this.currentIndex % availableKeys.length];
+    const key = availableKeys[this.currentIndex];
     this.currentIndex = (this.currentIndex + 1) % availableKeys.length;
     
     key.lastUsed = Date.now();

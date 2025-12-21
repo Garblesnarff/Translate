@@ -21,6 +21,7 @@ import { FallbackStrategies } from './translation/FallbackStrategies';
 import { formatValidator } from '../validators/formatValidator';
 import { QualityGateRunner, TranslationResultForGates } from './translation/QualityGates';
 import { metricsCollector } from './translation/MetricsCollector';
+import { entityExtractor } from './knowledgeGraph/EntityExtractor';
 import {
   TranslationConfig,
   EnhancedTranslationResult,
@@ -146,66 +147,96 @@ export class TranslationService {
       let usedFallback = false;
       let fallbackStrategy: string | undefined;
 
-      try {
-        // Wrap Gemini call with retry logic
-        currentTranslation = await retryHandler.executeWithRetry(
-          async () => {
-            return await this.geminiTranslationService.performInitialTranslation(
-              chunk,
-              mergedConfig,
-              1, // First iteration
-              abortSignal
-            );
-          },
-          {
-            maxRetries: 3,
-            abortSignal,
-            onRetry: (error, attemptNumber, delay) => {
-              console.log(`[TranslationService] Retry attempt ${attemptNumber} after ${delay}ms due to: ${error.message}`);
-            }
-          },
-          `translation-page-${chunk.pageNumber}`
-        );
-      } catch (error) {
-        // Classify error and attempt fallback strategies
-        const classification = ErrorClassifier.classifyError(error);
-        console.error(`[TranslationService] Translation failed with error type ${classification.errorType}:`, error);
+      // Check if primary service is currently unavailable via circuit breaker
+      const primaryContext = `translation-page-${chunk.pageNumber}`;
+      const isCircuitOpen = retryHandler.getCircuitBreakerState(primaryContext) === 'OPEN' || 
+                           retryHandler.getCircuitBreakerState('default') === 'OPEN';
 
-        // If error is fatal, throw immediately
-        if (classification.isFatal) {
-          console.error(`[TranslationService] Fatal error, cannot recover`);
-          throw error;
-        }
-
-        // Try fallback strategies
-        console.log(`[TranslationService] Attempting fallback strategies for page ${chunk.pageNumber}`);
+      if (isCircuitOpen) {
+        console.log(`[TranslationService] Primary circuit is OPEN, skipping to fallback model for page ${chunk.pageNumber}`);
         const fallbackResult = await this.fallbackStrategies.executeFallbackCascade(
           chunk,
           mergedConfig,
-          error as Error,
+          new Error('Circuit breaker is open'),
           abortSignal
         );
 
         if (fallbackResult.success && fallbackResult.translation && fallbackResult.confidence) {
-          console.log(`[TranslationService] Fallback strategy succeeded: ${fallbackResult.strategyUsed}`);
           currentTranslation = {
             translation: fallbackResult.translation,
             confidence: fallbackResult.confidence
           };
           usedFallback = true;
           fallbackStrategy = fallbackResult.strategyUsed;
-        } else if (fallbackResult.requiresManualIntervention) {
-          throw createTranslationError(
-            `Translation failed for page ${chunk.pageNumber} and all fallback strategies exhausted. Manual intervention required.`,
-            'MANUAL_INTERVENTION_REQUIRED',
-            500,
-            {
-              originalError: error,
-              fallbackAttempts: fallbackResult.strategyUsed
-            }
-          );
         } else {
-          throw error;
+          throw createTranslationError(
+            'Primary service unavailable and fallback failed',
+            'SERVICE_UNAVAILABLE',
+            503
+          );
+        }
+      } else {
+        try {
+          // Wrap Gemini call with retry logic
+          currentTranslation = await retryHandler.executeWithRetry(
+            async () => {
+              return await this.geminiTranslationService.performInitialTranslation(
+                chunk,
+                mergedConfig,
+                1, // First iteration
+                abortSignal
+              );
+            },
+            {
+              maxRetries: 3,
+              abortSignal,
+              onRetry: (error, attemptNumber, delay) => {
+                console.log(`[TranslationService] Retry attempt ${attemptNumber} after ${delay}ms due to: ${error.message}`);
+              }
+            },
+            primaryContext
+          );
+        } catch (error) {
+          // Classify error and attempt fallback strategies
+          const classification = ErrorClassifier.classifyError(error);
+          console.error(`[TranslationService] Translation failed with error type ${classification.errorType}:`, error);
+
+          // If error is fatal, throw immediately
+          if (classification.isFatal) {
+            console.error(`[TranslationService] Fatal error, cannot recover`);
+            throw error;
+          }
+
+          // Try fallback strategies
+          console.log(`[TranslationService] Attempting fallback strategies for page ${chunk.pageNumber}`);
+          const fallbackResult = await this.fallbackStrategies.executeFallbackCascade(
+            chunk,
+            mergedConfig,
+            error as Error,
+            abortSignal
+          );
+
+          if (fallbackResult.success && fallbackResult.translation && fallbackResult.confidence) {
+            console.log(`[TranslationService] Fallback strategy succeeded: ${fallbackResult.strategyUsed}`);
+            currentTranslation = {
+              translation: fallbackResult.translation,
+              confidence: fallbackResult.confidence
+            };
+            usedFallback = true;
+            fallbackStrategy = fallbackResult.strategyUsed;
+          } else if (fallbackResult.requiresManualIntervention) {
+            throw createTranslationError(
+              `Translation failed for page ${chunk.pageNumber} and all fallback strategies exhausted. Manual intervention required.`,
+              'MANUAL_INTERVENTION_REQUIRED',
+              500,
+              {
+                originalError: error,
+                fallbackAttempts: fallbackResult.strategyUsed
+              }
+            );
+          } else {
+            throw error;
+          }
         }
       }
 
@@ -251,33 +282,38 @@ export class TranslationService {
       if (mergedConfig.useMultiPass && finalConfidence < mergedConfig.qualityThreshold!) {
         console.log(`[TranslationService] Quality below threshold (${finalConfidence.toFixed(3)} < ${mergedConfig.qualityThreshold}), starting refinement`);
 
-        for (let iteration = 2; iteration <= mergedConfig.maxIterations!; iteration++) {
-          // Check for cancellation before each refinement
-          CancellationManager.throwIfCancelled(abortSignal, `refinement iteration ${iteration}`);
+        try {
+          for (let iteration = 2; iteration <= mergedConfig.maxIterations!; iteration++) {
+            // Check for cancellation before each refinement
+            CancellationManager.throwIfCancelled(abortSignal, `refinement iteration ${iteration}`);
 
-          const refinedTranslation = await performRefinementIteration(
-            chunk.content,
-            currentTranslation.translation,
-            iteration,
-            mergedConfig,
-            chunk.pageNumber,
-            abortSignal
-          );
+            const refinedTranslation = await performRefinementIteration(
+              chunk.content,
+              currentTranslation.translation,
+              iteration,
+              mergedConfig,
+              chunk.pageNumber,
+              abortSignal
+            );
 
-          if (refinedTranslation.confidence > finalConfidence) {
-            currentTranslation = refinedTranslation;
-            finalConfidence = refinedTranslation.confidence;
-            iterationsUsed = iteration;
-            console.log(`[TranslationService] Iteration ${iteration}: improved confidence to ${finalConfidence.toFixed(3)}`);
+            if (refinedTranslation.confidence > finalConfidence) {
+              currentTranslation = refinedTranslation;
+              finalConfidence = refinedTranslation.confidence;
+              iterationsUsed = iteration;
+              console.log(`[TranslationService] Iteration ${iteration}: improved confidence to ${finalConfidence.toFixed(3)}`);
 
-            // Stop if we've reached good quality
-            if (finalConfidence >= mergedConfig.qualityThreshold!) {
+              // Stop if we've reached good quality
+              if (finalConfidence >= mergedConfig.qualityThreshold!) {
+                break;
+              }
+            } else {
+              console.log(`[TranslationService] Iteration ${iteration}: no improvement, stopping`);
               break;
             }
-          } else {
-            console.log(`[TranslationService] Iteration ${iteration}: no improvement, stopping`);
-            break;
           }
+        } catch (refinementError) {
+          console.warn(`[TranslationService] Refinement process failed, falling back to initial translation:`, (refinementError as Error).message);
+          // iterationsUsed remains at whatever it was before the error
         }
       }
 
@@ -389,7 +425,7 @@ export class TranslationService {
         validationMetadata: outputValidation.metadata
       };
 
-      const gateResults = await this.qualityGateRunner.runGates(gateInput);
+      let gateResults = await this.qualityGateRunner.runGates(gateInput);
 
       // Restore Agreement gate state
       if (!mergedConfig.useHelperAI && agreementGateWasEnabled) {
@@ -436,12 +472,41 @@ export class TranslationService {
             }
           );
         } else if (gateResults.actions.shouldRetry) {
-          // Retry: One more attempt with refined prompt
-          console.log(`[TranslationService] Quality gates recommend retry for page ${chunk.pageNumber}`);
+          // Retry: One more attempt with refined prompt focusing on failed gates
+          console.log(`[TranslationService] Quality gates recommend retry for page ${chunk.pageNumber} focusing on: ${gateResults.actions.rejectionReasons.join(', ')}`);
 
-          // TODO: Implement retry with refined prompt focusing on failed gates
-          // For now, we'll continue with warnings
-          console.warn(`[TranslationService] Retry logic not yet implemented, continuing with warnings`);
+          try {
+            const retryResult = await this.geminiTranslationService.performRefinementPass(
+              chunk.content,
+              finalTranslation,
+              gateResults.actions.rejectionReasons,
+              chunk.pageNumber,
+              mergedConfig,
+              abortSignal
+            );
+
+            // Update with refined result
+            finalTranslation = this.textProcessor.processText(retryResult.translation);
+            finalConfidence = retryResult.confidence;
+            console.log(`[TranslationService] Quality retry completed for page ${chunk.pageNumber}, new confidence: ${finalConfidence.toFixed(3)}`);
+
+            // Re-run gates on the refined translation
+            const secondaryGateResults = await this.qualityGateRunner.runGates({
+              ...gateInput,
+              translation: finalTranslation,
+              confidence: finalConfidence,
+              processingTime: Date.now() - startTime
+            });
+            
+            console.log(`[TranslationService] Secondary quality gates ${secondaryGateResults.passed ? 'PASSED' : 'FAILED'}`);
+            console.log(this.qualityGateRunner.generateReport(secondaryGateResults));
+            
+            // Use these results for the final metric record and return
+            gateResults = secondaryGateResults;
+          } catch (retryError) {
+            console.warn(`[TranslationService] Quality retry failed for page ${chunk.pageNumber}:`, retryError);
+            // Continue with original translation if retry fails or use it as fallback
+          }
         }
       }
 
@@ -653,9 +718,10 @@ export class TranslationService {
    * Reset circuit breakers for error recovery
    * Useful when recovering from sustained failures
    */
-  public resetErrorRecovery(): void {
+  public async resetErrorRecovery(): Promise<void> {
     retryHandler.resetAllCircuitBreakers();
-    console.log('[TranslationService] Error recovery circuit breakers reset');
+    multiProviderAIService.resetProviderStates();
+    console.log('[TranslationService] Error recovery and AI providers reset');
   }
 }
 

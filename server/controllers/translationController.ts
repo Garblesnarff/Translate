@@ -12,6 +12,7 @@ import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import { splitTextIntoChunks } from "../../client/src/lib/textChunker";
 import { translationService } from '../services/translationService';
+import { entityExtractor } from '../services/knowledgeGraph/EntityExtractor';
 import { cancellationManager, CancellationManager } from '../services/CancellationManager';
 import { createTranslationError } from '../middleware/errorHandler';
 import { TranslationProgressEmitter } from '../lib/TranslationProgressEmitter';
@@ -267,6 +268,12 @@ export async function handleTranslation(
     };
 
     const [savedTranslation] = await db.insert(tables.translations).values(translationData).returning();
+
+    // Trigger Knowledge Graph extraction in background
+    console.log(`[TranslationController] Triggering background KG extraction for translation ${savedTranslation.id}`);
+    entityExtractor.extractFromTranslation(savedTranslation.id).catch(err => {
+      console.error(`[TranslationController] Background KG extraction failed for translation ${savedTranslation.id}:`, err);
+    });
 
     // Complete the session successfully
     cancellationManager.completeSession(sessionId);
@@ -645,6 +652,12 @@ export async function handleStreamingTranslation(
 
     const [savedTranslation] = await db.insert(tables.translations).values(translationData).returning();
 
+    // Trigger Knowledge Graph extraction in background
+    console.log(`[TranslationController] Triggering background KG extraction for translation ${savedTranslation.id}`);
+    entityExtractor.extractFromTranslation(savedTranslation.id).catch(err => {
+      console.error(`[TranslationController] Background KG extraction failed for translation ${savedTranslation.id}:`, err);
+    });
+
     // Send completion event
     progressEmitter.emit('complete', {
       message: 'Translation completed successfully!',
@@ -875,6 +888,25 @@ export async function getActiveSessions(
     res.json({
       activeSessions,
       count: activeSessions.length
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Reset error recovery and circuit breakers
+ */
+export async function resetErrorRecovery(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    translationService.resetErrorRecovery();
+    res.json({
+      success: true,
+      message: 'Error recovery and circuit breakers reset successfully'
     });
   } catch (error) {
     next(error);

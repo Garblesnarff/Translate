@@ -83,10 +83,10 @@ export const PersonEntitySchema = EntityBaseSchema.extend({
     titles: z.array(z.string()).optional(),
     honorifics: z.array(z.string()).optional(),
     epithets: z.array(z.string()).optional(),
-    roles: z.array(z.enum(['teacher', 'student', 'translator', 'abbot', 'patron', 'scholar', 'yogi', 'poet', 'king', 'minister'])).optional(),
+    roles: z.array(z.enum(['teacher', 'student', 'translator', 'abbot', 'patron', 'scholar', 'yogi', 'poet', 'king', 'minister', 'practitioner', 'master', 'author', 'deity_human_form'])).optional(),
     affiliations: z.array(z.string()).optional(),
     gender: z.enum(['male', 'female', 'unknown']).optional(),
-    tradition: z.array(z.enum(['Nyingma', 'Kagyu', 'Sakya', 'Gelug', 'Bon', 'Rimé', 'Kadam', 'Jonang'])).optional(),
+    tradition: z.array(z.enum(['Nyingma', 'Kagyu', 'Sakya', 'Gelug', 'Bon', 'Rimé', 'Kadam', 'Jonang', 'Shangpa', 'Chod'])).optional(),
     biography: z.string().optional(),
     alternateNames: z.array(z.string()).optional()
   }).default({})
@@ -95,7 +95,7 @@ export const PersonEntitySchema = EntityBaseSchema.extend({
 export const PlaceEntitySchema = EntityBaseSchema.extend({
   type: z.literal('place'),
   attributes: z.object({
-    placeType: z.enum(['monastery', 'mountain', 'cave', 'city', 'region', 'country', 'holy_site', 'hermitage', 'temple', 'stupa']),
+    placeType: z.enum(['monastery', 'mountain', 'cave', 'city', 'region', 'country', 'holy_site', 'hermitage', 'temple', 'stupa', 'village', 'district', 'kingdom', 'retreat_center']),
     coordinates: CoordinatesSchema.optional(),
     region: z.string().optional(),
     modernCountry: z.string().optional(),
@@ -109,7 +109,7 @@ export const PlaceEntitySchema = EntityBaseSchema.extend({
 export const TextEntitySchema = EntityBaseSchema.extend({
   type: z.literal('text'),
   attributes: z.object({
-    textType: z.enum(['sutra', 'tantra', 'commentary', 'biography', 'poetry', 'letters', 'ritual', 'philosophical_treatise', 'history', 'medicine', 'astrology']),
+    textType: z.enum(['sutra', 'tantra', 'commentary', 'biography', 'poetry', 'letters', 'ritual', 'philosophical_treatise', 'history', 'medicine', 'astrology', 'prayer', 'aspiration', 'terma', 'lexicon', 'grammar', 'instruction', 'treatise']),
     language: z.string(),
     volumeCount: z.number().int().positive().optional(),
     pageCount: z.number().int().positive().optional(),
@@ -124,7 +124,7 @@ export const TextEntitySchema = EntityBaseSchema.extend({
 export const EventEntitySchema = EntityBaseSchema.extend({
   type: z.literal('event'),
   attributes: z.object({
-    eventType: z.enum(['teaching', 'empowerment', 'debate', 'founding', 'pilgrimage', 'retreat', 'death', 'birth', 'transmission', 'political', 'natural_disaster', 'meeting', 'ordination', 'enthronement']),
+    eventType: z.enum(['teaching', 'empowerment', 'debate', 'founding', 'pilgrimage', 'retreat', 'death', 'birth', 'transmission', 'political', 'natural_disaster', 'meeting', 'ordination', 'enthronement', 'renunciation', 'enlightenment', 'parinirvana', 'prophecy', 'miracle']),
     location: z.string().optional(),
     duration: z.string().optional(),
     significance: z.string().optional(),

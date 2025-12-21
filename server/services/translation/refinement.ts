@@ -50,16 +50,53 @@ export async function performRefinementIteration(
 
   // Use correct Gemini service based on page number
   const geminiService = getGeminiService(pageNumber);
-  const result = await geminiService.generateContent(refinementPrompt, config.timeout, abortSignal);
-  const response = await result.response;
-  const refinedTranslation = response.text();
+  
+  try {
+    const result = await geminiService.generateContent(refinementPrompt, config.timeout, abortSignal);
+    const response = await result.response;
+    const refinedTranslation = response.text();
 
-  const confidence = calculateRefinementConfidence(refinedTranslation, originalText);
+    const confidence = calculateRefinementConfidence(refinedTranslation, originalText);
 
-  return {
-    translation: refinedTranslation,
-    confidence
-  };
+    return {
+      translation: refinedTranslation,
+      confidence
+    };
+  } catch (error) {
+    console.warn(`[Refinement] Gemini refinement failed for page ${pageNumber}, attempting alternative provider:`, (error as Error).message);
+    
+    // Fallback to MultiProvider AI for refinement
+    try {
+      const { multiProviderAIService } = await import('./MultiProviderAIService');
+      
+      if (multiProviderAIService.isAvailable()) {
+        const dictionaryContext = await dictionary.getDictionaryContext();
+        
+        const responses = await multiProviderAIService.getMultiProviderTranslations(
+          originalText,
+          dictionaryContext,
+          1
+        );
+
+        if (responses.length > 0) {
+          console.log(`[Refinement] Alternative provider (${responses[0].provider}) succeeded for refinement`);
+          return {
+            translation: responses[0].translation,
+            confidence: responses[0].confidence
+          };
+        }
+      }
+    } catch (fallbackError) {
+      console.error(`[Refinement] Alternative provider fallback logic failed:`, fallbackError);
+    }
+    
+    // If all refinement attempts fail, return the original translation
+    console.log(`[Refinement] All refinement attempts failed for page ${pageNumber}, keeping original translation`);
+    return {
+      translation: currentTranslation,
+      confidence: 0.7 
+    };
+  }
 }
 
 /**

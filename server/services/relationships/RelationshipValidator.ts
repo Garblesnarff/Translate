@@ -315,6 +315,11 @@ const TYPE_CONSTRAINTS: Record<PredicateType, TypeConstraint> = {
     object: 'person',
     description: 'Both subjects must be persons'
   },
+  potential_duplicate_of: {
+    subject: ['person', 'place', 'text', 'event', 'lineage', 'concept', 'institution', 'deity'],
+    object: ['person', 'place', 'text', 'event', 'lineage', 'concept', 'institution', 'deity'],
+    description: 'Any entity can be a potential duplicate of another entity'
+  },
 };
 
 // ============================================================================
@@ -364,6 +369,7 @@ const BIDIRECTIONAL_PAIRS: Record<PredicateType, PredicateType | null> = {
   preceded: null,
   followed: null,
   incarnation_of: null,
+  potential_duplicate_of: null,
 };
 
 // ============================================================================

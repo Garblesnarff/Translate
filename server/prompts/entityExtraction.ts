@@ -38,36 +38,38 @@ ${originalTibetan ? `\nORIGINAL TIBETAN (for reference):\n${originalTibetan}\n` 
 
 EXTRACTION GUIDELINES:
 
-1. **BE CONSERVATIVE**: Only extract what is explicitly stated or very strongly implied
-2. **PRESERVE NAMES**: Keep Tibetan names exactly as they appear
-3. **NOTE UNCERTAINTY**: Use confidence scores to reflect ambiguity (0.0 = uncertain, 1.0 = certain)
-4. **PROVIDE EVIDENCE**: Include source quotes for relationships
-5. **HANDLE PRONOUNS**: When text says "he" or "she", try to resolve to the person from context, but mark with lower confidence if uncertain
+1. **BE CONSERVATIVE**: Only extract what is explicitly stated or very strongly implied.
+2. **NAMED ENTITIES ONLY**: Only extract specific named individuals or entities with unique identities. DO NOT create "Person" entities for generic roles or titles (e.g., "The Abbot", "the master", "the teacher", "the practitioner") unless they have a proper name.
+3. **PRESERVE NAMES**: Keep Tibetan names exactly as they appear.
+4. **NOTE UNCERTAINTY**: Use confidence scores to reflect ambiguity (0.0 = uncertain, 1.0 = certain).
+5. **PROVIDE EVIDENCE**: Include source quotes for relationships.
+6. **HANDLE PRONOUNS**: When text says "he" or "she", try to resolve to the person from context, but mark with lower confidence if uncertain.
 
 ENTITY TYPES TO EXTRACT:
 
-**PERSON**: Teachers, students, translators, patrons, scholars, practitioners, historical figures
-- Extract: All name variants (Tibetan, English, phonetic)
-- Extract: Titles (རྗེ་བཙུན།, Rinpoche, Lotsawa, etc.)
-- Extract: Roles (teacher, translator, abbot, etc.)
-- Extract: Birth/death dates if mentioned
-- Extract: Tradition affiliation (Kagyu, Sakya, etc.)
+**PERSON**: Specific teachers, students, translators, patrons, scholars, practitioners, historical figures.
+- MUST HAVE a proper name or be a unique historical figure.
+- Extract: All name variants (Tibetan, English, phonetic).
+- Attributes roles (MUST BE one or more of): 'teacher', 'student', 'translator', 'abbot', 'patron', 'scholar', 'yogi', 'poet', 'king', 'minister', 'practitioner', 'master', 'author'.
+- Attributes tradition (MUST BE one of): 'Nyingma', 'Kagyu', 'Sakya', 'Gelug', 'Bon', 'Rimé', 'Kadam', 'Jonang', 'Shangpa', 'Chod'.
+- Extract: Birth/death dates if mentioned.
+- Attributes gender: 'male', 'female', or 'unknown'.
 
 **PLACE**: Monasteries, mountains, caves, regions, cities, countries
-- Extract: Location type (monastery, mountain, cave, region, country)
+- Attributes placeType (MUST BE one of): 'monastery', 'mountain', 'cave', 'city', 'region', 'country', 'holy_site', 'hermitage', 'temple', 'stupa', 'village', 'district', 'kingdom', 'retreat_center'
 - Extract: All name variants
 - Extract: Geographic relationships (X is in Y)
 - Extract: Founding dates and founders
 
-**TEXT**: Sutras, tantras, commentaries, biographies, letters, treatises
-- Extract: Type (sutra, tantra, commentary, biography, etc.)
+**TEXT**: Sutras, tantras, commentaries, biographies, letters, treatises, prayers
+- Attributes textType (MUST BE one of): 'sutra', 'tantra', 'commentary', 'biography', 'poetry', 'letters', 'ritual', 'philosophical_treatise', 'history', 'medicine', 'astrology', 'prayer', 'aspiration', 'terma', 'lexicon', 'grammar', 'instruction', 'treatise'
 - Extract: Author and translator if mentioned
 - Extract: Composition/translation dates
 - Extract: Which texts it comments on or cites
 
-**EVENT**: Teachings, empowerments, debates, foundings, retreats, meetings
-- Extract: Event type (teaching, empowerment, debate, etc.)
-- Extract: Date (exact, circa, or relative like "after X died")
+**EVENT**: Teachings, empowerments, debates, foundings, retreats, meetings, renunciation, enlightenment, miracles
+- Attributes eventType (MUST BE one of): 'teaching', 'empowerment', 'debate', 'founding', 'pilgrimage', 'retreat', 'death', 'birth', 'transmission', 'political', 'natural_disaster', 'meeting', 'ordination', 'enthronement', 'renunciation', 'enlightenment', 'parinirvana', 'prophecy', 'miracle'
+- Extract: Date (exact, circa, or relative)
 - Extract: Location
 - Extract: Participants and their roles
 
@@ -82,14 +84,14 @@ RELATIONSHIP TYPES TO EXTRACT:
 
 OUTPUT FORMAT:
 
-Return ONLY valid JSON (no markdown, no extra text) in this exact structure:
+Return ONLY valid JSON. Do not include any conversational text, markdown outside of the JSON block, or notes.
 
 {
   "entities": [
     {
       "tempId": "PERSON_1",
       "type": "person",
-      "canonicalName": "Primary name in English",
+      "canonicalName": "Marpa Lotsawa",
       "names": {
         "tibetan": ["མར་པ།"],
         "english": ["Marpa", "Marpa Lotsawa"],
@@ -111,62 +113,48 @@ Return ONLY valid JSON (no markdown, no extra text) in this exact structure:
       },
       "confidence": 0.9,
       "extractionReason": "Explicitly named as 'the great translator Marpa'"
+    },
+    {
+      "tempId": "PLACE_1",
+      "type": "place",
+      "canonicalName": "India",
+      "names": {
+        "tibetan": ["རྒྱ་གར།"],
+        "english": ["India"]
+      },
+      "attributes": {
+        "placeType": "country"
+      },
+      "confidence": 1.0,
+      "extractionReason": "Explicitly mentioned as location"
     }
   ],
   "relationships": [
     {
       "subjectId": "PERSON_1",
-      "subjectName": "Milarepa",
-      "predicate": "student_of",
-      "objectId": "PERSON_2",
-      "objectName": "Marpa",
-      "properties": {
-        "date": {
-          "year": 1055,
-          "precision": "circa",
-          "confidence": 0.7
-        },
-        "location": "Lhodrak",
-        "duration": "12 years"
-      },
+      "predicate": "origin_from",
+      "objectId": "PLACE_1",
       "confidence": 0.95,
-      "sourceQuote": "Milarepa studied under Marpa for twelve years at Lhodrak",
-      "extractionReason": "Explicit statement of student-teacher relationship with duration and location"
+      "sourceQuote": "Marpa traveled to India",
+      "extractionReason": "Marpa is the subject and India is the destination of travel"
     }
   ],
-  "ambiguities": [
-    "Birth year of Marpa varies in sources (1012 or 1009)",
-    "The text mentions 'the master' but it's unclear if this refers to Marpa or someone else"
-  ]
+  "ambiguities": []
 }
 
 IMPORTANT RULES:
 
 1. **Use tempId** for entity references (PERSON_1, PERSON_2, PLACE_1, etc.)
 2. **Match tempIds** between entities and relationships arrays
-3. **Include sourceQuote** showing exactly where you found each relationship
-4. **Include extractionReason** explaining your confidence score
-5. **List ambiguities** so human curators can review uncertain extractions
+3. **Include sourceQuote**: Keep quotes under 15 words. ONLY include the most relevant part.
+4. **Include extractionReason**: MAX 10 words. Be extremely concise.
+5. **List ambiguities**: Only list critical uncertainties that affect graph structure.
 6. **Never invent information** - if something isn't in the text, don't extract it
-7. **Handle dates carefully**:
-   - Use "exact" only for specific dates like "1073"
-   - Use "circa" for approximate dates like "around 1050"
-   - Use "estimated" for scholarly estimates
-   - Use "disputed" when sources conflict
-   - Use relative dates like {"relative": "after X died"} when only relative information is given
-
-8. **For Tibetan dates**: If text mentions Iron-Tiger year or similar:
-   {
-     "tibetanYear": {
-       "element": "iron",
-       "animal": "tiger",
-       "rabjung": 16,
-       "year": 47
-     },
-     "year": 2010,
-     "precision": "exact",
-     "confidence": 0.95
-   }
+7. **Handle dates carefully**
+8. **PlaceType is MANDATORY** for all place entities. Use 'region' or 'country' if unsure but generic.
+9. **Roles must be selected** from the provided list.
+10. **JSON MUST BE PARSABLE**. Check for trailing commas and balance all brackets.
+11. **BE CONCISE**: Priority is on data structure, not descriptive reasoning.
 
 Now extract all entities and relationships from the provided text. Return ONLY the JSON output.`;
 }

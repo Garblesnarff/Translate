@@ -1321,6 +1321,23 @@ export const ContemporaryWithSchema: RelationshipTypeSchema = {
   ]
 };
 
+/**
+ * System relationship: Potential Duplicate
+ */
+export const PotentialDuplicateOfSchema: RelationshipTypeSchema = {
+  type: 'potential_duplicate_of',
+  description: 'Indicates that two entities might refer to the same historical figure or place',
+  subjectTypes: ['person', 'place', 'text', 'event', 'lineage', 'concept', 'institution', 'deity'],
+  objectTypes: ['person', 'place', 'text', 'event', 'lineage', 'concept', 'institution', 'deity'],
+  properties: {
+    ...BaseRelationshipProperties
+  },
+  bidirectional: false,
+  examples: [
+    'PERSON_NEW potential_duplicate_of PERSON_EXISTING'
+  ]
+};
+
 // ============================================================================
 // Relationship Schema Registry
 // ============================================================================
@@ -1365,7 +1382,8 @@ export const RelationshipSchemas: Record<PredicateType, RelationshipTypeSchema> 
   taught_concept: TaughtConceptSchema,
   preceded: PrecededSchema,
   followed: FollowedSchema,
-  contemporary_with: ContemporaryWithSchema
+  contemporary_with: ContemporaryWithSchema,
+  potential_duplicate_of: PotentialDuplicateOfSchema
 };
 
 /**

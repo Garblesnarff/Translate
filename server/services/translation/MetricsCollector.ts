@@ -235,14 +235,14 @@ export class MetricsCollector {
       // Insert metrics into database
       for (const metric of metricsToFlush) {
         await db.insert(this.tables.translationMetrics).values({
-          translationId: metric.translationId,
+          translationId: metric.translationId?.toString(),
           sessionId: metric.sessionId,
-          timestamp: metric.timestamp,
+          timestamp: metric.timestamp.toISOString(),
 
-          confidenceScore: metric.confidenceScore,
-          qualityScore: metric.qualityScore,
-          modelAgreement: metric.modelAgreement,
-          formatScore: metric.formatScore,
+          confidenceScore: metric.confidenceScore.toString(),
+          qualityScore: metric.qualityScore?.toString() || null,
+          modelAgreement: metric.modelAgreement?.toString() || null,
+          formatScore: metric.formatScore?.toString() || null,
 
           processingTimeMs: metric.processingTimeMs,
           tokensProcessed: metric.tokensProcessed,
@@ -253,7 +253,7 @@ export class MetricsCollector {
           retriesNeeded: metric.retriesNeeded,
           helperModelsUsed: metric.helperModelsUsed ? JSON.stringify(metric.helperModelsUsed) : null,
 
-          gatesPassed: metric.gatesPassed,
+          gatesPassed: metric.gatesPassed ? 1 : 0,
           gateResults: metric.gateResults ? JSON.stringify(metric.gateResults) : null,
           failedGates: metric.failedGates ? JSON.stringify(metric.failedGates) : null,
 
@@ -261,7 +261,7 @@ export class MetricsCollector {
           documentId: metric.documentId,
           textLength: metric.textLength,
 
-          errorOccurred: metric.errorOccurred,
+          errorOccurred: metric.errorOccurred ? 1 : 0,
           errorType: metric.errorType,
           errorMessage: metric.errorMessage
         });

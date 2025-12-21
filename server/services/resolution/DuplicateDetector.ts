@@ -391,17 +391,9 @@ export class DuplicateDetector {
   /**
    * Calculate duplicate probability between two entities
    *
-   * Combines all signals using weighted scoring formula to determine
-   * overall duplicate probability.
-   *
-   * @param entity1 - First entity
-   * @param entity2 - Second entity
-   * @param options - Detection options
-   * @returns Detailed duplicate score with signal breakdown
-   *
-   * @example
-   * const score = detector.calculateDuplicateProbability(marpa1, marpa2);
-   * // Returns: { overall: 0.92, confidenceLevel: 'very_high', signals: {...} }
+   * Combines all signals using a normalized weighted scoring formula.
+   * Signals with no data (returning 0.5) are given less weight to prevent
+   * them from diluting strong signals like name matches.
    */
   calculateDuplicateProbability(
     entity1: Entity,
@@ -411,43 +403,79 @@ export class DuplicateDetector {
     const signals = this.scoreBySignal(entity1, entity2, options);
     const warnings: string[] = [];
 
-    // Calculate weighted overall score
-    const overall =
-      signals.nameSimilarity * SIGNAL_WEIGHTS.name +
-      signals.dateSimilarity * SIGNAL_WEIGHTS.date +
-      signals.locationSimilarity * SIGNAL_WEIGHTS.location +
-      signals.relationshipSimilarity * SIGNAL_WEIGHTS.relationship +
-      signals.attributeSimilarity * SIGNAL_WEIGHTS.attribute;
+    // Calculate weighted overall score using normalized weights
+    // If a signal is "neutral" (0.5), we reduce its influence if other signals are strong
+    let weightedSum = 0;
+    let weightTotal = 0;
+
+    // Name is always included
+    weightedSum += signals.nameSimilarity * SIGNAL_WEIGHTS.name;
+    weightTotal += SIGNAL_WEIGHTS.name;
+
+    // For other signals, if they are neutral (0.5), they contribute less to the total 
+    // weight if we have a strong name match, to avoid dilution.
+    const otherSignals: Array<[keyof typeof SIGNAL_WEIGHTS, number]> = [
+      ['date', signals.dateSimilarity],
+      ['location', signals.locationSimilarity],
+      ['relationship', signals.relationshipSimilarity],
+      ['attribute', signals.attributeSimilarity]
+    ];
+
+    for (const [key, score] of otherSignals) {
+      const weight = SIGNAL_WEIGHTS[key];
+      
+      // If signal has actual data (not 0.5), or if we want to include it anyway
+      if (score !== 0.5) {
+        weightedSum += score * weight;
+        weightTotal += weight;
+      } else {
+        // Neutral signal - we include it with half weight to provide some "gravity" 
+        // towards the center, but allow strong matches to shine through.
+        weightedSum += score * (weight * 0.5);
+        weightTotal += (weight * 0.5);
+      }
+    }
+
+    const overall = weightedSum / weightTotal;
+
+    // Special case: Exact name match with no conflicting data should be very high
+    let finalScore = overall;
+    if (signals.nameSimilarity > 0.98 && overall < 0.9) {
+      const hasConflicts = signals.dateSimilarity < 0.3 || signals.locationSimilarity < 0.3;
+      if (!hasConflicts) {
+        finalScore = Math.max(finalScore, 0.92); // Boost to "High" confidence
+      }
+    }
 
     // Determine confidence level
     let confidenceLevel: ConfidenceLevel;
-    if (overall >= CONFIDENCE_THRESHOLDS.very_high) {
+    if (finalScore >= CONFIDENCE_THRESHOLDS.very_high) {
       confidenceLevel = 'very_high';
-    } else if (overall >= CONFIDENCE_THRESHOLDS.high) {
+    } else if (finalScore >= CONFIDENCE_THRESHOLDS.high) {
       confidenceLevel = 'high';
-    } else if (overall >= CONFIDENCE_THRESHOLDS.medium) {
+    } else if (finalScore >= CONFIDENCE_THRESHOLDS.medium) {
       confidenceLevel = 'medium';
     } else {
       confidenceLevel = 'low';
     }
 
     // Generate explanation
-    const reason = this.generateDuplicateReason(signals, overall, confidenceLevel);
+    const reason = this.generateDuplicateReason(signals, finalScore, confidenceLevel);
 
     // Check for edge cases and add warnings
     this.detectEdgeCases(entity1, entity2, signals, warnings);
 
-    // Calculate actual weighted contributions
+    // Calculate actual weighted contributions for reporting
     const weights = {
-      name: signals.nameSimilarity * SIGNAL_WEIGHTS.name,
-      date: signals.dateSimilarity * SIGNAL_WEIGHTS.date,
-      location: signals.locationSimilarity * SIGNAL_WEIGHTS.location,
-      relationship: signals.relationshipSimilarity * SIGNAL_WEIGHTS.relationship,
-      attribute: signals.attributeSimilarity * SIGNAL_WEIGHTS.attribute,
+      name: (signals.nameSimilarity * SIGNAL_WEIGHTS.name) / weightTotal,
+      date: (signals.dateSimilarity * SIGNAL_WEIGHTS.date) / weightTotal,
+      location: (signals.locationSimilarity * SIGNAL_WEIGHTS.location) / weightTotal,
+      relationship: (signals.relationshipSimilarity * SIGNAL_WEIGHTS.relationship) / weightTotal,
+      attribute: (signals.attributeSimilarity * SIGNAL_WEIGHTS.attribute) / weightTotal,
     };
 
     return {
-      overall,
+      overall: finalScore,
       confidenceLevel,
       signals,
       weights,

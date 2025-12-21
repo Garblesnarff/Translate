@@ -86,7 +86,10 @@ export type PredicateType =
   // Temporal relationships
   | 'preceded'
   | 'followed'
-  | 'contemporary_with';
+  | 'contemporary_with'
+  
+  // System relationships
+  | 'potential_duplicate_of';
 
 // ============================================================================
 // Supporting Types
@@ -169,10 +172,10 @@ export interface PersonEntity extends EntityBase {
     titles?: string[]; // རྗེ་བཙུན།, Rinpoche, Lotsawa, etc.
     honorifics?: string[];
     epithets?: string[]; // "The Great Translator", etc.
-    roles?: ('teacher' | 'student' | 'translator' | 'abbot' | 'patron' | 'scholar' | 'yogi' | 'poet' | 'king' | 'minister')[];
+    roles?: ('teacher' | 'student' | 'translator' | 'abbot' | 'patron' | 'scholar' | 'yogi' | 'poet' | 'king' | 'minister' | 'practitioner' | 'master' | 'author' | 'deity_human_form')[];
     affiliations?: string[]; // Monastery names, lineage names
     gender?: 'male' | 'female' | 'unknown';
-    tradition?: ('Nyingma' | 'Kagyu' | 'Sakya' | 'Gelug' | 'Bon' | 'Rimé' | 'Kadam' | 'Jonang')[];
+    tradition?: ('Nyingma' | 'Kagyu' | 'Sakya' | 'Gelug' | 'Bon' | 'Rimé' | 'Kadam' | 'Jonang' | 'Shangpa' | 'Chod')[];
     biography?: string; // Brief summary
     alternateNames?: string[]; // Other names they were known by
   };
@@ -187,7 +190,7 @@ export interface PersonEntity extends EntityBase {
 export interface PlaceEntity extends EntityBase {
   type: 'place';
   attributes: {
-    placeType: 'monastery' | 'mountain' | 'cave' | 'city' | 'region' | 'country' | 'holy_site' | 'hermitage' | 'temple' | 'stupa';
+    placeType: 'monastery' | 'mountain' | 'cave' | 'city' | 'region' | 'country' | 'holy_site' | 'hermitage' | 'temple' | 'stupa' | 'village' | 'district' | 'kingdom' | 'retreat_center';
     coordinates?: Coordinates;
     region?: string; // Ü, Tsang, Kham, Amdo, etc.
     modernCountry?: string; // Current political entity
@@ -206,7 +209,7 @@ export interface PlaceEntity extends EntityBase {
 export interface TextEntity extends EntityBase {
   type: 'text';
   attributes: {
-    textType: 'sutra' | 'tantra' | 'commentary' | 'biography' | 'poetry' | 'letters' | 'ritual' | 'philosophical_treatise' | 'history' | 'medicine' | 'astrology';
+    textType: 'sutra' | 'tantra' | 'commentary' | 'biography' | 'poetry' | 'letters' | 'ritual' | 'philosophical_treatise' | 'history' | 'medicine' | 'astrology' | 'prayer' | 'aspiration' | 'terma' | 'lexicon' | 'grammar' | 'instruction' | 'treatise';
     language: string; // Tibetan, Sanskrit, Chinese, Pali, etc.
     volumeCount?: number;
     pageCount?: number;

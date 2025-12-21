@@ -312,7 +312,7 @@ export class EntityMerger {
             attributes: JSON.stringify((combined as any).attributes),
             dates: combined.dates ? JSON.stringify(combined.dates) : null,
             confidence: String(combined.confidence),
-            updatedAt: new Date(),
+            updatedAt: new Date().toISOString(),
           })
           .where(eq(entities.id, primaryId));
 
@@ -337,7 +337,7 @@ export class EntityMerger {
             .set({
               mergeStatus: 'merged',
               mergedInto: primaryId,
-              updatedAt: new Date(),
+              updatedAt: new Date().toISOString(),
             })
             .where(eq(entities.id, duplicateId));
         } else {
@@ -373,7 +373,7 @@ export class EntityMerger {
             ${JSON.stringify(primarySnapshot)},
             ${JSON.stringify(duplicateSnapshot)},
             ${relationshipsUpdated},
-            ${softDelete}
+            ${softDelete ? 1 : 0}
           )
         `);
 
@@ -505,7 +505,7 @@ export class EntityMerger {
             attributes: JSON.stringify((primaryEntity as any).attributes),
             dates: primaryEntity.dates ? JSON.stringify(primaryEntity.dates) : null,
             confidence: String(primaryEntity.confidence),
-            updatedAt: new Date(),
+            updatedAt: new Date().toISOString(),
           })
           .where(eq(entities.id, primaryEntityId));
 
@@ -521,7 +521,7 @@ export class EntityMerger {
             confidence: String(duplicateEntity.confidence),
             mergeStatus: 'active',
             mergedInto: null,
-            updatedAt: new Date(),
+            updatedAt: new Date().toISOString(),
           })
           .where(eq(entities.id, duplicateEntityId));
 

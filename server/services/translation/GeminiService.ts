@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, GenerativeModel, GenerateContentResult } from "@google/generative-ai";
+import { GoogleGenerativeAI, GenerativeModel, GenerateContentResult, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { GeminiKeyPool } from './GeminiKeyPool';
 import { CancellationManager } from '../CancellationManager';
 
@@ -10,6 +10,14 @@ export class GeminiService {
   private pageType: 'odd' | 'even';
   private currentModel: GenerativeModel | null = null;
   private currentApiKey: string | null = null;
+
+  // Standard safety settings to prevent silent truncation of historical content
+  private readonly safetySettings = [
+    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  ];
 
   constructor(primaryApiKey: string, pageType: 'odd' | 'even', backupKeys: string[] = []) {
     if (!primaryApiKey) {
@@ -23,28 +31,29 @@ export class GeminiService {
     this.initializeWithNextKey();
   }
 
-  private initializeWithNextKey(): boolean {
+  private initializeWithNextKey(modelId: string = "gemini-3-flash-preview"): boolean {
     const apiKey = this.keyPool.getNextAvailableKey();
     if (!apiKey) {
       console.error(`[GeminiService] No available keys for ${this.pageType} pages`);
       return false;
     }
 
-    if (this.currentApiKey === apiKey) {
-      return true; // Already using this key
-    }
+    // If key hasn't changed AND model hasn't changed, skip
+    // We check if currentModel's config matches the requested modelId if possible
+    // but for simplicity we'll re-initialize if modelId is provided and different
 
     try {
       this.currentApiKey = apiKey;
       const genAI = new GoogleGenerativeAI(apiKey);
       this.currentModel = genAI.getGenerativeModel({ 
-        model: "gemini-3-flash-preview",
+        model: modelId,
         generationConfig: {
           temperature: 0.1,
           topK: 1,
           topP: 0.8,
           maxOutputTokens: 8192,
-        }
+        },
+        safetySettings: this.safetySettings
       });
       return true;
     } catch (error) {
@@ -58,10 +67,18 @@ export class GeminiService {
    * @param prompt - The prompt to generate content from
    * @param timeout - Maximum time to wait for generation in milliseconds
    * @param abortSignal - Signal to abort the operation
+   * @param mimeType - Optional response MIME type (e.g. "application/json")
+   * @param modelId - Optional model ID to use (overrides default)
    * @returns The generated content result
    * @throws Error if generation times out or fails after retries
    */
-  public async generateContent(prompt: string, timeout: number = 30000, abortSignal?: AbortSignal): Promise<GenerateContentResult> {
+  public async generateContent(
+    prompt: string, 
+    timeout: number = 30000, 
+    abortSignal?: AbortSignal,
+    mimeType: string = "text/plain",
+    modelId: string = "gemini-3-flash-preview"
+  ): Promise<GenerateContentResult> {
     const maxRetries = 3;
     const baseDelay = 1000; // 1 second
     const startTime = Date.now();
@@ -70,9 +87,9 @@ export class GeminiService {
       // Check for cancellation before each attempt
       CancellationManager.throwIfCancelled(abortSignal, `Gemini attempt ${attempt}`);
       
-      // Ensure we have a valid model with an available key
+      // Ensure we have a valid model with an available key or if modelId changed
       if (!this.currentModel || !this.currentApiKey) {
-        if (!this.initializeWithNextKey()) {
+        if (!this.initializeWithNextKey(modelId)) {
           throw new Error(`No available Gemini keys for ${this.pageType} pages`);
         }
       }
@@ -90,12 +107,32 @@ export class GeminiService {
               topP: 0.8,
               maxOutputTokens: 8192,
               candidateCount: 1,
+              responseMimeType: mimeType,
             },
+            safetySettings: this.safetySettings
           }),
           new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Translation timeout')), timeout)
           )
-        ]) as Promise<GenerateContentResult>;
+        ]) as GenerateContentResult;
+
+        // Check for truncation/safety blocks
+        const candidate = result.response.candidates?.[0];
+        if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+          const reason = candidate.finishReason;
+          console.warn(`[GeminiService] Response terminated early! Reason: ${reason}`);
+          
+          if (reason === 'MAX_TOKENS') {
+            throw new Error('Gemini output truncated (MAX_TOKENS)');
+          }
+          if (reason === 'SAFETY') {
+            throw new Error('Gemini output blocked by safety filters');
+          }
+          // For other reasons, we still might want to treat it as a failure if no text is returned
+          if (!result.response.text()) {
+            throw new Error(`Gemini failed to return text. Reason: ${reason}`);
+          }
+        }
 
         // Record successful call
         const responseTime = Date.now() - startTime;
@@ -124,31 +161,9 @@ export class GeminiService {
               this.currentModel = null;
               continue; // Try with new key immediately
             } else {
-              // Check for cancellation before waiting
-              CancellationManager.throwIfCancelled(abortSignal, 'exponential backoff delay');
-              
-              // No other keys available, wait with exponential backoff
-              const delay = baseDelay * Math.pow(2, attempt - 1);
-              console.log(`[GeminiService] No backup keys available, waiting ${delay}ms before retry`);
-              
-              // Create a cancellable delay
-              await new Promise<void>((resolve, reject) => {
-                const timeoutId = setTimeout(resolve, delay);
-                
-                // If aborted during delay, clear timeout and reject
-                if (abortSignal) {
-                  const abortHandler = () => {
-                    clearTimeout(timeoutId);
-                    reject(new Error('Translation cancelled during retry delay'));
-                  };
-                  
-                  if (abortSignal.aborted) {
-                    abortHandler();
-                  } else {
-                    abortSignal.addEventListener('abort', abortHandler, { once: true });
-                  }
-                }
-              });
+              // No other keys available, don't wait if it's pointless
+              console.warn(`[GeminiService] No backup keys available for ${this.pageType} pool`);
+              throw new Error(`Rate limit exceeded and no backup keys available for ${this.pageType} pages`);
             }
           }
         } 

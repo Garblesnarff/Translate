@@ -56,6 +56,7 @@ export function getTables() {
       dictionary: sqliteSchema.dictionary,
       apiKeys: sqliteSchema.apiKeys,
       auditLogs: sqliteSchema.auditLogs,
+      translationMetrics: sqliteSchema.translationMetrics,
       // Knowledge graph tables
       entities: sqliteSchema.entities,
       relationships: sqliteSchema.relationships,
@@ -70,6 +71,7 @@ export function getTables() {
       dictionary: pgSchema.dictionary,
       apiKeys: pgSchema.apiKeys,
       auditLogs: pgSchema.auditLogs,
+      translationMetrics: pgSchema.translationMetrics,
       // Knowledge graph tables
       entities: pgSchema.entities,
       relationships: pgSchema.relationships,
