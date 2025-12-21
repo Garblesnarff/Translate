@@ -1,0 +1,22 @@
+{
+  "timestamp": "2025-12-21T02:57:16.256Z",
+  "summary": {
+    "totalOperations": 0,
+    "passed": 0,
+    "failed": 0,
+    "avgDuration": null
+  },
+  "byCategory": {},
+  "details": [],
+  "targets": {
+    "DICTIONARY_TERM_LOOKUP": 5,
+    "DICTIONARY_BATCH_LOOKUP": 20,
+    "TRANSLATION_MEMORY_SEARCH": 20,
+    "TRANSLATION_MEMORY_INSERT": 10,
+    "METRICS_BATCH_INSERT_100": 10,
+    "METRICS_QUERY": 10,
+    "JOB_QUEUE_QUERY": 10,
+    "JOB_QUEUE_UPDATE": 5,
+    "INDEX_SCAN": 15
+  }
+}

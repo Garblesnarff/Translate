@@ -1,0 +1,31 @@
+{
+  "timestamp": "2025-12-21T02:57:17.523Z",
+  "caches": {
+    "l1": {
+      "hits": 0,
+      "misses": 0,
+      "hitRate": 0,
+      "size": 0
+    },
+    "l2": {
+      "hits": 0,
+      "misses": 0,
+      "hitRate": 0,
+      "size": 0
+    },
+    "translationMemory": {
+      "hits": 0,
+      "misses": 0,
+      "hitRate": 0,
+      "size": 0
+    }
+  },
+  "targets": {
+    "L1_HIT_RATE": 0.75,
+    "L2_HIT_RATE": 0.2,
+    "TRANSLATION_MEMORY_HIT_RATE": 0.1,
+    "OVERALL_HIT_RATE": 0.8,
+    "MAX_LOOKUP_TIME": 1,
+    "MAX_EVICTION_TIME": 10
+  }
+}

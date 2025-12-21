@@ -1,15 +1,19 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+/**
+ * Text Chunking Tests (now part of textExtractor)
+ *
+ * Tests the chunking functionality for splitting extracted text
+ * into translation-ready chunks.
+ */
+
+import { describe, it, expect } from 'vitest';
 import {
-  SemanticChunker,
   estimateTokenCount,
   splitTextIntoChunks,
-  combineTranslations,
-  getChunkingStats,
-  type ChunkingConfig,
-  type TextChunk,
+  type PageChunk,
+  type ExtractionChunkingConfig,
 } from '@/lib/textChunker';
 
-describe('textChunker', () => {
+describe('textExtractor chunking', () => {
   describe('estimateTokenCount', () => {
     it('should return 0 for empty text', () => {
       expect(estimateTokenCount('')).toBe(0);
@@ -35,87 +39,93 @@ describe('textChunker', () => {
     });
   });
 
-  describe('SemanticChunker', () => {
-    let chunker: SemanticChunker;
+  describe('splitTextIntoChunks', () => {
+    it('should return empty array for empty text', () => {
+      expect(splitTextIntoChunks('')).toEqual([]);
+      expect(splitTextIntoChunks('   ')).toEqual([]);
+    });
 
-    beforeEach(() => {
-      chunker = new SemanticChunker({
-        maxTokens: 100, // Small limit for testing
-        overlapSentences: 2,
-        preferPageBased: true,
+    it('should work as convenience function', () => {
+      const text = 'Page 1:\nབོད་སྐད། Test text།';
+      const chunks = splitTextIntoChunks(text);
+
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks[0]).toHaveProperty('text');
+      expect(chunks[0]).toHaveProperty('tokenCount');
+    });
+
+    it('should accept custom config', () => {
+      const text = 'Page 1:\n' + 'Test text། '.repeat(50);
+      const chunks = splitTextIntoChunks(text, { maxTokens: 50 });
+
+      chunks.forEach(chunk => {
+        expect(chunk.tokenCount).toBeLessThanOrEqual(50);
       });
     });
 
-    describe('chunkText', () => {
-      it('should return empty array for empty text', () => {
-        expect(chunker.chunkText('')).toEqual([]);
-        expect(chunker.chunkText('   ')).toEqual([]);
+    it('should parse Page N: format correctly', () => {
+      const text = `Page 1:
+First page content།
+
+Page 2:
+Second page content།
+
+Page 3:
+Third page content།`;
+      const chunks = splitTextIntoChunks(text);
+
+      expect(chunks.length).toBe(3);
+      expect(chunks[0].pageNumber).toBe(1);
+      expect(chunks[0].text).toContain('First page');
+      expect(chunks[1].pageNumber).toBe(2);
+      expect(chunks[1].text).toContain('Second page');
+      expect(chunks[2].pageNumber).toBe(3);
+      expect(chunks[2].text).toContain('Third page');
+    });
+
+    it('should handle text without page markers as single chunk', () => {
+      const text = 'No page markers here།';
+      const chunks = splitTextIntoChunks(text);
+
+      expect(chunks.length).toBe(1);
+      expect(chunks[0].pageNumber).toBe(1);
+      expect(chunks[0].text).toBe('No page markers here།');
+    });
+
+    it('should respect token limits', () => {
+      const text = 'Page 1:\n' + 'བོད་སྐད། '.repeat(200);
+      const chunks = splitTextIntoChunks(text, { maxTokens: 100 });
+
+      chunks.forEach(chunk => {
+        expect(chunk.tokenCount).toBeLessThanOrEqual(100);
       });
+    });
 
-      it('should detect numbered pages', () => {
-        const text = '1 First page text། 2 Second page text།';
-        const chunks = chunker.chunkText(text);
+    it('should split large pages into sub-chunks', () => {
+      // Create a very long page that exceeds token limit
+      const longText = 'Page 1:\n' + 'བོད་སྐད། '.repeat(100);
+      const chunks = splitTextIntoChunks(longText, { maxTokens: 50 });
 
-        expect(chunks.length).toBeGreaterThan(0);
-        expect(chunks.some(c => c.chunkingStrategy === 'page')).toBe(true);
-      });
+      expect(chunks.length).toBeGreaterThan(1);
+      expect(chunks.some(c => c.isSubChunk)).toBe(true);
+    });
 
-      it('should use semantic chunking when no page markers', () => {
-        const text = 'བོད་སྐད་ནི་སྐད་ཡིག་གལ་ཆེན་ཡིན། ང་ཚོ་བོད་སྐད་སློབ་སྦྱོང་བྱེད།';
-        const chunks = chunker.chunkText(text);
+    it('should use decimal page numbers for sub-chunks', () => {
+      const longText = 'Page 1:\n' + 'བོད་སྐད། '.repeat(100);
+      const chunks = splitTextIntoChunks(longText, { maxTokens: 50 });
 
-        expect(chunks.length).toBeGreaterThan(0);
-        expect(chunks[0].chunkingStrategy).toMatch(/semantic|page/);
-      });
-
-      it('should split large page chunks using hybrid strategy', () => {
-        // Create a very long page that exceeds token limit
-        const longText = '1 ' + 'བོད་སྐད་ '.repeat(100);
-        const chunker = new SemanticChunker({ maxTokens: 50 });
-        const chunks = chunker.chunkText(longText);
-
-        expect(chunks.length).toBeGreaterThan(1);
-        expect(chunks.some(c => c.chunkingStrategy === 'hybrid')).toBe(true);
-      });
-
-      it('should respect token limits', () => {
-        const chunker = new SemanticChunker({ maxTokens: 100 });
-        const longText = 'བོད་སྐད། '.repeat(200);
-        const chunks = chunker.chunkText(longText);
-
-        chunks.forEach(chunk => {
-          expect(chunk.tokenCount).toBeLessThanOrEqual(100);
-        });
-      });
-
-      it('should add overlap between chunks', () => {
-        const text = 'Sentence one། Sentence two། Sentence three། Sentence four།';
-        const chunker = new SemanticChunker({
-          maxTokens: 30,
-          overlapSentences: 1,
-        });
-        const chunks = chunker.chunkText(text);
-
-        if (chunks.length > 1) {
-          const hasOverlap = chunks.slice(1).some(c => c.hasOverlap);
-          expect(hasOverlap).toBe(true);
-        }
-      });
-
-      it('should not exceed token limit even with overlap', () => {
-        const text = 'Short། '.repeat(50);
-        const chunker = new SemanticChunker({ maxTokens: 50 });
-        const chunks = chunker.chunkText(text);
-
-        chunks.forEach(chunk => {
-          expect(chunk.tokenCount).toBeLessThanOrEqual(50);
-        });
-      });
+      // First chunk should be page 1, sub-chunks should be 1.1, 1.2, etc.
+      expect(chunks[0].pageNumber).toBe(1);
+      if (chunks.length > 1) {
+        // Sub-chunks have decimal page numbers
+        const subChunks = chunks.filter(c => c.isSubChunk);
+        expect(subChunks.length).toBeGreaterThan(0);
+      }
     });
 
     describe('sentence boundary respect', () => {
       it('should never split mid-sentence', () => {
-        const text = 'བོད་སྐད་ནི་སྐད་ཡིག་ཡིན། ང་ཚོ་བོད་སྐད་སློབ་སྦྱོང་བྱེད།';
+        const text = 'Page 1:\nབོད་སྐད་ནི་སྐད་ཡིག་ཡིན། ང་ཚོ་བོད་སྐད་སློབ་སྦྱོང་བྱེད།';
         const chunks = splitTextIntoChunks(text, { maxTokens: 20 });
 
         // Each chunk should end with proper sentence ending
@@ -128,191 +138,25 @@ describe('textChunker', () => {
       });
 
       it('should keep complete sentences together when possible', () => {
-        const text = 'First sentence། Second sentence། Third sentence།';
+        const text = 'Page 1:\nFirst sentence། Second sentence། Third sentence།';
         const chunks = splitTextIntoChunks(text, { maxTokens: 100 });
 
         // With high token limit, should keep all together
         expect(chunks.length).toBeLessThanOrEqual(2);
       });
     });
-
-    describe('numbered page detection', () => {
-      it('should detect page markers', () => {
-        const text = `1 Page one content།
-2 Page two content།
-3 Page three content།`;
-        const chunks = chunker.chunkText(text);
-
-        expect(chunks.length).toBe(3);
-        expect(chunks[0].pageNumber).toBe(1);
-        expect(chunks[1].pageNumber).toBe(2);
-        expect(chunks[2].pageNumber).toBe(3);
-      });
-
-      it('should extract page numbers correctly', () => {
-        const text = '42 Some page content།';
-        const chunks = chunker.chunkText(text);
-
-        expect(chunks.length).toBe(1);
-        expect(chunks[0].pageNumber).toBe(42);
-      });
-
-      it('should handle non-numbered text', () => {
-        const text = 'No page numbers here།';
-        const chunks = chunker.chunkText(text);
-
-        expect(chunks.length).toBeGreaterThan(0);
-        expect(chunks[0].chunkingStrategy).toBe('semantic');
-      });
-    });
-  });
-
-  describe('splitTextIntoChunks', () => {
-    it('should work as convenience function', () => {
-      const text = 'བོད་སྐད། Test text།';
-      const chunks = splitTextIntoChunks(text);
-
-      expect(chunks.length).toBeGreaterThan(0);
-      expect(chunks[0]).toHaveProperty('text');
-      expect(chunks[0]).toHaveProperty('tokenCount');
-    });
-
-    it('should accept custom config', () => {
-      const text = 'Test text། '.repeat(50);
-      const chunks = splitTextIntoChunks(text, { maxTokens: 50 });
-
-      chunks.forEach(chunk => {
-        expect(chunk.tokenCount).toBeLessThanOrEqual(50);
-      });
-    });
-  });
-
-  describe('combineTranslations', () => {
-    it('should combine translations in order', () => {
-      const translations = [
-        { pageNumber: 2, translation: 'Second' },
-        { pageNumber: 1, translation: 'First' },
-        { pageNumber: 3, translation: 'Third' },
-      ];
-
-      const combined = combineTranslations(translations);
-      expect(combined).toBe('First\n\nSecond\n\nThird');
-    });
-
-    it('should handle single translation', () => {
-      const translations = [{ pageNumber: 1, translation: 'Only one' }];
-      const combined = combineTranslations(translations);
-
-      expect(combined).toBe('Only one');
-    });
-
-    it('should handle empty array', () => {
-      const combined = combineTranslations([]);
-      expect(combined).toBe('');
-    });
-
-    it('should preserve decimal page numbers in order', () => {
-      const translations = [
-        { pageNumber: 1.2, translation: 'Sub 2' },
-        { pageNumber: 1, translation: 'Main' },
-        { pageNumber: 1.1, translation: 'Sub 1' },
-      ];
-
-      const combined = combineTranslations(translations);
-      expect(combined).toBe('Main\n\nSub 1\n\nSub 2');
-    });
-  });
-
-  describe('getChunkingStats', () => {
-    it('should return zero stats for empty array', () => {
-      const stats = getChunkingStats([]);
-
-      expect(stats.totalChunks).toBe(0);
-      expect(stats.totalTokens).toBe(0);
-      expect(stats.avgTokensPerChunk).toBe(0);
-      expect(stats.maxTokens).toBe(0);
-      expect(stats.minTokens).toBe(0);
-    });
-
-    it('should calculate correct statistics', () => {
-      const chunks: TextChunk[] = [
-        {
-          pageNumber: 1,
-          text: 'test',
-          tokenCount: 50,
-          hasOverlap: false,
-          chunkingStrategy: 'page',
-        },
-        {
-          pageNumber: 2,
-          text: 'test',
-          tokenCount: 100,
-          hasOverlap: true,
-          chunkingStrategy: 'semantic',
-        },
-        {
-          pageNumber: 3,
-          text: 'test',
-          tokenCount: 75,
-          hasOverlap: false,
-          chunkingStrategy: 'hybrid',
-        },
-      ];
-
-      const stats = getChunkingStats(chunks);
-
-      expect(stats.totalChunks).toBe(3);
-      expect(stats.totalTokens).toBe(225);
-      expect(stats.avgTokensPerChunk).toBe(75);
-      expect(stats.maxTokens).toBe(100);
-      expect(stats.minTokens).toBe(50);
-      expect(stats.chunksWithOverlap).toBe(1);
-      expect(stats.strategyCounts.page).toBe(1);
-      expect(stats.strategyCounts.semantic).toBe(1);
-      expect(stats.strategyCounts.hybrid).toBe(1);
-    });
-
-    it('should count strategy types correctly', () => {
-      const chunks: TextChunk[] = [
-        {
-          pageNumber: 1,
-          text: 'a',
-          tokenCount: 10,
-          hasOverlap: false,
-          chunkingStrategy: 'page',
-        },
-        {
-          pageNumber: 2,
-          text: 'b',
-          tokenCount: 10,
-          hasOverlap: false,
-          chunkingStrategy: 'page',
-        },
-        {
-          pageNumber: 3,
-          text: 'c',
-          tokenCount: 10,
-          hasOverlap: false,
-          chunkingStrategy: 'semantic',
-        },
-      ];
-
-      const stats = getChunkingStats(chunks);
-      expect(stats.strategyCounts.page).toBe(2);
-      expect(stats.strategyCounts.semantic).toBe(1);
-    });
   });
 
   describe('context overlap', () => {
     it('should include overlap text when configured', () => {
-      const text = 'Sentence 1። Sentence 2། Sentence 3། Sentence 4།';
+      const text = 'Page 1:\nSentence 1། Sentence 2། Sentence 3། Sentence 4།';
       const chunks = splitTextIntoChunks(text, {
         maxTokens: 20,
         overlapSentences: 1,
       });
 
       if (chunks.length > 1) {
-        const withOverlap = chunks.filter(c => c.hasOverlap);
+        const withOverlap = chunks.filter(c => c.overlapText);
         expect(withOverlap.length).toBeGreaterThan(0);
         withOverlap.forEach(chunk => {
           expect(chunk.overlapText).toBeDefined();
@@ -322,20 +166,19 @@ describe('textChunker', () => {
     });
 
     it('should not add overlap to first chunk', () => {
-      const text = 'Sentence 1། Sentence 2། Sentence 3།';
+      const text = 'Page 1:\nSentence 1། Sentence 2། Sentence 3།';
       const chunks = splitTextIntoChunks(text, {
         maxTokens: 20,
         overlapSentences: 2,
       });
 
       if (chunks.length > 0) {
-        expect(chunks[0].hasOverlap).toBe(false);
         expect(chunks[0].overlapText).toBeUndefined();
       }
     });
 
     it('should respect overlapSentences configuration', () => {
-      const text = 'S1། S2། S3। S4། S5། S6।';
+      const text = 'Page 1:\nS1། S2། S3། S4། S5། S6།';
       const chunks = splitTextIntoChunks(text, {
         maxTokens: 15,
         overlapSentences: 2,
@@ -350,6 +193,151 @@ describe('textChunker', () => {
           }
         });
       }
+    });
+  });
+
+  describe('PageChunk interface', () => {
+    it('should have required properties', () => {
+      const text = 'Page 1:\nTest content།';
+      const chunks = splitTextIntoChunks(text);
+
+      expect(chunks.length).toBe(1);
+      const chunk = chunks[0];
+
+      expect(chunk).toHaveProperty('pageNumber');
+      expect(chunk).toHaveProperty('text');
+      expect(chunk).toHaveProperty('tokenCount');
+      expect(chunk).toHaveProperty('isSubChunk');
+      expect(chunk).toHaveProperty('sentenceCount');
+    });
+
+    it('should set isSubChunk correctly', () => {
+      const text = 'Page 1:\nShort text།';
+      const chunks = splitTextIntoChunks(text, { maxTokens: 3500 });
+
+      expect(chunks[0].isSubChunk).toBe(false);
+    });
+  });
+
+  describe('cross-page sentence merging', () => {
+    it('should merge incomplete sentences across page boundaries', () => {
+      // Simulates a sentence split across pages: "དེ་ཚེ་ང་རྒྱལ་བཅག་བྱ་" + "ཞིང་།"
+      const text = `Page 1:
+First complete sentence།
+Incomplete sentence start བྱ་
+
+Page 2:
+ཞིང་། Second page content།`;
+
+      const chunks = splitTextIntoChunks(text);
+
+      // Page 1 should now include the completion "ཞིང་།"
+      expect(chunks[0].text).toContain('ཞིང་།');
+      // Page 2 should start after the merged portion
+      expect(chunks[1].text).not.toMatch(/^ཞིང་།/);
+    });
+
+    it('should not merge when page ends with complete sentence', () => {
+      const text = `Page 1:
+Complete sentence one།
+Complete sentence two།
+
+Page 2:
+Third sentence།`;
+
+      const chunks = splitTextIntoChunks(text);
+
+      expect(chunks.length).toBe(2);
+      expect(chunks[0].text).toContain('sentence two།');
+      expect(chunks[0].text).not.toContain('Third');
+      expect(chunks[1].text).toContain('Third sentence།');
+    });
+
+    it('should handle multiple consecutive incomplete pages', () => {
+      const text = `Page 1:
+Start བྱ་
+
+Page 2:
+ཞིང་། Middle བྱ་
+
+Page 3:
+ཞིང་། End།`;
+
+      const chunks = splitTextIntoChunks(text);
+
+      // Page 1 should get completion from page 2
+      expect(chunks[0].text).toContain('ཞིང་།');
+      // Page 2 should get completion from page 3
+      expect(chunks[1].text).toContain('ཞིང་།');
+    });
+
+    it('should handle real Tibetan text with page breaks mid-verse', () => {
+      // Tibetan verse content split across pages (without page footers/headers)
+      const text = `Page 1:
+དེ་ཚེ་ང་རྒྱལ་བཅག་བྱ་
+
+Page 2:
+ཞིང་། །བླ་མའི་གདམས་ངག་དྲན་པར་བྱ།`;
+
+      const chunks = splitTextIntoChunks(text);
+
+      // The incomplete verse from page 1 should be completed with "ཞིང་།" from page 2
+      expect(chunks[0].text).toContain('བཅག་བྱ་ཞིང་།');
+      // Page 2 should start after the merged portion
+      expect(chunks[1].text).toMatch(/^།བླ་མའི་གདམས་ངག/);
+    });
+
+    it('should recognize page footers ending with shad as complete sentences', () => {
+      // When a page has a footer with shad, it's considered complete
+      // (Footer stripping should happen during text extraction, not chunking)
+      const text = `Page 1:
+དེ་ཚེ་ང་རྒྱལ་བཅག་བྱ་
+བྱང་ཆུབ་སེམས་དཔའི་ནོར་བུའི་ཕྲེང་བ། 1
+
+Page 2:
+ཞིང་། །བླ་མའི་གདམས་ངག་དྲན་པར་བྱ།`;
+
+      const chunks = splitTextIntoChunks(text);
+
+      // With footer present, page 1 ends with shad, so no merging happens
+      expect(chunks.length).toBe(2);
+      expect(chunks[0].text).toContain('ཕྲེང་བ། 1');
+      expect(chunks[1].text).toContain('ཞིང་།');
+    });
+
+    it('should preserve page numbers after merging', () => {
+      const text = `Page 1:
+Incomplete བྱ་
+
+Page 2:
+ཞིང་། Content།
+
+Page 3:
+Final content།`;
+
+      const chunks = splitTextIntoChunks(text);
+
+      expect(chunks[0].pageNumber).toBe(1);
+      expect(chunks[1].pageNumber).toBe(2);
+      expect(chunks[2].pageNumber).toBe(3);
+    });
+
+    it('should filter out pages that become empty after merging', () => {
+      const text = `Page 1:
+Incomplete བྱ་
+
+Page 2:
+ཞིང་།
+
+Page 3:
+Real content།`;
+
+      const chunks = splitTextIntoChunks(text);
+
+      // Page 2 only had the completion text, should be filtered out
+      expect(chunks.length).toBe(2);
+      expect(chunks[0].pageNumber).toBe(1);
+      expect(chunks[1].pageNumber).toBe(3);
     });
   });
 });

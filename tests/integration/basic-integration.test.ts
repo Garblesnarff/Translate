@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { splitTextIntoChunks } from '@/lib/textChunker';
+import { splitTextIntoChunks } from '@/lib/textExtractor';
 import { splitIntoSentences } from '@/lib/tibetan/sentenceDetector';
 import { validateSyllableStructure } from '@/lib/tibetan/syllableDetector';
 import { validateAndNormalize } from '@/lib/tibetan/unicodeValidator';

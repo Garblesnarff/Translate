@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { splitTextIntoChunks } from '@/lib/textChunker';
+import { splitTextIntoChunks } from '@/lib/textExtractor';
 import { validateAndNormalize } from '@/lib/tibetan/unicodeValidator';
 import { splitIntoSentences } from '@/lib/tibetan/sentenceDetector';
 import { ValidationService } from '../../../server/services/validation/ValidationService';

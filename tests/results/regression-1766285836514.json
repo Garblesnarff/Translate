@@ -1,0 +1,655 @@
+{
+  "timestamp": "2025-12-21T02:57:16.514Z",
+  "stats": {
+    "totalTests": 50,
+    "passed": 50,
+    "failed": 0,
+    "avgSimilarity": 1,
+    "avgConfidence": 0.782,
+    "avgPreservation": 0.9344937066038632,
+    "byDifficulty": {
+      "simple": {
+        "count": 10,
+        "avgSimilarity": 1
+      },
+      "medium": {
+        "count": 15,
+        "avgSimilarity": 1
+      },
+      "complex": {
+        "count": 15,
+        "avgSimilarity": 1
+      },
+      "very_complex": {
+        "count": 10,
+        "avgSimilarity": 1
+      }
+    }
+  },
+  "details": [
+    {
+      "id": "simple-001",
+      "category": "greeting",
+      "difficulty": "simple",
+      "similarity": 1,
+      "confidence": 0.95,
+      "tibetanPreservation": 1,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "simple-002",
+      "category": "courtesy",
+      "difficulty": "simple",
+      "similarity": 1,
+      "confidence": 0.95,
+      "tibetanPreservation": 1,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "simple-003",
+      "category": "object",
+      "difficulty": "simple",
+      "similarity": 1,
+      "confidence": 0.9,
+      "tibetanPreservation": 0.9444444444444444,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "simple-004",
+      "category": "food",
+      "difficulty": "simple",
+      "similarity": 1,
+      "confidence": 0.9,
+      "tibetanPreservation": 0.9375,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "simple-005",
+      "category": "weather",
+      "difficulty": "simple",
+      "similarity": 1,
+      "confidence": 0.9,
+      "tibetanPreservation": 0.9285714285714286,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "simple-006",
+      "category": "location",
+      "difficulty": "simple",
+      "similarity": 1,
+      "confidence": 0.9,
+      "tibetanPreservation": 0.9473684210526315,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "simple-007",
+      "category": "education",
+      "difficulty": "simple",
+      "similarity": 1,
+      "confidence": 0.9,
+      "tibetanPreservation": 0.9523809523809523,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "simple-008",
+      "category": "family",
+      "difficulty": "simple",
+      "similarity": 1,
+      "confidence": 0.9,
+      "tibetanPreservation": 0.9473684210526315,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "simple-009",
+      "category": "general",
+      "difficulty": "simple",
+      "similarity": 1,
+      "confidence": 0.9,
+      "tibetanPreservation": 0.9166666666666666,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "simple-010",
+      "category": "object",
+      "difficulty": "simple",
+      "similarity": 1,
+      "confidence": 0.9,
+      "tibetanPreservation": 0.9411764705882353,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "medium-001",
+      "category": "general",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.85,
+      "tibetanPreservation": 0.8787878787878788,
+      "formatScore": 0.9,
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Moderate Tibetan preservation rate: 88%"
+      ]
+    },
+    {
+      "id": "medium-002",
+      "category": "education",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.85,
+      "tibetanPreservation": 0.9310344827586207,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "medium-003",
+      "category": "practice",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.85,
+      "tibetanPreservation": 0.9259259259259259,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "medium-004",
+      "category": "philosophy",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.85,
+      "tibetanPreservation": 0.8260869565217391,
+      "formatScore": 0.9,
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Moderate Tibetan preservation rate: 83%"
+      ]
+    },
+    {
+      "id": "medium-005",
+      "category": "philosophy",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.85,
+      "tibetanPreservation": 0.8275862068965517,
+      "formatScore": 0.9,
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Moderate Tibetan preservation rate: 83%"
+      ]
+    },
+    {
+      "id": "medium-006",
+      "category": "metaphor",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.8,
+      "tibetanPreservation": 0.967741935483871,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "medium-007",
+      "category": "education",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.85,
+      "tibetanPreservation": 0.9666666666666667,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "medium-008",
+      "category": "nature",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.85,
+      "tibetanPreservation": 0.8214285714285714,
+      "formatScore": 0.9,
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Moderate Tibetan preservation rate: 82%"
+      ]
+    },
+    {
+      "id": "medium-009",
+      "category": "wisdom",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.85,
+      "tibetanPreservation": 0.9545454545454546,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "medium-010",
+      "category": "ethics",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.85,
+      "tibetanPreservation": 0.96875,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "medium-011",
+      "category": "philosophy",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.8,
+      "tibetanPreservation": 0.8611111111111112,
+      "formatScore": 0.9,
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Moderate Tibetan preservation rate: 86%"
+      ]
+    },
+    {
+      "id": "medium-012",
+      "category": "ethics",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.85,
+      "tibetanPreservation": 0.9655172413793104,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "medium-013",
+      "category": "practice",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.85,
+      "tibetanPreservation": 0.9705882352941176,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "medium-014",
+      "category": "practice",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.85,
+      "tibetanPreservation": 0.9615384615384616,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "medium-015",
+      "category": "practice",
+      "difficulty": "medium",
+      "similarity": 1,
+      "confidence": 0.8,
+      "tibetanPreservation": 0.9736842105263158,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "complex-001",
+      "category": "philosophy",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.8,
+      "tibetanPreservation": 0.8620689655172413,
+      "formatScore": 0.9,
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Moderate Tibetan preservation rate: 86%"
+      ]
+    },
+    {
+      "id": "complex-002",
+      "category": "philosophy",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.75,
+      "tibetanPreservation": 0.8717948717948718,
+      "formatScore": 0.9,
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Moderate Tibetan preservation rate: 87%"
+      ]
+    },
+    {
+      "id": "complex-003",
+      "category": "philosophy",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.75,
+      "tibetanPreservation": 0.8611111111111112,
+      "formatScore": 0.9,
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Moderate Tibetan preservation rate: 86%"
+      ]
+    },
+    {
+      "id": "complex-004",
+      "category": "practice",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.8,
+      "tibetanPreservation": 0.96875,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "complex-005",
+      "category": "philosophy",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.75,
+      "tibetanPreservation": 0.975609756097561,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "complex-006",
+      "category": "philosophy",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.75,
+      "tibetanPreservation": 0.9038461538461539,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "complex-007",
+      "category": "philosophy",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.7,
+      "tibetanPreservation": 0.8888888888888888,
+      "formatScore": 0.9,
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Moderate Tibetan preservation rate: 89%"
+      ]
+    },
+    {
+      "id": "complex-008",
+      "category": "liturgical",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.9,
+      "tibetanPreservation": 1,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "complex-009",
+      "category": "philosophy",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.75,
+      "tibetanPreservation": 0.9761904761904762,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "complex-010",
+      "category": "philosophy",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.7,
+      "tibetanPreservation": 0.9047619047619048,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "complex-011",
+      "category": "practice",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.75,
+      "tibetanPreservation": 0.9591836734693877,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "complex-012",
+      "category": "practice",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.75,
+      "tibetanPreservation": 0.8936170212765957,
+      "formatScore": 0.9,
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Moderate Tibetan preservation rate: 89%"
+      ]
+    },
+    {
+      "id": "complex-013",
+      "category": "philosophy",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.75,
+      "tibetanPreservation": 0.9148936170212766,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "complex-014",
+      "category": "philosophy",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.7,
+      "tibetanPreservation": 0.8717948717948718,
+      "formatScore": 0.9,
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Moderate Tibetan preservation rate: 87%"
+      ]
+    },
+    {
+      "id": "complex-015",
+      "category": "liturgical",
+      "difficulty": "complex",
+      "similarity": 1,
+      "confidence": 0.75,
+      "tibetanPreservation": 0.9772727272727273,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "very-complex-001",
+      "category": "philosophy",
+      "difficulty": "very_complex",
+      "similarity": 1,
+      "confidence": 0.65,
+      "tibetanPreservation": 0.8962264150943396,
+      "formatScore": 0.9,
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Moderate Tibetan preservation rate: 90%"
+      ]
+    },
+    {
+      "id": "very-complex-002",
+      "category": "philosophy",
+      "difficulty": "very_complex",
+      "similarity": 1,
+      "confidence": 0.65,
+      "tibetanPreservation": 0.946236559139785,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "very-complex-003",
+      "category": "philosophy",
+      "difficulty": "very_complex",
+      "similarity": 1,
+      "confidence": 0.65,
+      "tibetanPreservation": 0.9125,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "very-complex-004",
+      "category": "philosophy",
+      "difficulty": "very_complex",
+      "similarity": 1,
+      "confidence": 0.6,
+      "tibetanPreservation": 0.9612403100775194,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "very-complex-005",
+      "category": "practice",
+      "difficulty": "very_complex",
+      "similarity": 1,
+      "confidence": 0.6,
+      "tibetanPreservation": 0.9824561403508771,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "very-complex-006",
+      "category": "philosophy",
+      "difficulty": "very_complex",
+      "similarity": 1,
+      "confidence": 0.6,
+      "tibetanPreservation": 0.9814814814814815,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "very-complex-007",
+      "category": "practice",
+      "difficulty": "very_complex",
+      "similarity": 1,
+      "confidence": 0.6,
+      "tibetanPreservation": 0.9514563106796117,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "very-complex-008",
+      "category": "practice",
+      "difficulty": "very_complex",
+      "similarity": 1,
+      "confidence": 0.6,
+      "tibetanPreservation": 1,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "very-complex-009",
+      "category": "practice",
+      "difficulty": "very_complex",
+      "similarity": 1,
+      "confidence": 0.55,
+      "tibetanPreservation": 0.9838709677419355,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "id": "very-complex-010",
+      "category": "philosophy",
+      "difficulty": "very_complex",
+      "similarity": 1,
+      "confidence": 0.55,
+      "tibetanPreservation": 0.9629629629629629,
+      "formatScore": 1,
+      "passed": true,
+      "errors": [],
+      "warnings": []
+    }
+  ]
+}

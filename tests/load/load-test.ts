@@ -19,7 +19,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { splitTextIntoChunks } from '@/lib/textChunker';
+import { splitTextIntoChunks } from '@/lib/textExtractor';
 import { ValidationService } from '../../../server/services/validation/ValidationService';
 import { QualityScorer } from '../../../server/services/quality/QualityScorer';
 import {

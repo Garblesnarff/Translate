@@ -1,423 +1,320 @@
-/**
- * Semantic Text Chunking for Tibetan Translation
- *
- * Provides sophisticated text chunking that:
- * - Respects sentence boundaries (never splits mid-sentence)
- * - Enforces token limits for AI models
- * - Adds context overlap between chunks
- * - Supports both page-based and semantic chunking strategies
- */
+// client/src/lib/textChunker.ts
+// Text chunking utilities for translation processing
+// This module is server-compatible (no browser-specific dependencies)
 
-import {
-  splitIntoSentences,
-  combineSentences,
-  type TibetanSentence
-} from './tibetan/sentenceDetector';
+import { splitIntoSentences, combineSentences, isTibetanSentenceEnd, type TibetanSentence } from './tibetan/sentenceDetector';
 
 /**
- * Chunking strategy used
+ * Page chunk interface for translation processing
  */
-export type ChunkingStrategy = 'page' | 'semantic' | 'hybrid';
-
-/**
- * Enhanced text chunk interface with semantic information
- */
-export interface TextChunk {
-  /** Page number (may be detected or assigned) */
+export interface PageChunk {
+  /** Page number (1-based). Sub-chunks use decimals: 1, 1.1, 1.2 */
   pageNumber: number;
-
-  /** Main text content for this chunk */
+  /** Text content for this chunk */
   text: string;
-
-  /** Whether this chunk includes context from previous chunk */
-  hasOverlap: boolean;
-
-  /** Overlapping text from previous chunk (for context only) */
-  overlapText?: string;
-
-  /** Estimated token count for this chunk */
+  /** Estimated token count */
   tokenCount: number;
-
-  /** Strategy used to create this chunk */
-  chunkingStrategy: ChunkingStrategy;
-
+  /** Whether this is a sub-chunk from splitting an oversized page */
+  isSubChunk: boolean;
   /** Number of sentences in this chunk */
-  sentenceCount?: number;
+  sentenceCount: number;
+  /** Overlapping text from previous chunk for context */
+  overlapText?: string;
 }
 
 /**
- * Configuration for semantic chunking
+ * Configuration for text chunking
  */
-export interface ChunkingConfig {
+export interface ExtractionChunkingConfig {
   /** Maximum tokens per chunk (default: 3500) */
-  maxTokens: number;
-
-  /** Number of sentences to overlap (default: 2) */
-  overlapSentences: number;
-
-  /** Prefer page-based chunking if page markers detected */
-  preferPageBased: boolean;
-
-  /** Minimum sentences per chunk (default: 1) */
-  minSentences: number;
+  maxTokens?: number;
+  /** Number of sentences to overlap between chunks (default: 2) */
+  overlapSentences?: number;
 }
 
-/**
- * Default chunking configuration
- */
-const DEFAULT_CONFIG: ChunkingConfig = {
-  maxTokens: 3500, // Safe limit for Gemini with room for prompt
+/** Default chunking configuration */
+const DEFAULT_CHUNKING_CONFIG: Required<ExtractionChunkingConfig> = {
+  maxTokens: 3500,
   overlapSentences: 2,
-  preferPageBased: true,
-  minSentences: 1,
 };
 
 /**
- * Estimate token count for text
- * Uses rough estimate of ~4 characters per token for Tibetan
- * English is roughly ~4 chars per token as well
- *
- * This is conservative to ensure we don't exceed model limits
+ * Check if text ends with a complete Tibetan sentence.
+ * Returns true if the text ends with a Tibetan sentence-ending punctuation mark.
+ */
+function endsWithCompleteSentence(text: string): boolean {
+  if (!text || !text.trim()) return true;
+
+  const trimmed = text.trim();
+  // Check last few characters for sentence-ending punctuation
+  // Account for possible trailing whitespace or page numbers
+  const lastChars = trimmed.slice(-20);
+
+  // Find the last Tibetan character position
+  for (let i = lastChars.length - 1; i >= 0; i--) {
+    const char = lastChars[i];
+    // Skip numbers, spaces, and Latin characters (page numbers like "བྱང་ཆུབ། 1")
+    if (/[\d\s\na-zA-Z]/.test(char)) continue;
+    // Check if it's a sentence-ending mark
+    return isTibetanSentenceEnd(char);
+  }
+  return true; // No Tibetan text found, treat as complete
+}
+
+/**
+ * Find the position of the first complete sentence end in text.
+ * Returns the index after the sentence-ending punctuation, or -1 if not found.
+ */
+function findFirstSentenceEnd(text: string): number {
+  for (let i = 0; i < text.length; i++) {
+    if (isTibetanSentenceEnd(text[i])) {
+      return i + 1;
+    }
+  }
+  return -1;
+}
+
+/**
+ * Strip common Tibetan page headers and footers from text.
+ * Footers typically appear as: <title>། <page_number> or <page_number> <title>།
+ */
+function stripPageHeadersFooters(text: string): string {
+  // Remove lines that are just page numbers (possibly with title)
+  // Pattern: title ending with shad + space + number at end of text
+  // Or: number + space + title at start of text
+  const lines = text.split('\n');
+  const cleanedLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+
+    // Skip empty lines
+    if (!trimmedLine) {
+      cleanedLines.push(line);
+      continue;
+    }
+
+    // Footer pattern: title ending with shad/number, or just page number
+    // e.g., "བྱང་ཆུབ་སེམས་དཔའི་ནོར་བུའི་ཕྲེང་བ། 1" or "1"
+    const footerPattern = /^.*།\s*\d+$/;
+    const headerPattern = /^\d+\s+.*།$/;
+    const standaloneNumberPattern = /^\d+$/;
+
+    if (footerPattern.test(trimmedLine) ||
+        headerPattern.test(trimmedLine) ||
+        standaloneNumberPattern.test(trimmedLine)) {
+      // This looks like a header/footer, skip it
+      continue;
+    }
+
+    cleanedLines.push(line);
+  }
+
+  return cleanedLines.join('\n').trim();
+}
+
+/**
+ * Merge incomplete sentences across page boundaries.
+ * When a page ends without proper sentence-ending punctuation,
+ * move the beginning of the next page (up to first sentence end) to the current page.
+ */
+function mergeIncompleteSentences(
+  pages: { pageNumber: number; text: string }[]
+): { pageNumber: number; text: string }[] {
+  if (pages.length <= 1) return pages;
+
+  const result: { pageNumber: number; text: string }[] = [];
+
+  for (let i = 0; i < pages.length; i++) {
+    const currentPage = { ...pages[i] };
+
+    // Check if this page ends with an incomplete sentence
+    if (i < pages.length - 1 && !endsWithCompleteSentence(currentPage.text)) {
+      const nextPage = pages[i + 1];
+      const sentenceEndPos = findFirstSentenceEnd(nextPage.text);
+
+      if (sentenceEndPos > 0) {
+        // Move text from next page to complete this sentence
+        const textToMove = nextPage.text.substring(0, sentenceEndPos);
+        currentPage.text = currentPage.text.trimEnd() + textToMove;
+
+        // Update next page to remove the moved text
+        pages[i + 1] = {
+          ...nextPage,
+          text: nextPage.text.substring(sentenceEndPos).trimStart()
+        };
+      }
+    }
+
+    result.push(currentPage);
+  }
+
+  // Filter out any pages that became empty after merging
+  return result.filter(p => p.text.trim().length > 0);
+}
+
+/**
+ * Estimate token count for text.
+ * Uses ~4 characters per token (conservative estimate for Tibetan/English).
  */
 export function estimateTokenCount(text: string): number {
   if (!text) return 0;
-
-  // Average characters per token (conservative estimate)
-  const CHARS_PER_TOKEN = 4;
-
-  return Math.ceil(text.length / CHARS_PER_TOKEN);
+  return Math.ceil(text.length / 4);
 }
 
 /**
- * Semantic Chunker - intelligently splits text into chunks
- * that respect sentence boundaries and token limits
+ * Split an oversized page into smaller chunks by sentence boundaries.
  */
-export class SemanticChunker {
-  private config: ChunkingConfig;
-
-  constructor(config: Partial<ChunkingConfig> = {}) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
+function splitOversizedPage(
+  pageText: string,
+  pageNumber: number,
+  maxTokens: number
+): PageChunk[] {
+  const sentences = splitIntoSentences(pageText);
+  if (sentences.length === 0) {
+    return [{
+      pageNumber,
+      text: pageText,
+      tokenCount: estimateTokenCount(pageText),
+      isSubChunk: false,
+      sentenceCount: 0,
+    }];
   }
 
-  /**
-   * Main entry point for chunking text
-   */
-  public chunkText(text: string): TextChunk[] {
-    if (!text || !text.trim()) {
-      return [];
-    }
+  const chunks: PageChunk[] = [];
+  let currentSentences: TibetanSentence[] = [];
+  let currentTokenCount = 0;
+  let subChunkIndex = 0;
 
-    // Try numbered paragraph/page detection first (backward compatibility)
-    const numberedChunks = this.detectNumberedPages(text);
-    if (numberedChunks.length > 0 && this.config.preferPageBased) {
-      // Check if any numbered chunk exceeds token limit
-      const needsSplitting = numberedChunks.some(
-        chunk => chunk.tokenCount > this.config.maxTokens
-      );
+  for (const sentence of sentences) {
+    const sentenceTokens = estimateTokenCount(sentence.text);
 
-      if (needsSplitting) {
-        // Use hybrid approach: split large page-based chunks
-        return this.applyHybridStrategy(numberedChunks);
-      }
-
-      // Page-based chunks are good as-is
-      return this.addContextOverlap(numberedChunks, 'page');
-    }
-
-    // No page markers or page-based not preferred: use semantic chunking
-    return this.chunkBySemanticBoundaries(text);
-  }
-
-  /**
-   * Detect numbered pages/paragraphs (e.g., "1 text", "2 text")
-   * This maintains backward compatibility with the old system
-   */
-  private detectNumberedPages(text: string): TextChunk[] {
-    const chunks = text.split(/(?=^\s*\d+\s+)/m);
-    const numberedChunks: TextChunk[] = [];
-
-    for (const chunk of chunks) {
-      const pageMatch = chunk.match(/^\s*(\d+)\s+/);
-      if (!pageMatch) continue;
-
-      const pageNumber = parseInt(pageMatch[1]);
-      const chunkText = chunk.replace(/^\s*\d+\s+/, '').trim();
-
-      if (!chunkText) continue;
-
-      const sentences = splitIntoSentences(chunkText);
-
-      numberedChunks.push({
-        pageNumber,
-        text: chunkText,
-        hasOverlap: false,
-        tokenCount: estimateTokenCount(chunkText),
-        chunkingStrategy: 'page',
-        sentenceCount: sentences.length,
-      });
-    }
-
-    return numberedChunks;
-  }
-
-  /**
-   * Apply hybrid strategy: split page-based chunks that are too large
-   */
-  private applyHybridStrategy(pageChunks: TextChunk[]): TextChunk[] {
-    const result: TextChunk[] = [];
-    let subChunkCounter = 0;
-
-    for (const chunk of pageChunks) {
-      if (chunk.tokenCount <= this.config.maxTokens) {
-        // Chunk is fine as-is
-        result.push(chunk);
-      } else {
-        // Split this chunk semantically
-        const subChunks = this.splitChunkBySemanticBoundaries(
-          chunk.text,
-          chunk.pageNumber + subChunkCounter / 1000 // e.g., 1.001, 1.002
-        );
-
-        // Mark as hybrid strategy
-        subChunks.forEach(sc => {
-          sc.chunkingStrategy = 'hybrid';
-        });
-
-        result.push(...subChunks);
-        subChunkCounter += subChunks.length;
-      }
-    }
-
-    return this.addContextOverlap(result, 'hybrid');
-  }
-
-  /**
-   * Chunk text purely by semantic boundaries (sentences)
-   */
-  private chunkBySemanticBoundaries(text: string): TextChunk[] {
-    const sentences = splitIntoSentences(text);
-    if (sentences.length === 0) return [];
-
-    const chunks: TextChunk[] = [];
-    let currentSentences: TibetanSentence[] = [];
-    let currentTokenCount = 0;
-    let chunkNumber = 1;
-
-    for (let i = 0; i < sentences.length; i++) {
-      const sentence = sentences[i];
-      const sentenceTokens = estimateTokenCount(sentence.text);
-
-      // Check if adding this sentence would exceed limit
-      if (currentSentences.length > 0 &&
-          currentTokenCount + sentenceTokens > this.config.maxTokens) {
-        // Create chunk from current sentences
-        chunks.push(this.createChunkFromSentences(
-          currentSentences,
-          chunkNumber++,
-          'semantic'
-        ));
-
-        // Start new chunk
-        currentSentences = [sentence];
-        currentTokenCount = sentenceTokens;
-      } else {
-        // Add sentence to current chunk
-        currentSentences.push(sentence);
-        currentTokenCount += sentenceTokens;
-      }
-    }
-
-    // Handle remaining sentences
-    if (currentSentences.length > 0) {
-      chunks.push(this.createChunkFromSentences(
-        currentSentences,
-        chunkNumber,
-        'semantic'
-      ));
-    }
-
-    return this.addContextOverlap(chunks, 'semantic');
-  }
-
-  /**
-   * Split a single chunk by semantic boundaries
-   * Used for hybrid strategy when a page-based chunk is too large
-   */
-  private splitChunkBySemanticBoundaries(
-    text: string,
-    basePageNumber: number
-  ): TextChunk[] {
-    const sentences = splitIntoSentences(text);
-    if (sentences.length === 0) return [];
-
-    const chunks: TextChunk[] = [];
-    let currentSentences: TibetanSentence[] = [];
-    let currentTokenCount = 0;
-    let subChunkIndex = 0;
-
-    for (const sentence of sentences) {
-      const sentenceTokens = estimateTokenCount(sentence.text);
-
-      if (currentSentences.length > 0 &&
-          currentTokenCount + sentenceTokens > this.config.maxTokens) {
-        // Create chunk
-        const chunkText = combineSentences(currentSentences);
-        chunks.push({
-          pageNumber: Math.floor(basePageNumber) + subChunkIndex * 0.1,
-          text: chunkText,
-          hasOverlap: false,
-          tokenCount: currentTokenCount,
-          chunkingStrategy: 'hybrid',
-          sentenceCount: currentSentences.length,
-        });
-
-        subChunkIndex++;
-        currentSentences = [sentence];
-        currentTokenCount = sentenceTokens;
-      } else {
-        currentSentences.push(sentence);
-        currentTokenCount += sentenceTokens;
-      }
-    }
-
-    // Remaining sentences
-    if (currentSentences.length > 0) {
+    if (currentSentences.length > 0 && currentTokenCount + sentenceTokens > maxTokens) {
+      // Create chunk from current sentences
       const chunkText = combineSentences(currentSentences);
       chunks.push({
-        pageNumber: Math.floor(basePageNumber) + subChunkIndex * 0.1,
+        pageNumber: subChunkIndex === 0 ? pageNumber : pageNumber + subChunkIndex * 0.1,
         text: chunkText,
-        hasOverlap: false,
         tokenCount: currentTokenCount,
-        chunkingStrategy: 'hybrid',
+        isSubChunk: subChunkIndex > 0,
         sentenceCount: currentSentences.length,
       });
-    }
 
-    return chunks;
+      subChunkIndex++;
+      currentSentences = [sentence];
+      currentTokenCount = sentenceTokens;
+    } else {
+      currentSentences.push(sentence);
+      currentTokenCount += sentenceTokens;
+    }
   }
 
-  /**
-   * Create a chunk from sentences
-   */
-  private createChunkFromSentences(
-    sentences: TibetanSentence[],
-    pageNumber: number,
-    strategy: ChunkingStrategy
-  ): TextChunk {
-    const text = combineSentences(sentences);
-    const tokenCount = estimateTokenCount(text);
-
-    return {
-      pageNumber,
-      text,
-      hasOverlap: false,
-      tokenCount,
-      chunkingStrategy: strategy,
-      sentenceCount: sentences.length,
-    };
+  // Handle remaining sentences
+  if (currentSentences.length > 0) {
+    const chunkText = combineSentences(currentSentences);
+    chunks.push({
+      pageNumber: subChunkIndex === 0 ? pageNumber : pageNumber + subChunkIndex * 0.1,
+      text: chunkText,
+      tokenCount: currentTokenCount,
+      isSubChunk: subChunkIndex > 0,
+      sentenceCount: currentSentences.length,
+    });
   }
 
-  /**
-   * Add context overlap between chunks
-   * Includes last N sentences from previous chunk
-   */
-  private addContextOverlap(
-    chunks: TextChunk[],
-    strategy: ChunkingStrategy
-  ): TextChunk[] {
-    if (chunks.length <= 1 || this.config.overlapSentences === 0) {
-      return chunks;
-    }
-
-    for (let i = 1; i < chunks.length; i++) {
-      const previousChunk = chunks[i - 1];
-      const currentChunk = chunks[i];
-
-      // Get sentences from previous chunk
-      const previousSentences = splitIntoSentences(previousChunk.text);
-
-      // Take last N sentences
-      const overlapSentences = previousSentences.slice(
-        -this.config.overlapSentences
-      );
-
-      if (overlapSentences.length > 0) {
-        const overlapText = combineSentences(overlapSentences);
-        const overlapTokens = estimateTokenCount(overlapText);
-
-        // Only add overlap if it doesn't push us over the limit
-        if (currentChunk.tokenCount + overlapTokens <= this.config.maxTokens) {
-          currentChunk.hasOverlap = true;
-          currentChunk.overlapText = overlapText;
-          currentChunk.tokenCount += overlapTokens;
-        }
-      }
-    }
-
-    return chunks;
-  }
+  return chunks;
 }
 
 /**
- * Convenience function to split text into chunks with default configuration
+ * Add context overlap between chunks (last N sentences from previous chunk).
+ */
+function addOverlapContext(chunks: PageChunk[], overlapSentences: number): PageChunk[] {
+  if (chunks.length <= 1 || overlapSentences === 0) {
+    return chunks;
+  }
+
+  for (let i = 1; i < chunks.length; i++) {
+    const previousChunk = chunks[i - 1];
+    const currentChunk = chunks[i];
+
+    const previousSentences = splitIntoSentences(previousChunk.text);
+    const overlapSentenceList = previousSentences.slice(-overlapSentences);
+
+    if (overlapSentenceList.length > 0) {
+      const overlapText = combineSentences(overlapSentenceList);
+      currentChunk.overlapText = overlapText;
+    }
+  }
+
+  return chunks;
+}
+
+/**
+ * Split text into chunks for translation.
+ * Parses "Page N:" format from textExtractor and applies token limits.
+ *
+ * This is the main entry point used by server controllers for chunking.
  */
 export function splitTextIntoChunks(
   text: string,
-  config?: Partial<ChunkingConfig>
-): TextChunk[] {
-  const chunker = new SemanticChunker(config);
-  return chunker.chunkText(text);
-}
-
-/**
- * Combine translated chunks back into a single document
- */
-export function combineTranslations(
-  translations: { pageNumber: number; translation: string }[]
-): string {
-  return translations
-    .sort((a, b) => a.pageNumber - b.pageNumber)
-    .map(({ translation }) => translation)
-    .join('\n\n');
-}
-
-/**
- * Get statistics about chunks
- */
-export function getChunkingStats(chunks: TextChunk[]): {
-  totalChunks: number;
-  totalTokens: number;
-  avgTokensPerChunk: number;
-  maxTokens: number;
-  minTokens: number;
-  chunksWithOverlap: number;
-  strategyCounts: Record<ChunkingStrategy, number>;
-} {
-  if (chunks.length === 0) {
-    return {
-      totalChunks: 0,
-      totalTokens: 0,
-      avgTokensPerChunk: 0,
-      maxTokens: 0,
-      minTokens: 0,
-      chunksWithOverlap: 0,
-      strategyCounts: { page: 0, semantic: 0, hybrid: 0 },
-    };
+  config?: ExtractionChunkingConfig
+): PageChunk[] {
+  if (!text || !text.trim()) {
+    return [];
   }
 
-  const totalTokens = chunks.reduce((sum, c) => sum + c.tokenCount, 0);
-  const strategyCounts = chunks.reduce((acc, c) => {
-    acc[c.chunkingStrategy] = (acc[c.chunkingStrategy] || 0) + 1;
-    return acc;
-  }, {} as Record<ChunkingStrategy, number>);
+  const { maxTokens, overlapSentences } = { ...DEFAULT_CHUNKING_CONFIG, ...config };
 
-  return {
-    totalChunks: chunks.length,
-    totalTokens,
-    avgTokensPerChunk: totalTokens / chunks.length,
-    maxTokens: Math.max(...chunks.map(c => c.tokenCount)),
-    minTokens: Math.min(...chunks.map(c => c.tokenCount)),
-    chunksWithOverlap: chunks.filter(c => c.hasOverlap).length,
-    strategyCounts,
-  };
+  // Parse "Page N:\n<content>" format from textExtractor
+  const pageRegex = /Page\s+(\d+):\n([\s\S]*?)(?=Page\s+\d+:|$)/g;
+  const pages: { pageNumber: number; text: string }[] = [];
+  let match;
+
+  while ((match = pageRegex.exec(text)) !== null) {
+    const pageNumber = parseInt(match[1], 10);
+    // Strip headers/footers (like "བྱང་ཆུབ་སེམས་དཔའི་ནོར་བུའི་ཕྲེང་བ། 1") before processing
+    const pageText = stripPageHeadersFooters(match[2]);
+    if (pageText) {
+      pages.push({ pageNumber, text: pageText });
+    }
+  }
+
+  // If no page markers found, treat entire text as one page
+  if (pages.length === 0) {
+    const trimmedText = text.trim();
+    if (trimmedText) {
+      pages.push({ pageNumber: 1, text: trimmedText });
+    }
+  }
+
+  // Merge incomplete sentences across page boundaries
+  // This ensures sentences that span PDF page breaks are kept together
+  const mergedPages = mergeIncompleteSentences(pages);
+
+  // Build chunks, splitting oversized pages
+  let allChunks: PageChunk[] = [];
+
+  for (const page of mergedPages) {
+    const tokenCount = estimateTokenCount(page.text);
+
+    if (tokenCount > maxTokens) {
+      // Split oversized page by sentence boundaries
+      const subChunks = splitOversizedPage(page.text, page.pageNumber, maxTokens);
+      allChunks.push(...subChunks);
+    } else {
+      // Page fits within token limit
+      const sentences = splitIntoSentences(page.text);
+      allChunks.push({
+        pageNumber: page.pageNumber,
+        text: page.text,
+        tokenCount,
+        isSubChunk: false,
+        sentenceCount: sentences.length,
+      });
+    }
+  }
+
+  // Add context overlap between chunks
+  allChunks = addOverlapContext(allChunks, overlapSentences);
+
+  return allChunks;
 }
