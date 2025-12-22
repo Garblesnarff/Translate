@@ -19,7 +19,8 @@ export type EntityType =
   | 'lineage'
   | 'concept'
   | 'institution'
-  | 'deity';
+  | 'deity'
+  | 'artifact';
 
 export type PredicateType =
   // Teacher-Student relationships
@@ -190,7 +191,7 @@ export interface PersonEntity extends EntityBase {
 export interface PlaceEntity extends EntityBase {
   type: 'place';
   attributes: {
-    placeType: 'monastery' | 'mountain' | 'cave' | 'city' | 'region' | 'country' | 'holy_site' | 'hermitage' | 'temple' | 'stupa' | 'village' | 'district' | 'kingdom' | 'retreat_center';
+    placeType: 'monastery' | 'mountain' | 'cave' | 'city' | 'region' | 'country' | 'holy_site' | 'hermitage' | 'temple' | 'stupa' | 'village' | 'district' | 'kingdom' | 'retreat_center' | 'route' | 'pass';
     coordinates?: Coordinates;
     region?: string; // Ü, Tsang, Kham, Amdo, etc.
     modernCountry?: string; // Current political entity
@@ -209,7 +210,7 @@ export interface PlaceEntity extends EntityBase {
 export interface TextEntity extends EntityBase {
   type: 'text';
   attributes: {
-    textType: 'sutra' | 'tantra' | 'commentary' | 'biography' | 'poetry' | 'letters' | 'ritual' | 'philosophical_treatise' | 'history' | 'medicine' | 'astrology' | 'prayer' | 'aspiration' | 'terma' | 'lexicon' | 'grammar' | 'instruction' | 'treatise';
+    textType: 'sutra' | 'tantra' | 'commentary' | 'biography' | 'poetry' | 'letters' | 'ritual' | 'philosophical_treatise' | 'history' | 'medicine' | 'astrology' | 'prayer' | 'aspiration' | 'terma' | 'lexicon' | 'grammar' | 'instruction' | 'treatise' | 'prophecy' | 'mantra';
     language: string; // Tibetan, Sanskrit, Chinese, Pali, etc.
     volumeCount?: number;
     pageCount?: number;
@@ -230,12 +231,15 @@ export interface TextEntity extends EntityBase {
 export interface EventEntity extends EntityBase {
   type: 'event';
   attributes: {
-    eventType: 'teaching' | 'empowerment' | 'debate' | 'founding' | 'pilgrimage' | 'retreat' | 'death' | 'birth' | 'transmission' | 'political' | 'natural_disaster' | 'meeting' | 'ordination' | 'enthronement';
+    eventType: 'teaching' | 'empowerment' | 'debate' | 'founding' | 'pilgrimage' | 'retreat' | 'death' | 'birth' | 'transmission' | 'political' | 'natural_disaster' | 'meeting' | 'ordination' | 'enthronement' | 'atmospheric_event' | 'water_event' | 'earth_event' | 'route_disruption' | 'temporal_marker' | 'oath_binding' | 'subjugation' | 'consecration' | 'sea_voyage' | 'religious_conflict' | 'volcanic_event' | 'tsunami' | 'astronomical_event' | 'famine' | 'epidemic';
     location?: string; // Place ID
     duration?: string; // "3 days", "6 months", "12 years"
     significance?: string;
     description?: string;
     attendeeCount?: number;
+    casualtyCount?: number; // For disasters/conflicts
+    damageAssessment?: string; // "City destroyed", "Library burned"
+    recoveryDuration?: string; // "13 years"
     outcome?: string; // Result of the event
   };
   dates?: {
@@ -306,7 +310,7 @@ export interface InstitutionEntity extends EntityBase {
 export interface DeityEntity extends EntityBase {
   type: 'deity';
   attributes: {
-    deityType: 'buddha' | 'bodhisattva' | 'yidam' | 'protector' | 'dakini' | 'dharma_protector';
+    deityType: 'buddha' | 'bodhisattva' | 'yidam' | 'protector' | 'dakini' | 'dharma_protector' | 'hindu_deity' | 'naga' | 'rakshasa' | 'mara' | 'spirit';
     tradition?: string[]; // Which traditions practice
     iconography?: {
       arms?: number;
@@ -317,6 +321,24 @@ export interface DeityEntity extends EntityBase {
     };
     qualities?: string[]; // Compassion, wisdom, power, etc.
     mantras?: string[];
+  };
+}
+
+export interface ArtifactEntity extends EntityBase {
+  type: 'artifact';
+  attributes: {
+    artifactType: 'reliquary' | 'statue' | 'thangka' | 'ritual_object' | 'amulet' | 'manuscript_object';
+    material?: string; // "gold", "sandalwood", "bone"
+    dimensions?: string;
+    creator?: string; // Person ID
+    location?: string; // Current or historical location (Place ID)
+    description?: string;
+    significance?: string[];
+  };
+  dates?: {
+    created?: DateInfo;
+    discovered?: DateInfo; // For termas
+    moved?: DateInfo; // Major relocation
   };
 }
 
@@ -356,7 +378,8 @@ export type Entity =
   | ConceptEntity
   | InstitutionEntity
   | DeityEntity
-  | LineageEntity;
+  | LineageEntity
+  | ArtifactEntity;
 
 // ============================================================================
 // Relationship Type

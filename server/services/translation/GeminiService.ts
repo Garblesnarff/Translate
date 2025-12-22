@@ -51,7 +51,8 @@ export class GeminiService {
           temperature: 0.1,
           topK: 1,
           topP: 0.8,
-          maxOutputTokens: 8192,
+          // Removed maxOutputTokens cap - let model use full capacity
+          // 8192 was causing MAX_TOKENS truncation on longer translations
         },
         safetySettings: this.safetySettings
       });
@@ -105,7 +106,7 @@ export class GeminiService {
               temperature: 0.1,
               topK: 1,
               topP: 0.8,
-              maxOutputTokens: 8192,
+              // Removed maxOutputTokens cap - let model use full capacity
               candidateCount: 1,
               responseMimeType: mimeType,
             },

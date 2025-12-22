@@ -102,11 +102,12 @@ export class MultiProviderAIService {
       });
 
       // 2) GLM-4.5-Air - Latest high-performance model
+      // NOTE: Reasoning is DISABLED for translation (cuts 17min → ~30sec)
       this.providers.set('openrouter-glm-4.5-air', {
         apiKey: process.env.OPENROUTER_API_KEY,
         baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
         modelId: 'z-ai/glm-4.5-air:free',
-        maxTokens: 4000,
+        maxTokens: 16000,  // High limit to handle any output
         contextWindow: 128000,
         requestsPerMinute: 200,
         tokensPerMinute: 50000,
@@ -320,25 +321,28 @@ export class MultiProviderAIService {
    */
   private selectAvailableProviders(maxProviders: number = 3, preferredProvider?: string): string[] {
     const priorityOrder = [
-      // Primary Fallback: Fastest free model
+      // Primary Fallback: GLM 4.5 Air (high-performance, reasoning disabled for speed)
+      'openrouter-glm-4.5-air',
+
+      // Secondary Fallback: Fast flash model (no reasoning overhead)
       'openrouter-mimo-v2-flash',
 
-      // Tier 1: Advanced reasoning models
-      'openrouter-kimi-k2-thinking',      // 1. Trillion-param MoE, 256K context
-      'openrouter-glm-4.5-air',           // 2. Latest high-performance model
+      // Tier 1: Gemma 3 (proven working for KG extraction)
+      'openrouter-gemma-3-27b',
 
-      // Tier 2: Fastest/largest free models
-      'cerebras-qwen3-235b',              // 3. 235B params, 1400+ t/s
-      'openrouter-llama-4-maverick',      // 4. Latest Meta, 128K context
+      // Tier 2: Fast execution models
+      'groq-deepseek-r1-llama',           // 70B, 388 t/s
+      'groq-qwen-2.5',                    // 32B, 397 t/s
+      'cerebras-qwen3-235b',              // 235B params, 1400+ t/s
 
-      // Tier 3: Fast execution models
-      'groq-deepseek-r1-llama',           // 5. 70B, 388 t/s
-      'groq-qwen-2.5',                    // 6. 32B, 397 t/s
+      // Tier 3: Large context models  
+      'openrouter-llama-4-maverick',      // Latest Meta, 128K context
+      'openrouter-qwen-qwq',              // 32B reasoning
+      'openrouter-kimi-k2-thinking',      // Trillion-param MoE, 256K context
 
-      // Tier 4: Specialized/backup
-      'openrouter-qwen-qwq',              // 7. 32B reasoning
-      'cerebras-gpt-oss-120b',            // 8. 120B alternative
-      'groq-deepseek-r1-qwen'             // 9. 32B fast
+      // Tier 4: Backup
+      'cerebras-gpt-oss-120b',            // 120B alternative
+      'groq-deepseek-r1-qwen'             // 32B fast
       // Note: Gemini removed from OpenRouter - using direct Google API instead
     ];
 
@@ -409,17 +413,39 @@ export class MultiProviderAIService {
     const requestBody = this.buildRequestBody(config, prompt);
     const headers = this.buildHeaders(config, providerId);
 
-    const response = await fetch(config.baseUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(requestBody)
-    });
+    // Add 60 second timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    
+    let response: Response;
+    try {
+      response = await fetch(config.baseUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      });
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        throw new Error(`${providerId} request timed out after 60s`);
+      }
+      throw fetchError;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
-      throw new Error(`${providerId} API error: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`${providerId} API error: ${response.status} ${errorText.substring(0, 100)}`);
     }
 
     const data = await response.json();
+    console.log(`[MultiProviderAI] ${providerId} raw response:`, {
+      model: data.model,
+      finishReason: data.choices?.[0]?.finish_reason,
+      contentLength: data.choices?.[0]?.message?.content?.length || 0
+    });
     const content = this.extractTranslation(data, providerId);
     this.updateRateLimit(providerId);
 
@@ -438,10 +464,11 @@ export class MultiProviderAIService {
   public async getMultiProviderTranslations(
     tibetanText: string,
     dictionaryContext: string,
-    maxProviders: number = 3
+    maxProviders: number = 3,
+    preferredProvider?: string
   ): Promise<AIResponse[]> {
     // Get only available providers (not rate-limited or disabled)
-    const selectedProviders = this.selectAvailableProviders(maxProviders);
+    const selectedProviders = this.selectAvailableProviders(maxProviders, preferredProvider);
     
     if (selectedProviders.length === 0) {
       console.error('[MultiProviderAI] No providers available - returning empty results');
@@ -505,11 +532,27 @@ export class MultiProviderAIService {
       const requestBody = this.buildRequestBody(config, prompt);
       const headers = this.buildHeaders(config, providerId);
 
-      const response = await fetch(config.baseUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(requestBody)
-      });
+      // Add 60 second timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      
+      let response: Response;
+      try {
+        response = await fetch(config.baseUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
+        });
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error(`${providerId} request timed out after 60s`);
+        }
+        throw fetchError;
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -518,6 +561,12 @@ export class MultiProviderAIService {
       }
 
       const data = await response.json();
+      console.log(`[MultiProviderAI] ${providerId} response received:`, {
+        model: data.model,
+        usage: data.usage,
+        finishReason: data.choices?.[0]?.finish_reason,
+        contentLength: data.choices?.[0]?.message?.content?.length || 0
+      });
       const translation = this.extractTranslation(data, providerId);
       const tokensUsed = this.extractTokenUsage(data);
       
@@ -603,7 +652,7 @@ Begin Translation:`;
    * Build request body for different providers
    */
   private buildRequestBody(config: ProviderConfig, prompt: string): any {
-    const baseBody = {
+    const baseBody: any = {
       model: config.modelId,
       messages: [
         {
@@ -611,10 +660,18 @@ Begin Translation:`;
           content: prompt
         }
       ],
-      max_tokens: config.maxTokens,
       temperature: 0.1,
       stream: false
+      // NOTE: max_tokens intentionally omitted - let models use their full capacity
+      // Modern models (2025) have 128K+ output limits and stop naturally
+      // Capping tokens can break reasoning models that use internal thinking tokens
     };
+
+    // Disable reasoning for GLM models - cuts response time from 17min to ~30sec
+    // Reasoning burns 4-7K tokens on internal thinking which we don't need for translation
+    if (config.modelId.includes('glm')) {
+      baseBody.reasoning = { enabled: false };
+    }
 
     // Provider-specific parameters
     if (config.modelId.includes('deepseek-r1')) {
@@ -677,7 +734,20 @@ Begin Translation:`;
   private extractTranslation(data: any, providerId: string): string {
     try {
       // Standard OpenAI format used by most providers
-      return data.choices?.[0]?.message?.content || '';
+      const content = data.choices?.[0]?.message?.content || '';
+      
+      // Log warning if response is empty or unexpected
+      if (!content) {
+        console.warn(`[MultiProviderAI] ${providerId} returned empty content. Response structure:`, {
+          hasChoices: !!data.choices,
+          choicesLength: data.choices?.length,
+          hasMessage: !!data.choices?.[0]?.message,
+          finishReason: data.choices?.[0]?.finish_reason,
+          error: data.error
+        });
+      }
+      
+      return content;
     } catch (error) {
       console.warn(`[MultiProviderAI] Failed to extract translation from ${providerId}:`, error);
       return '';
@@ -693,32 +763,37 @@ Begin Translation:`;
 
   /**
    * Calculate provider-specific confidence score
+   * Updated 2025-12-21: Added GLM bonus, removed slow-response penalty for reasoning models
    */
   private calculateProviderConfidence(
     translation: string,
     providerId: string,
     processingTime: number
   ): number {
-    let confidence = 0.7; // Base confidence
+    let confidence = 0.75; // Base confidence (increased from 0.7)
 
-    // Provider reliability adjustments
-    if (providerId.includes('deepseek-r1')) confidence += 0.1; // High reasoning capability
-    if (providerId.includes('qwen')) confidence += 0.08; // Good multilingual support
-    if (providerId.includes('kimi-k2')) confidence += 0.06; // Good context handling
-    if (providerId.includes('gpt-oss')) confidence += 0.05; // Solid reasoning
+    // Provider reliability adjustments - based on observed translation quality
+    if (providerId.includes('deepseek-r1')) confidence += 0.10; // High reasoning capability
+    if (providerId.includes('glm')) confidence += 0.10;         // GLM 4.5 Air - excellent quality (was missing!)
+    if (providerId.includes('qwen')) confidence += 0.08;        // Good multilingual support
+    if (providerId.includes('gemma')) confidence += 0.08;       // Google's latest open model
+    if (providerId.includes('kimi-k2')) confidence += 0.06;     // Good context handling
+    if (providerId.includes('gpt-oss')) confidence += 0.05;     // Solid reasoning
+    if (providerId.includes('mimo')) confidence += 0.03;        // Fast but less reliable formatting
 
     // Translation quality indicators
     const tibetanParens = (translation.match(/\([^)]*[\u0F00-\u0FFF][^)]*\)/g) || []).length;
-    confidence += Math.min(0.15, tibetanParens * 0.03);
+    confidence += Math.min(0.10, tibetanParens * 0.02); // Up to +0.10 for good format
 
-    // Response time quality (faster often means more confident)
-    if (processingTime < 5000) confidence += 0.05;
-    if (processingTime > 30000) confidence -= 0.1;
+    // Response time quality - only penalize extremely slow responses (>2 minutes)
+    // Note: Removed 30s penalty since reasoning models legitimately take longer
+    if (processingTime < 10000) confidence += 0.02;  // Bonus for fast response
+    if (processingTime > 120000) confidence -= 0.05; // Only penalize very slow (>2min)
 
     // Length reasonableness
     const wordCount = translation.split(/\s+/).length;
-    if (wordCount < 5) confidence -= 0.2;
-    if (wordCount > 1000) confidence -= 0.1;
+    if (wordCount < 5) confidence -= 0.2;    // Too short - probably failed
+    if (wordCount > 2000) confidence -= 0.05; // Unusually long
 
     return Math.min(0.95, Math.max(0.1, confidence));
   }

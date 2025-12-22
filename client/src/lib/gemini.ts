@@ -74,6 +74,7 @@ interface TranslationState {
   canCancel: boolean;
   logs: LogEntry[];
   currentSessionId?: string;
+  translationStartTime?: number;  // Track when translation started for recovery
 }
 
 export const useTranslation = () => {
@@ -88,6 +89,43 @@ export const useTranslation = () => {
   
   const eventSourceRef = useRef<EventSource | null>(null);
   const startTimeRef = useRef<number>(0);
+
+  // Poll for translation result if stream dies
+  const pollForTranslationResult = useCallback(async (startTime: number, maxAttempts: number = 10): Promise<TranslationResult | null> => {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const response = await fetch('/api/translate/recent?limit=5');
+        if (!response.ok) continue;
+        
+        const data = await response.json();
+        
+        // Look for a translation that completed after our start time
+        const recentTranslation = data.translations?.find((t: any) => {
+          const createdAt = new Date(t.createdAt).getTime();
+          return createdAt > startTime && t.status === 'completed';
+        });
+        
+        if (recentTranslation) {
+          console.log('Recovered translation from server:', recentTranslation.id);
+          return {
+            translatedText: recentTranslation.translatedText,
+            confidence: parseFloat(recentTranslation.confidence) || 0.9,
+            metadata: {
+              processingTime: recentTranslation.processingTime,
+              chunkCount: recentTranslation.pageCount,
+              totalChars: recentTranslation.textLength
+            }
+          };
+        }
+        
+        // Wait before next poll (increasing backoff)
+        await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1)));
+      } catch (error) {
+        console.warn('Poll attempt failed:', error);
+      }
+    }
+    return null;
+  }, []);
 
   const setProgress = useCallback((progress: number) => {
     setState(prev => ({
@@ -256,13 +294,50 @@ export const useTranslation = () => {
                 }
               }
             }
+            
+            // Stream ended - if we haven't resolved yet, try to recover
+            if (!resolved) {
+              console.warn('Stream ended without completion event, attempting recovery...');
+              
+              setState(prev => ({
+                ...prev,
+                progressInfo: {
+                  ...prev.progressInfo!,
+                  message: 'Checking for completed translation...',
+                  timeElapsed: Date.now() - startTimeRef.current
+                }
+              }));
+              
+              // Try to recover the translation result from the server
+              const recoveredResult = await pollForTranslationResult(startTimeRef.current);
+              
+              if (recoveredResult) {
+                resolved = true;
+                setState(prev => ({ 
+                  ...prev, 
+                  isTranslating: false, 
+                  canCancel: false,
+                  progress: 100,
+                  currentSessionId: undefined,
+                  progressInfo: {
+                    message: 'Translation recovered successfully!',
+                    progress: 100,
+                    timeElapsed: Date.now() - startTimeRef.current
+                  }
+                }));
+                resolve(recoveredResult);
+              } else {
+                resolved = true;
+                reject(new TranslationError(
+                  'Stream ended without result and could not recover translation',
+                  TranslationErrorCode.NETWORK_ERROR
+                ));
+              }
+            }
           } catch (error) {
             console.error('Stream reading error:', error);
-            reject(new TranslationError(
-              'Stream reading failed',
-              TranslationErrorCode.NETWORK_ERROR,
-              error
-            ));
+            // Don't reject immediately - let the outer catch handle recovery
+            throw error;
           }
         };
 
@@ -455,14 +530,46 @@ export const useTranslation = () => {
           }
         };
 
-        readStream().catch(error => {
+        readStream().catch(async (error) => {
           if (!resolved) {
-            resolved = true;
-            reject(new TranslationError(
-              'Stream processing failed',
-              TranslationErrorCode.NETWORK_ERROR,
-              error
-            ));
+            console.warn('Stream disconnected, attempting recovery...');
+            
+            // Update UI to show recovery in progress
+            setState(prev => ({
+              ...prev,
+              progressInfo: {
+                ...prev.progressInfo!,
+                message: 'Connection lost. Checking for completed translation...',
+                timeElapsed: Date.now() - startTimeRef.current
+              }
+            }));
+            
+            // Try to recover the translation result from the server
+            const recoveredResult = await pollForTranslationResult(startTimeRef.current);
+            
+            if (recoveredResult) {
+              resolved = true;
+              setState(prev => ({ 
+                ...prev, 
+                isTranslating: false, 
+                canCancel: false,
+                progress: 100,
+                currentSessionId: undefined,
+                progressInfo: {
+                  message: 'Translation recovered successfully!',
+                  progress: 100,
+                  timeElapsed: Date.now() - startTimeRef.current
+                }
+              }));
+              resolve(recoveredResult);
+            } else {
+              resolved = true;
+              reject(new TranslationError(
+                'Stream processing failed and could not recover translation',
+                TranslationErrorCode.NETWORK_ERROR,
+                error
+              ));
+            }
           }
         });
         

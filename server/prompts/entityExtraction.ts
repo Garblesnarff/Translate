@@ -61,14 +61,20 @@ ENTITY TYPES TO EXTRACT:
 - Extract: Geographic relationships (X is in Y)
 - Extract: Founding dates and founders
 
-**TEXT**: Sutras, tantras, commentaries, biographies, letters, treatises, prayers
-- Attributes textType (MUST BE one of): 'sutra', 'tantra', 'commentary', 'biography', 'poetry', 'letters', 'ritual', 'philosophical_treatise', 'history', 'medicine', 'astrology', 'prayer', 'aspiration', 'terma', 'lexicon', 'grammar', 'instruction', 'treatise'
+**TEXT**: Sutras, tantras, commentaries, biographies, letters, treatises, prayers, prophecies, mantras
+- Attributes textType (MUST BE one of): 'sutra', 'tantra', 'commentary', 'biography', 'poetry', 'letters', 'ritual', 'philosophical_treatise', 'history', 'medicine', 'astrology', 'prayer', 'aspiration', 'terma', 'lexicon', 'grammar', 'instruction', 'treatise', 'prophecy', 'mantra'
 - Extract: Author and translator if mentioned
 - Extract: Composition/translation dates
 - Extract: Which texts it comments on or cites
 
-**EVENT**: Teachings, empowerments, debates, foundings, retreats, meetings, renunciation, enlightenment, miracles
-- Attributes eventType (MUST BE one of): 'teaching', 'empowerment', 'debate', 'founding', 'pilgrimage', 'retreat', 'death', 'birth', 'transmission', 'political', 'natural_disaster', 'meeting', 'ordination', 'enthronement', 'renunciation', 'enlightenment', 'parinirvana', 'prophecy', 'miracle'
+**ARTIFACT**: Sacred objects, reliquaries, statues, thangkas, ritual items
+- Attributes artifactType (MUST BE one of): 'reliquary', 'statue', 'thangka', 'ritual_object', 'amulet', 'manuscript_object'
+- Extract: Material, dimensions, creator, significance
+- Extract: Creation/discovery dates
+- Extract: Current/historical location
+
+**EVENT**: Teachings, empowerments, debates, foundings, retreats, meetings, renunciation, enlightenment, miracles, disasters
+- Attributes eventType (MUST BE one of): 'teaching', 'empowerment', 'debate', 'founding', 'pilgrimage', 'retreat', 'death', 'birth', 'transmission', 'political', 'natural_disaster', 'meeting', 'ordination', 'enthronement', 'renunciation', 'enlightenment', 'parinirvana', 'prophecy', 'miracle', 'famine', 'epidemic'
 - Extract: Date (exact, circa, or relative)
 - Extract: Location
 - Extract: Participants and their roles

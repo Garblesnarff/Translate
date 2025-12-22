@@ -83,6 +83,14 @@ PLACE TYPES TO EXTRACT:
 - Examples: Boudhanath Stupa, Swayambhunath, memorial stupas
 - Look for: མཆོད་རྟེན།, stupa, chorten
 
+**ROUTE** (ལམ་): Trade routes, pilgrimage paths, travel corridors
+- Examples: Silk Road, Tea Horse Road, circumambulation paths
+- Look for: ལམ་, path, route, way, road
+
+**PASS** (ལ་): Mountain passes, chokepoints
+- Examples: Nathu La, Jelep La, high mountain passes
+- Look for: ལ་, pass, la
+
 EXTRACTION GUIDELINES:
 
 1. **NAME VARIANTS**: Extract ALL ways the place is referenced
@@ -149,7 +157,7 @@ Return ONLY valid JSON (no markdown, no extra text) in this exact structure:
         "wylie": ["sa skya dgon pa"]
       },
       "attributes": {
-        "placeType": "monastery",
+        "placeType": "monastery|mountain|cave|region|country|city|holy_site|hermitage|temple|stupa|route|pass",
         "coordinates": {
           "latitude": 28.9019,
           "longitude": 88.0247,
@@ -311,7 +319,7 @@ Now extract all place entities from the provided text. Return ONLY the JSON outp
 export function buildSimplePlaceExtractionPrompt(text: string): string {
   return `Extract all PLACES (locations) from this Tibetan Buddhist text.
 
-PLACE TYPES: monastery, mountain, cave, region, country, city, holy_site, hermitage, temple, stupa
+PLACE TYPES: monastery, mountain, cave, region, country, city, holy_site, hermitage, temple, stupa, route, pass
 
 TEXT:
 ${text}

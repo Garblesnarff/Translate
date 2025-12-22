@@ -128,6 +128,79 @@ EVENT TYPES TO EXTRACT
 - Extract: person enthroned, position, location, date, presiding lamas
 - Examples: "enthroned as abbot of Sakya", "recognized as incarnation of..."
 
+**ATMOSPHERIC_EVENT**:
+- Red winds/skies, pillars (waterspouts, volcanic plumes, dust devils)
+- Dark days/darkness lasting unusual durations, "fire in the sky"
+- Unusual colors (green sky, red/orange particulates)
+- Extract: type of phenomenon, duration, color, location, associated omens
+- Examples: "sky turned red for three days", "pillar of smoke rose from the mountain"
+
+**WATER_EVENT**:
+- Ocean/lake churning, unusual wave behavior, water changing color
+- Mass fish/marine life death, water becoming poisonous/undrinkable
+- Flooding from unusual directions
+- Extract: type of event, body of water, duration, effects
+- Examples: "lake boiled and turned black", "river flowed backwards"
+
+**EARTH_EVENT**:
+- Mountains splitting or collapsing, ground shaking (during meditation/ceremonies)
+- Lakes appearing or disappearing, valleys filling with deadly air
+- Extract: type of event, location, duration, physical changes
+- Examples: "mountain split in two", "valley filled with purple mist"
+
+**ROUTE_DISRUPTION**:
+- Trade/pilgrimage routes becoming impassable/blocked
+- Specific geographic chokepoints mentioned as closed/dangerous
+- Extract: route name, location, cause of disruption, duration
+- Examples: "trade route to India blocked by snow", "pilgrimage path severed by war"
+
+**TEMPORAL_MARKER**:
+- Chronological anchors not tied to specific standard events
+- "For X years, travel ceased", "When the monastery was built"
+- Astronomical observations (eclipses, comets, unusual stars)
+- Extract: the marker description, duration, associated era/date
+- Examples: "comet appeared in the sky", "travel ceased for 12 years"
+
+**OATH_BINDING** (དམ་བཞག / dam bzhag):
+- Spirits/deities swearing to protect dharma
+- Extract: deity bound, binder (master), oath taken, location
+- Examples: "bound the local naga to protect the valley", "protector swore an oath"
+
+**SUBJUGATION** (འདུལ་བ། / 'dul ba):
+- Defeating/converting non-Buddhist forces, demons, or heretics
+- Extract: subjugator, entity subjugated, method, location
+- Examples: "subjugated the demoness of the lake", "defeated the heretic teacher"
+
+**CONSECRATION** (རབ་གནས། / rab gnas):
+- Blessing land, statues, temples; claiming territory for Buddhism
+- Extract: consecrator, object/place consecrated, signs, date
+- Examples: "consecrated the ground for Samye", "blessed the new statue"
+
+**SEA_VOYAGE**:
+- Maritime journeys (specifically for Indonesia/Serlingpa narratives)
+- Extract: travelers, route, duration, obstacles (storms, monsters), ports
+- Examples: "sailed for thirteen months to Suvarnadvipa", "encountered storm at sea"
+
+**RELIGIOUS_CONFLICT**:
+- Sectarian disputes, suppression of Bön, expulsions
+- Extract: parties involved, cause, actions taken, outcome
+- Examples: "King Langdarma suppressed the dharma", "conflict between schools"
+
+**VOLCANIC_EVENT**:
+- Eruptions, ash clouds, "sky ablaze", falling rocks/fire
+- Extract: description, location, duration, effects
+- Examples: "mountain vomited fire", "ash covered the sun for days"
+
+**TSUNAMI**:
+- Sudden ocean flooding, coastal destruction, "water rising to the sky"
+- Extract: description, location, damage, warning signs
+- Examples: "ocean swallowed the coast", "great wave destroyed the village"
+
+**ASTRONOMICAL_EVENT**:
+- Eclipses, comets, planetary alignments, "pillars in the sky"
+- Extract: phenomenon, date/time, associated omens
+- Examples: "sun was eaten by Rahu", "six pillars stood in the sky"
+
 ═══════════════════════════════════════════════════════════════════════
 EXTRACTION DETAILS FOR EACH EVENT
 ═══════════════════════════════════════════════════════════════════════
@@ -255,7 +328,7 @@ Return ONLY valid JSON (no markdown, no extra text) in this structure:
         "wylie": ["Wylie transliteration"]
       },
       "attributes": {
-        "eventType": "teaching|empowerment|debate|founding|pilgrimage|retreat|transmission|meeting|death|birth|political|natural_disaster|ordination|enthronement",
+        "eventType": "teaching|empowerment|debate|founding|pilgrimage|retreat|transmission|meeting|death|birth|political|natural_disaster|ordination|enthronement|atmospheric_event|water_event|earth_event|route_disruption|temporal_marker|oath_binding|subjugation|consecration|sea_voyage|religious_conflict|volcanic_event|tsunami|astronomical_event",
         "location": "PLACE_3 or place name",
         "duration": "3 years",
         "significance": "Why this event matters",
@@ -360,7 +433,7 @@ export function buildSimpleEventExtractionPrompt(text: string): string {
 TEXT:
 ${text}
 
-Extract events like: teachings, empowerments, debates, monastery foundings, pilgrimages, retreats, transmissions, births, deaths.
+Extract events like: teachings, empowerments, debates, monastery foundings, pilgrimages, retreats, transmissions, births, deaths, atmospheric phenomena, route disruptions, earth/water events, and temporal markers.
 
 For each event provide:
 - Event type
@@ -378,7 +451,7 @@ Return JSON:
       "type": "event",
       "canonicalName": "Brief name",
       "attributes": {
-        "eventType": "teaching|empowerment|...",
+        "eventType": "teaching|empowerment|...|atmospheric_event|route_disruption",
         "location": "place name",
         "duration": "3 years",
         "significance": "why important"

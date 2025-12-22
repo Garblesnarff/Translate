@@ -78,9 +78,9 @@ export const EntityBaseSchema: NodeLabelSchema = {
       type: 'string',
       required: true,
       indexed: true,
-      description: 'Type of entity (person, place, text, event, concept, institution, deity, lineage)',
+      description: 'Type of entity (person, place, text, event, concept, institution, deity, lineage, artifact)',
       constraints: {
-        enum: ['person', 'place', 'text', 'event', 'concept', 'institution', 'deity', 'lineage']
+        enum: ['person', 'place', 'text', 'event', 'concept', 'institution', 'deity', 'lineage', 'artifact']
       }
     },
     canonical_name: {
@@ -376,7 +376,7 @@ export const PlaceSchema: NodeLabelSchema = {
       indexed: true,
       description: 'Type of place',
       constraints: {
-        enum: ['monastery', 'mountain', 'cave', 'city', 'region', 'country', 'holy_site', 'hermitage', 'temple', 'stupa']
+        enum: ['monastery', 'mountain', 'cave', 'city', 'region', 'country', 'holy_site', 'hermitage', 'temple', 'stupa', 'route', 'pass']
       }
     },
     latitude: {
@@ -486,7 +486,7 @@ export const TextSchema: NodeLabelSchema = {
       indexed: true,
       description: 'Type of text',
       constraints: {
-        enum: ['sutra', 'tantra', 'commentary', 'biography', 'poetry', 'letters', 'ritual', 'philosophical_treatise', 'history', 'medicine', 'astrology']
+        enum: ['sutra', 'tantra', 'commentary', 'biography', 'poetry', 'letters', 'ritual', 'philosophical_treatise', 'history', 'medicine', 'astrology', 'prophecy', 'mantra']
       }
     },
     language: {
@@ -588,7 +588,7 @@ export const EventSchema: NodeLabelSchema = {
       indexed: true,
       description: 'Type of event',
       constraints: {
-        enum: ['teaching', 'empowerment', 'debate', 'founding', 'pilgrimage', 'retreat', 'death', 'birth', 'transmission', 'political', 'natural_disaster', 'meeting', 'ordination', 'enthronement']
+        enum: ['teaching', 'empowerment', 'debate', 'founding', 'pilgrimage', 'retreat', 'death', 'birth', 'transmission', 'political', 'natural_disaster', 'meeting', 'ordination', 'enthronement', 'atmospheric_event', 'water_event', 'earth_event', 'route_disruption', 'temporal_marker', 'oath_binding', 'subjugation', 'consecration', 'sea_voyage', 'religious_conflict', 'volcanic_event', 'tsunami', 'astronomical_event', 'famine', 'epidemic']
       }
     },
     location_id: {
@@ -616,6 +616,21 @@ export const EventSchema: NodeLabelSchema = {
       type: 'integer',
       required: false,
       description: 'Approximate number of attendees'
+    },
+    casualty_count: {
+      type: 'integer',
+      required: false,
+      description: 'Approximate number of casualties (for disasters/conflicts)'
+    },
+    damage_assessment: {
+      type: 'string',
+      required: false,
+      description: 'Assessment of damage caused'
+    },
+    recovery_duration: {
+      type: 'string',
+      required: false,
+      description: 'Time taken to recover from the event'
     },
     outcome: {
       type: 'string',
@@ -823,7 +838,7 @@ export const DeitySchema: NodeLabelSchema = {
       indexed: true,
       description: 'Type of deity',
       constraints: {
-        enum: ['buddha', 'bodhisattva', 'yidam', 'protector', 'dakini', 'dharma_protector']
+        enum: ['buddha', 'bodhisattva', 'yidam', 'protector', 'dakini', 'dharma_protector', 'hindu_deity', 'naga', 'rakshasa', 'mara', 'spirit']
       }
     },
     tradition: {
@@ -928,6 +943,79 @@ export const LineageSchema: NodeLabelSchema = {
 };
 
 // ============================================================================
+// Artifact Entity Schema
+// ============================================================================
+
+export const ArtifactSchema: NodeLabelSchema = {
+  label: 'Artifact',
+  parentLabels: ['Entity'],
+  description: 'Sacred objects, reliquaries, statues, thangkas, and ritual items',
+  properties: {
+    artifact_type: {
+      type: 'string',
+      required: true,
+      indexed: true,
+      description: 'Type of artifact',
+      constraints: {
+        enum: ['reliquary', 'statue', 'thangka', 'ritual_object', 'amulet', 'manuscript_object']
+      }
+    },
+    material: {
+      type: 'string',
+      required: false,
+      description: 'Material composition (gold, sandalwood, bone, etc.)'
+    },
+    dimensions: {
+      type: 'string',
+      required: false,
+      description: 'Physical dimensions'
+    },
+    creator_id: {
+      type: 'string',
+      required: false,
+      indexed: true,
+      description: 'Person ID of the creator'
+    },
+    location_id: {
+      type: 'string',
+      required: false,
+      indexed: true,
+      description: 'Current or historical location (Place ID)'
+    },
+    description: {
+      type: 'string',
+      required: false,
+      description: 'Detailed description of the artifact'
+    },
+    significance: {
+      type: 'string[]',
+      required: false,
+      description: 'Why this artifact is important'
+    },
+    created_year: {
+      type: 'integer',
+      required: false,
+      indexed: true,
+      description: 'Year created'
+    },
+    discovered_year: {
+      type: 'integer',
+      required: false,
+      description: 'Year discovered (for termas)'
+    }
+  },
+  indexes: [
+    {
+      name: 'artifact_type',
+      type: 'property',
+      properties: ['artifact_type'],
+      description: 'Index for filtering artifacts by type'
+    }
+  ],
+  constraints: []
+};
+
+// ============================================================================
 // Schema Registry
 // ============================================================================
 
@@ -940,7 +1028,8 @@ export const NodeSchemas: Record<string, NodeLabelSchema> = {
   Concept: ConceptSchema,
   Institution: InstitutionSchema,
   Deity: DeitySchema,
-  Lineage: LineageSchema
+  Lineage: LineageSchema,
+  Artifact: ArtifactSchema
 };
 
 /**
@@ -955,7 +1044,8 @@ export function getNodeSchema(entityType: EntityType): NodeLabelSchema {
     concept: ConceptSchema,
     institution: InstitutionSchema,
     deity: DeitySchema,
-    lineage: LineageSchema
+    lineage: LineageSchema,
+    artifact: ArtifactSchema
   };
 
   return schemaMap[entityType];

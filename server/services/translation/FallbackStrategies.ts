@@ -208,7 +208,7 @@ export class FallbackStrategies {
   }
 
   /**
-   * Strategy 2: Try alternative AI model (GPT-4, Claude, etc.)
+   * Strategy 3: Try alternative AI model (GLM-4.5, Mimo, etc.)
    */
   private async tryAlternativeModel(
     chunk: TranslationChunk,
@@ -220,11 +220,13 @@ export class FallbackStrategies {
       // For now, we'll use an empty context
       const dictionaryContext = '';
 
-      // Try getting translation from alternative providers
+      // Try getting translation from alternative providers, preferring GLM-4.5-Air
+      // GLM now has maxTokens=16000 to handle reasoning overhead
       const responses = await multiProviderAIService.getMultiProviderTranslations(
         chunk.content,
         dictionaryContext,
-        1  // Just need one successful response
+        1,  // Just need one successful response
+        'openrouter-glm-4.5-air'
       );
 
       if (responses.length > 0) {
@@ -310,8 +312,13 @@ export class FallbackStrategies {
     try {
       const strictPrompt = this.createStrictFormatPrompt(chunk.content);
       
-      // Generic generation without standard translation template to avoid confusion
-      const responses = await multiProviderAIService.generateContent(strictPrompt, 1);
+      // Generic generation with preferred provider GLM-4.5-Air
+      // GLM now has maxTokens=16000 to handle reasoning overhead
+      const responses = await multiProviderAIService.generateContent(
+        strictPrompt, 
+        1, 
+        'openrouter-glm-4.5-air'
+      );
 
       if (responses.length > 0) {
         const bestResponse = responses[0];

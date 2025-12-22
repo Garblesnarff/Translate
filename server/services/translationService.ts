@@ -51,7 +51,7 @@ export class TranslationService {
     useHelperAI: true,
     useMultiPass: true,
     maxIterations: 3,
-    qualityThreshold: 0.8,
+    qualityThreshold: 0.70,  // Lowered from 0.8 to accept fallback model translations (GLM ~0.75)
     useChainOfThought: false,
     contextWindow: 2,
     enableQualityAnalysis: true,

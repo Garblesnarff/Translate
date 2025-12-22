@@ -63,7 +63,7 @@ export const CoordinatesSchema = z.object({
 
 export const EntityBaseSchema = z.object({
   id: z.string().uuid().optional(), // Optional for creation
-  type: z.enum(['person', 'place', 'text', 'event', 'lineage', 'concept', 'institution', 'deity']),
+  type: z.enum(['person', 'place', 'text', 'event', 'lineage', 'concept', 'institution', 'deity', 'artifact']),
   canonicalName: z.string().min(1).max(500),
   names: NameVariantsSchema,
   dates: z.record(DateInfoSchema).optional(),
@@ -95,7 +95,7 @@ export const PersonEntitySchema = EntityBaseSchema.extend({
 export const PlaceEntitySchema = EntityBaseSchema.extend({
   type: z.literal('place'),
   attributes: z.object({
-    placeType: z.enum(['monastery', 'mountain', 'cave', 'city', 'region', 'country', 'holy_site', 'hermitage', 'temple', 'stupa', 'village', 'district', 'kingdom', 'retreat_center']),
+    placeType: z.enum(['monastery', 'mountain', 'cave', 'city', 'region', 'country', 'holy_site', 'hermitage', 'temple', 'stupa', 'village', 'district', 'kingdom', 'retreat_center', 'route', 'pass']),
     coordinates: CoordinatesSchema.optional(),
     region: z.string().optional(),
     modernCountry: z.string().optional(),
@@ -109,7 +109,7 @@ export const PlaceEntitySchema = EntityBaseSchema.extend({
 export const TextEntitySchema = EntityBaseSchema.extend({
   type: z.literal('text'),
   attributes: z.object({
-    textType: z.enum(['sutra', 'tantra', 'commentary', 'biography', 'poetry', 'letters', 'ritual', 'philosophical_treatise', 'history', 'medicine', 'astrology', 'prayer', 'aspiration', 'terma', 'lexicon', 'grammar', 'instruction', 'treatise']),
+    textType: z.enum(['sutra', 'tantra', 'commentary', 'biography', 'poetry', 'letters', 'ritual', 'philosophical_treatise', 'history', 'medicine', 'astrology', 'prayer', 'aspiration', 'terma', 'lexicon', 'grammar', 'instruction', 'treatise', 'prophecy', 'mantra']),
     language: z.string(),
     volumeCount: z.number().int().positive().optional(),
     pageCount: z.number().int().positive().optional(),
@@ -124,12 +124,15 @@ export const TextEntitySchema = EntityBaseSchema.extend({
 export const EventEntitySchema = EntityBaseSchema.extend({
   type: z.literal('event'),
   attributes: z.object({
-    eventType: z.enum(['teaching', 'empowerment', 'debate', 'founding', 'pilgrimage', 'retreat', 'death', 'birth', 'transmission', 'political', 'natural_disaster', 'meeting', 'ordination', 'enthronement', 'renunciation', 'enlightenment', 'parinirvana', 'prophecy', 'miracle']),
+    eventType: z.enum(['teaching', 'empowerment', 'debate', 'founding', 'pilgrimage', 'retreat', 'death', 'birth', 'transmission', 'political', 'natural_disaster', 'meeting', 'ordination', 'enthronement', 'renunciation', 'enlightenment', 'parinirvana', 'prophecy', 'miracle', 'atmospheric_event', 'water_event', 'earth_event', 'route_disruption', 'temporal_marker', 'oath_binding', 'subjugation', 'consecration', 'sea_voyage', 'religious_conflict', 'volcanic_event', 'tsunami', 'astronomical_event', 'famine', 'epidemic']),
     location: z.string().optional(),
     duration: z.string().optional(),
     significance: z.string().optional(),
     description: z.string().optional(),
     attendeeCount: z.number().int().positive().optional(),
+    casualtyCount: z.number().int().optional(),
+    damageAssessment: z.string().optional(),
+    recoveryDuration: z.string().optional(),
     outcome: z.string().optional()
   })
 });
@@ -304,7 +307,7 @@ export const InstitutionEntitySchema = EntityBaseSchema.extend({
 export const DeityEntitySchema = EntityBaseSchema.extend({
   type: z.literal('deity'),
   attributes: z.object({
-    deityType: z.enum(['buddha', 'bodhisattva', 'yidam', 'protector', 'dakini', 'dharma_protector']),
+    deityType: z.enum(['buddha', 'bodhisattva', 'yidam', 'protector', 'dakini', 'dharma_protector', 'hindu_deity', 'naga', 'rakshasa', 'mara', 'spirit']),
     tradition: z.array(z.string()).optional(),
     iconography: z.object({
       arms: z.number().int().positive().optional(),
@@ -315,6 +318,19 @@ export const DeityEntitySchema = EntityBaseSchema.extend({
     }).optional(),
     qualities: z.array(z.string()).optional(),
     mantras: z.array(z.string()).optional()
+  })
+});
+
+export const ArtifactEntitySchema = EntityBaseSchema.extend({
+  type: z.literal('artifact'),
+  attributes: z.object({
+    artifactType: z.enum(['reliquary', 'statue', 'thangka', 'ritual_object', 'amulet', 'manuscript_object']),
+    material: z.string().optional(),
+    dimensions: z.string().optional(),
+    creator: z.string().optional(),
+    location: z.string().optional(),
+    description: z.string().optional(),
+    significance: z.array(z.string()).optional()
   })
 });
 
@@ -377,7 +393,8 @@ export const ExtractionResultSchema = z.object({
     ConceptEntitySchema,
     InstitutionEntitySchema,
     DeityEntitySchema,
-    LineageEntitySchema
+    LineageEntitySchema,
+    ArtifactEntitySchema
   ])),
   relationships: z.array(RelationshipSchema),
   lineages: z.array(LineageEntitySchema).optional(),
@@ -413,6 +430,7 @@ export type EventEntityInput = z.infer<typeof EventEntitySchema>;
 export type ConceptEntityInput = z.infer<typeof ConceptEntitySchema>;
 export type InstitutionEntityInput = z.infer<typeof InstitutionEntitySchema>;
 export type DeityEntityInput = z.infer<typeof DeityEntitySchema>;
+export type ArtifactEntityInput = z.infer<typeof ArtifactEntitySchema>;
 export type LineageEntityInput = z.infer<typeof LineageEntitySchema>;
 export type RelationshipInput = z.infer<typeof RelationshipSchema>;
 export type ExtractionResultInput = z.infer<typeof ExtractionResultSchema>;
@@ -448,7 +466,8 @@ export function validateEntity(data: unknown):
   | ConceptEntityInput
   | InstitutionEntityInput
   | DeityEntityInput
-  | LineageEntityInput {
+  | LineageEntityInput
+  | ArtifactEntityInput {
 
   // Try each schema based on type field
   const baseData = data as any;
@@ -470,6 +489,8 @@ export function validateEntity(data: unknown):
       return DeityEntitySchema.parse(data);
     case 'lineage':
       return LineageEntitySchema.parse(data);
+    case 'artifact':
+      return ArtifactEntitySchema.parse(data);
     default:
       throw new Error(`Unknown entity type: ${baseData?.type}`);
   }

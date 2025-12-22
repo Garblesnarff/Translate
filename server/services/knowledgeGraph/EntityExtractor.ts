@@ -739,7 +739,7 @@ export class EntityExtractor {
       const attrs = { ...(raw.attributes || {}) };
       
       // Ensure placeType is present and valid
-      const validPlaceTypes = ['monastery', 'mountain', 'cave', 'city', 'region', 'country', 'holy_site', 'hermitage', 'temple', 'stupa', 'village', 'district', 'kingdom', 'retreat_center'];
+      const validPlaceTypes = ['monastery', 'mountain', 'cave', 'city', 'region', 'country', 'holy_site', 'hermitage', 'temple', 'stupa', 'village', 'district', 'kingdom', 'retreat_center', 'route', 'pass'];
       if (!attrs.placeType || !validPlaceTypes.includes(attrs.placeType)) {
         // Try to infer placeType from canonicalName
         const name = (raw.canonicalName || '').toLowerCase();
@@ -788,6 +788,21 @@ export class EntityExtractor {
         attrs.language = 'Tibetan';
       }
       
+      sanitized.attributes = attrs;
+    }
+
+    if (raw.type === 'artifact') {
+      const attrs = { ...(raw.attributes || {}) };
+      
+      const validArtifactTypes = ['reliquary', 'statue', 'thangka', 'ritual_object', 'amulet', 'manuscript_object'];
+      if (!attrs.artifactType || !validArtifactTypes.includes(attrs.artifactType)) {
+        attrs.artifactType = 'ritual_object';
+      }
+
+      if (attrs.significance && typeof attrs.significance === 'string') {
+        attrs.significance = [attrs.significance];
+      }
+
       sanitized.attributes = attrs;
     }
     
