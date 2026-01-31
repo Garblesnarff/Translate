@@ -30,7 +30,8 @@ export function entityTypeToLabels(entityType: EntityType): string[] {
     concept: 'Concept',
     institution: 'Institution',
     deity: 'Deity',
-    lineage: 'Lineage'
+    lineage: 'Lineage',
+    artifact: 'Artifact'
   };
 
   return ['Entity', labelMap[entityType]];
@@ -48,7 +49,8 @@ export function labelsToEntityType(labels: string[]): EntityType | null {
     'Concept': 'concept',
     'Institution': 'institution',
     'Deity': 'deity',
-    'Lineage': 'lineage'
+    'Lineage': 'lineage',
+    'Artifact': 'artifact'
   };
 
   for (const label of labels) {
@@ -378,6 +380,18 @@ function mapTypeSpecificProperties(
       props.lineage_chain = attributes.lineage_chain || null;
       props.branch_lineage_ids = attributes.branch_lineage_ids || [];
       break;
+
+    case 'artifact':
+      props.artifact_type = attributes.artifactType || 'unknown';
+      props.material = attributes.material || null;
+      props.dimensions = attributes.dimensions || null;
+      props.creator_id = attributes.creator || null;
+      props.location_id = attributes.location || null;
+      props.description = attributes.description || null;
+      props.significance = attributes.significance || [];
+      props.created_year = dates?.created?.year || null;
+      props.discovered_year = dates?.discovered?.year || null;
+      break;
   }
 
   return props;
@@ -509,6 +523,15 @@ function extractDatesFromNode(props: any): any {
     dates.origin = { year: props.origin_year };
   }
 
+  // Artifact dates
+  if (props.created_year) {
+    dates.created = { year: props.created_year };
+  }
+
+  if (props.discovered_year) {
+    dates.discovered = { year: props.discovered_year };
+  }
+
   return Object.keys(dates).length > 0 ? dates : null;
 }
 
@@ -530,7 +553,7 @@ function extractAttributesFromNode(props: any): any {
     'founded_year', 'destroyed_year', 'rebuilt_year', 'dissolved_year',
     'reformed_year', 'composed_year', 'translated_year', 'printed_year',
     'rediscovered_year', 'occurred_year', 'started_year', 'ended_year',
-    'origin_year'
+    'origin_year', 'created_year', 'discovered_year'
   ];
 
   for (const [key, value] of Object.entries(props)) {

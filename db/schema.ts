@@ -223,7 +223,7 @@ export type AuditLog = z.infer<typeof selectAuditLogSchema>;
 export const entities = pgTable("entities", {
   id: text("id").primaryKey(),
   type: text("type", {
-    enum: ["person", "place", "text", "event", "lineage", "concept", "institution", "deity"]
+    enum: ["person", "place", "text", "event", "lineage", "concept", "institution", "deity", "artifact"]
   }).notNull(),
   canonicalName: text("canonical_name").notNull(),
   names: text("names").notNull(), // JSON: {tibetan: [], english: [], phonetic: [], wylie: []}

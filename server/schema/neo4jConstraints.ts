@@ -117,6 +117,15 @@ export const EntityIdConstraints: Neo4jConstraint[] = [
     description: 'Each lineage must have a unique UUID',
     cypher: 'CREATE CONSTRAINT lineage_id_unique IF NOT EXISTS FOR (l:Lineage) REQUIRE l.id IS UNIQUE',
     dropCypher: 'DROP CONSTRAINT lineage_id_unique IF EXISTS'
+  },
+  {
+    name: 'artifact_id_unique',
+    type: 'unique',
+    labels: ['Artifact'],
+    properties: ['id'],
+    description: 'Each artifact must have a unique UUID',
+    cypher: 'CREATE CONSTRAINT artifact_id_unique IF NOT EXISTS FOR (a:Artifact) REQUIRE a.id IS UNIQUE',
+    dropCypher: 'DROP CONSTRAINT artifact_id_unique IF EXISTS'
   }
 ];
 
@@ -259,6 +268,15 @@ export const TypeSpecificExistenceConstraints: Neo4jConstraint[] = [
     description: 'Every lineage must have a lineage_type',
     cypher: 'CREATE CONSTRAINT lineage_type_exists IF NOT EXISTS FOR (l:Lineage) REQUIRE l.lineage_type IS NOT NULL',
     dropCypher: 'DROP CONSTRAINT lineage_type_exists IF EXISTS'
+  },
+  {
+    name: 'artifact_type_exists',
+    type: 'exists',
+    labels: ['Artifact'],
+    properties: ['artifact_type'],
+    description: 'Every artifact must have an artifact_type',
+    cypher: 'CREATE CONSTRAINT artifact_type_exists IF NOT EXISTS FOR (a:Artifact) REQUIRE a.artifact_type IS NOT NULL',
+    dropCypher: 'DROP CONSTRAINT artifact_type_exists IF EXISTS'
   }
 ];
 
@@ -413,9 +431,9 @@ export const ValidationRules = {
   entity_type_enum: {
     description: 'Entity type must be one of the defined types',
     enforcement: 'application',
-    allowedValues: ['person', 'place', 'text', 'event', 'concept', 'institution', 'deity', 'lineage'],
+    allowedValues: ['person', 'place', 'text', 'event', 'concept', 'institution', 'deity', 'lineage', 'artifact'],
     validation: (type: string) => {
-      const allowed: EntityType[] = ['person', 'place', 'text', 'event', 'concept', 'institution', 'deity', 'lineage'];
+      const allowed: EntityType[] = ['person', 'place', 'text', 'event', 'concept', 'institution', 'deity', 'lineage', 'artifact'];
       return allowed.includes(type as EntityType);
     }
   }
