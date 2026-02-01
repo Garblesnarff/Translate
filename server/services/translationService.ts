@@ -22,6 +22,8 @@ import { formatValidator } from '../validators/formatValidator';
 import { QualityGateRunner, TranslationResultForGates } from './translation/QualityGates';
 import { metricsCollector } from './translation/MetricsCollector';
 import { entityExtractor } from './knowledgeGraph/EntityExtractor';
+import { ExpertPanelService } from './translation/ExpertPanelService';
+import { referenceTranslationService } from './translation/ReferenceTranslationService';
 import {
   TranslationConfig,
   EnhancedTranslationResult,
@@ -46,6 +48,7 @@ export class TranslationService {
   private consistencyValidator: ConsistencyValidator;
   private fallbackStrategies: FallbackStrategies;
   private qualityGateRunner: QualityGateRunner;
+  private expertPanelService: ExpertPanelService;
 
   private readonly defaultConfig: TranslationConfig = {
     useHelperAI: true,
@@ -55,7 +58,11 @@ export class TranslationService {
     useChainOfThought: false,
     contextWindow: 2,
     enableQualityAnalysis: true,
-    timeout: 90000 // 90 seconds for enhanced processing
+    timeout: 90000, // 90 seconds for enhanced processing
+    // New optional features (cherry-picked from PR #1)
+    useExpertPanel: false,           // Panel of experts quality gate
+    useReferenceTranslations: false, // In-context learning
+    extractGlossary: false           // Extract glossary during translation
   };
 
   /**
@@ -88,6 +95,11 @@ export class TranslationService {
       oddPagesGeminiService
     );
     this.qualityGateRunner = new QualityGateRunner();
+    // Expert panel service for advanced quality review (cherry-picked from PR #1)
+    this.expertPanelService = new ExpertPanelService(
+      this.promptGenerator,
+      oddPagesGeminiService
+    );
   }
 
   /**
@@ -402,6 +414,30 @@ export class TranslationService {
           finalTranslation = correction.corrected;
         } else {
           console.warn(`[TranslationService] Format correction failed, using original translation`);
+        }
+      }
+
+      // Phase 7.5: Expert Panel Review (if enabled) - cherry-picked from PR #1
+      let expertPanelUsed = false;
+      if (mergedConfig.useExpertPanel) {
+        console.log(`[TranslationService] Running expert panel review for page ${chunk.pageNumber}`);
+        try {
+          const expertResult = await this.expertPanelService.reviewAndRefine(
+            chunk,
+            finalTranslation,
+            { timeout: 30000, refinementTimeout: 60000 },
+            abortSignal
+          );
+
+          if (expertResult.wasRefined) {
+            console.log(`[TranslationService] Expert panel refined translation based on ${expertResult.critiques.filter(c => c.hasIssues).length} critique(s)`);
+            finalTranslation = expertResult.translation;
+            expertPanelUsed = true;
+          } else {
+            console.log(`[TranslationService] Expert panel approved translation (no significant issues)`);
+          }
+        } catch (error) {
+          console.warn(`[TranslationService] Expert panel review failed, continuing with existing translation:`, error);
         }
       }
 

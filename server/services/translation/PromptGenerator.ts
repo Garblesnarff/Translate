@@ -476,4 +476,117 @@ IMPORTANT: Provide ONLY the improved translation in format: English sentence (Ti
                 return '\n7. This is an advanced refinement - focus on subtle meaning and cultural nuance';
         }
     }
+
+    // ============================================
+    // New methods cherry-picked from PR #1
+    // ============================================
+
+    /**
+     * Creates a prompt to extract a glossary of key terms from Tibetan text.
+     * Returns JSON mapping Tibetan terms to English translations.
+     *
+     * @param text - The Tibetan text to extract terms from
+     * @returns A formatted prompt string
+     */
+    public createGlossaryExtractionPrompt(text: string): string {
+        return `You are a linguistic analyst specializing in classical Tibetan texts. Your task is to identify key terms, names, and important concepts in the following text and provide their English translations.
+
+TEXT:
+${text}
+
+INSTRUCTIONS:
+1. Identify up to 10 key terms, proper names, or significant concepts.
+2. For each term, provide a concise and accurate English translation.
+3. Prioritize:
+   - Proper names (people, places, texts)
+   - Technical Buddhist terminology
+   - Recurring important concepts
+4. Return the results as a single JSON object where keys are the Tibetan terms and values are their English translations.
+5. Ensure the output is valid JSON with no additional text.
+
+EXAMPLE OUTPUT:
+{
+  "ཆོས་ཀྱི་རྒྱལ་པོ": "Dharma King",
+  "བྱང་ཆུབ་སེམས་དཔའ": "Bodhisattva",
+  "རྗེ་བཙུན་མི་ལ་རས་པ": "Jetsun Milarepa"
+}
+
+JSON_GLOSSARY:`;
+    }
+
+    /**
+     * Creates a prompt for an expert to critique a translation.
+     * Used by the panel of experts quality gate.
+     *
+     * @param originalText - The original Tibetan text
+     * @param translation - The English translation to critique
+     * @param expert - The expert persona (e.g., 'Historian', 'Linguist', 'Religious Scholar')
+     * @returns A formatted prompt string
+     */
+    public createCritiquePrompt(originalText: string, translation: string, expert: string): string {
+        const expertGuidance = this.getExpertGuidance(expert);
+
+        return `You are a world-renowned ${expert} with deep expertise in Tibetan literature and Buddhist studies. Your task is to review the following translation and provide a concise critique from your expert perspective.
+
+ORIGINAL TIBETAN:
+${originalText}
+
+ENGLISH TRANSLATION:
+${translation}
+
+YOUR EXPERTISE AS ${expert.toUpperCase()}:
+${expertGuidance}
+
+INSTRUCTIONS:
+1. As a ${expert}, identify any potential inaccuracies, inconsistencies, or areas for improvement.
+2. Focus on aspects relevant to your field.
+3. If you find no significant issues, respond with exactly: "No significant issues found."
+4. If you find issues, describe them concisely in 2-3 sentences.
+5. Be constructive - suggest improvements where possible.
+
+CRITIQUE:`;
+    }
+
+    /**
+     * Get expertise-specific guidance for critique prompts
+     */
+    private getExpertGuidance(expert: string): string {
+        const guidance: Record<string, string> = {
+            'Historian': 'Focus on historical accuracy, proper names, dates, places, and historical context. Verify that events and figures are correctly identified.',
+            'Linguist': 'Focus on grammar, syntax, word choice, and natural English flow. Check that the translation accurately conveys the structure and nuances of the original.',
+            'Religious Scholar': 'Focus on Buddhist terminology, doctrinal accuracy, and proper understanding of religious concepts. Ensure technical terms are correctly translated.',
+            'Tibetologist': 'Focus on Tibetan language accuracy, proper rendering of Tibetan terms, and cultural context specific to Tibetan Buddhism.',
+            'Philosopher': 'Focus on logical consistency, philosophical concepts, and accurate representation of Buddhist philosophical views.'
+        };
+
+        return guidance[expert] || `Focus on accuracy and quality from your perspective as a ${expert}.`;
+    }
+
+    /**
+     * Builds a reference translations section for inclusion in prompts.
+     * Used for in-context learning with gold standard examples.
+     *
+     * @param references - Array of reference translation pairs
+     * @returns A formatted reference section string
+     */
+    public buildReferenceSection(
+        references?: Array<{ source: string; translation: string; context?: string }>
+    ): string {
+        if (!references || references.length === 0) {
+            return '';
+        }
+
+        let referenceSection = '\nREFERENCE TRANSLATIONS (Use as style and terminology guide):\n';
+
+        references.forEach((ref, index) => {
+            referenceSection += `\nExample ${index + 1}:`;
+            if (ref.context) {
+                referenceSection += ` [${ref.context}]`;
+            }
+            referenceSection += `\nTibetan: ${ref.source}`;
+            referenceSection += `\nEnglish: ${ref.translation}\n`;
+        });
+
+        return referenceSection;
+    }
 }

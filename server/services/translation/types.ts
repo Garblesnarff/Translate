@@ -16,6 +16,10 @@ export interface TranslationConfig {
   contextWindow?: number;
   enableQualityAnalysis?: boolean;
   timeout?: number;
+  // New optional features from PR #1 cherry-pick
+  useExpertPanel?: boolean;        // Enable panel of experts quality gate
+  useReferenceTranslations?: boolean; // Enable in-context learning
+  extractGlossary?: boolean;       // Extract glossary during translation
 }
 
 export interface ValidationMetadata {
@@ -108,4 +112,31 @@ export interface GeminiTranslationResult {
 export interface RefinementResult {
   translation: string;
   confidence: number;
+}
+
+// New types from PR #1 cherry-pick
+
+/**
+ * Glossary mapping Tibetan terms to English translations
+ */
+export interface Glossary {
+  [tibetanTerm: string]: string;
+}
+
+/**
+ * Reference translation pair for in-context learning
+ */
+export interface ReferenceTranslation {
+  source: string;       // Original Tibetan text
+  translation: string;  // English translation
+  context?: string;     // Optional context (e.g., "Heart Sutra", "Sakya lineage")
+}
+
+/**
+ * Expert critique from panel of experts quality gate
+ */
+export interface ExpertCritique {
+  expert: string;       // Expert type (e.g., "Historian", "Linguist")
+  critique: string;     // The critique text
+  hasIssues: boolean;   // Whether significant issues were found
 }
